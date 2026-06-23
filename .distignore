@@ -12,7 +12,6 @@
 /.wordpress-org
 /playwright.config.js
 /bin
-/guidelines
 /composer.lock
 /phpcs.xml.dist
 /phpcs.xml
@@ -21,10 +20,6 @@
 /phpunit.xml.dist
 /phpunit-integration.xml.dist
 /.phpunit.result.cache
-/PROGRESS.md
-/PROGRESS-wporg-review.md
-/PROGRESS-recesso-parziale.md
-/PROGRESS-recesso-quantita.md
 *.local.md
 /.build-ignore.local
 /README.md
