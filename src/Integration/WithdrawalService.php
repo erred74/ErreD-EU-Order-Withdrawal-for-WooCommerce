@@ -101,6 +101,11 @@ final class WithdrawalService {
 			throw new NotEligibleException( Reason::NO_ELIGIBLE_ITEMS );
 		}
 
+		// A consumer who abandoned a previous attempt (closed the page before confirming) can start
+		// over: drop any unconfirmed (pending) request for this order so the new declaration is not
+		// blocked by the abandoned one's reservation. Confirmed requests are left untouched.
+		$this->requests->discard_pending_for_order( $order->get_id() );
+
 		$request = $this->requests->create_declaration(
 			$order->get_id(),
 			array(

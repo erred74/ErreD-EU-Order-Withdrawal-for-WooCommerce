@@ -9,7 +9,6 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Admin;
 
-use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Support\Capabilities;
 
@@ -100,7 +99,8 @@ final class Menu {
 
 	/**
 	 * The submenu title, with a count bubble for requests awaiting admin action (confirmed but not
-	 * yet processed). Mirrors the core "awaiting moderation" badge, which screen readers announce.
+	 * yet processed). Uses the same `menu-counter` markup WooCommerce gives its Orders count, so the
+	 * badge matches the other WooCommerce/WordPress menu bubbles (colour included).
 	 */
 	private function menu_title(): string {
 		$base  = __( 'Recesso digitale', 'erred-eu-order-withdrawal-for-woocommerce' );
@@ -114,13 +114,14 @@ final class Menu {
 			/* translators: %1$s: menu label, %2$s: count badge markup. */
 			_x( '%1$s %2$s', 'admin menu item with count badge', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			$base,
-			'<span class="awaiting-mod count-' . absint( $count ) . '"><span class="pending-count">' . esc_html( number_format_i18n( $count ) ) . '</span></span>'
+			'<span class="menu-counter count-' . absint( $count ) . '"><span class="pending-count">' . esc_html( number_format_i18n( $count ) ) . '</span></span>'
 		);
 	}
 
 	/**
-	 * Count of requests awaiting admin action (status "confirmed"), cached briefly to avoid a query
-	 * on every admin page load. Invalidated on confirmation and on admin processing.
+	 * Count of requests awaiting admin action (confirmed or acknowledged — i.e. confirmed by the
+	 * consumer and not yet processed by the merchant), cached briefly to avoid a query on every admin
+	 * page load. Invalidated on confirmation and on admin processing.
 	 */
 	private function action_count(): int {
 		$cached = get_transient( self::COUNT_TRANSIENT );
@@ -128,7 +129,7 @@ final class Menu {
 			return (int) $cached;
 		}
 
-		$count = $this->requests->count_for_admin( array( 'status' => RequestStatus::CONFIRMED ) );
+		$count = $this->requests->count_awaiting_action();
 		set_transient( self::COUNT_TRANSIENT, $count, 5 * MINUTE_IN_SECONDS );
 
 		return $count;

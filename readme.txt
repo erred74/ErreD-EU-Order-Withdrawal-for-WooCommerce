@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 10.9
-Stable tag: 0.5.1
+Stable tag: 0.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,18 @@ the plugin removes its tables, options and the flow page on uninstall.
 
 == Changelog ==
 
+= 0.5.2 =
+* The withdrawal function is now a single «recedere dal contratto qui» button shown below the order
+  details, available to both guest-checkout customers (order-received page) and logged-in members
+  (My Account order view); the previous duplicate button is gone and the link no longer reports
+  "this withdrawal link is not valid or has expired".
+* Confirmation step: removed the (unnecessary) product thumbnail and gave the «conferma recesso»
+  button a proper, accessible button style that no longer depends on the theme.
+* Admin: unconfirmed (abandoned) declarations no longer appear in the requests list or its counts,
+  and a consumer who closed the page before confirming can start a fresh request.
+* Admin: the menu badge counts all open requests awaiting action (confirmed and acknowledged) and
+  uses the standard WooCommerce/WordPress menu-counter styling.
+
 = 0.5.1 =
 * Packaging: the distribution now bundles the full, human-readable JS/CSS source (`assets/`) and
   the build manifests (`package.json`, `package-lock.json`) alongside the compiled `build/`
@@ -226,6 +238,11 @@ the plugin removes its tables, options and the flow page on uninstall.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.5.2 =
+A single, correctly-working withdrawal button for guests and members, a tidier styled confirmation
+step, and admin improvements: abandoned (unconfirmed) requests are hidden and restartable, and the
+menu badge counts all open requests with the standard styling. No data migration required.
 
 = 0.5.1 =
 Bundles the full JS/CSS source alongside the compiled assets and links the public development

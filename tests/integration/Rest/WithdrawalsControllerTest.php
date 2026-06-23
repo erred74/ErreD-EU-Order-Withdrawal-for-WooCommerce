@@ -14,6 +14,7 @@ namespace Recesso54bis\Tests\Integration\Rest;
 
 use PHPUnit\Framework\TestCase;
 use Recesso54bis\Activation\Migrations;
+use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Persistence\Schema;
 use Recesso54bis\Support\OrderToken;
 use Recesso54bis\Support\Settings;
@@ -157,11 +158,21 @@ final class WithdrawalsControllerTest extends TestCase {
 		$this->assertNotSame( 'TAMPERED-9999', $saved->contract_reference );
 	}
 
-	public function test_duplicate_open_request_conflicts(): void {
+	public function test_unconfirmed_request_can_be_restarted_and_a_confirmed_one_conflicts(): void {
+		// A consumer who abandoned an unconfirmed attempt (closed the page) can start over: the new
+		// declaration replaces the pending one instead of conflicting.
 		$this->assertSame( 201, $this->create_request( $this->token )->get_status() );
 
+		$this->clear_rate_limiter();
 		$second = $this->create_request( $this->token );
-		$this->assertSame( 409, $second->get_status() );
+		$this->assertSame( 201, $second->get_status() );
+
+		// Once a request is confirmed those units are being withdrawn, so a new overlapping request
+		// conflicts (the duplicate guard still protects confirmed/open requests).
+		$this->confirm_via_repo( (int) $second->get_data()['id'] );
+		$this->clear_rate_limiter();
+		$third = $this->create_request( $this->token );
+		$this->assertSame( 409, $third->get_status() );
 	}
 
 	public function test_partial_requests_on_disjoint_lines_coexist(): void {
@@ -169,13 +180,17 @@ final class WithdrawalsControllerTest extends TestCase {
 		$token = ( new OrderToken() )->issue( $order->get_id(), time() + 3600 );
 		$lines = $this->line_ids( $order );
 
-		$first  = $this->create_partial_request( $order->get_id(), $token, array( $lines[0] => 1 ) );
-		$second = $this->create_partial_request( $order->get_id(), $token, array( $lines[1] => 1 ) );
-
+		// Confirm each partial request so its reservation persists (a still-pending one would be
+		// replaced by the next declaration); confirmed partial withdrawals on disjoint lines coexist.
+		$first = $this->create_partial_request( $order->get_id(), $token, array( $lines[0] => 1 ) );
 		$this->assertSame( 201, $first->get_status() );
-		$this->assertSame( 201, $second->get_status() );
+		$this->confirm_via_repo( (int) $first->get_data()['id'] );
 
-		// A third request overlapping the first (now fully reserved) line must conflict.
+		$second = $this->create_partial_request( $order->get_id(), $token, array( $lines[1] => 1 ) );
+		$this->assertSame( 201, $second->get_status() );
+		$this->confirm_via_repo( (int) $second->get_data()['id'] );
+
+		// A third request overlapping the first (now fully reserved and confirmed) line must conflict.
 		$third = $this->create_partial_request( $order->get_id(), $token, array( $lines[0] => 1 ) );
 		$this->assertSame( 409, $third->get_status() );
 
@@ -200,9 +215,17 @@ final class WithdrawalsControllerTest extends TestCase {
 		$token = ( new OrderToken() )->issue( $order->get_id(), time() + 3600 );
 		$line  = $this->line_ids( $order )[0];
 
-		// Two requests each reserve 2 of the 4 units → both succeed; a third (1 more) has nothing left.
-		$this->assertSame( 201, $this->create_partial_request( $order->get_id(), $token, array( $line => 2 ) )->get_status() );
-		$this->assertSame( 201, $this->create_partial_request( $order->get_id(), $token, array( $line => 2 ) )->get_status() );
+		// Two confirmed requests each reserve 2 of the 4 units → both succeed; a third (1 more) has
+		// nothing left. Each is confirmed so its reservation persists (an unconfirmed one would be
+		// replaced by the next declaration).
+		$first = $this->create_partial_request( $order->get_id(), $token, array( $line => 2 ) );
+		$this->assertSame( 201, $first->get_status() );
+		$this->confirm_via_repo( (int) $first->get_data()['id'] );
+
+		$second = $this->create_partial_request( $order->get_id(), $token, array( $line => 2 ) );
+		$this->assertSame( 201, $second->get_status() );
+		$this->confirm_via_repo( (int) $second->get_data()['id'] );
+
 		$this->assertSame( 409, $this->create_partial_request( $order->get_id(), $token, array( $line => 1 ) )->get_status() );
 
 		$this->delete_requests( $order->get_id() );
@@ -282,6 +305,16 @@ final class WithdrawalsControllerTest extends TestCase {
 		$response = rest_do_request( $request );
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertTrue( $response->get_data()['is_eligible'] );
+	}
+
+	/**
+	 * Confirm a request directly via the repository, bypassing the REST confirm endpoint (and the
+	 * synchronous durable-PDF generation its hook triggers). Keeps the guard tests fast and light.
+	 *
+	 * @param int $id Request id.
+	 */
+	private function confirm_via_repo( int $id ): void {
+		( new RequestRepository() )->confirm( $id, gmdate( 'Y-m-d H:i:s' ) );
 	}
 
 	private function confirm_request( int $id, string $token ): \WP_REST_Response {

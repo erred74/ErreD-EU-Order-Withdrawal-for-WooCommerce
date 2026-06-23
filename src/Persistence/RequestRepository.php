@@ -541,6 +541,57 @@ final class RequestRepository {
 	}
 
 	/**
+	 * Count requests awaiting an admin decision (for the menu badge): a request is "open" once the
+	 * consumer has confirmed it and until the merchant processes it. This spans both `confirmed`
+	 * (receipt pending) and `acknowledged` (receipt issued), since the durable-medium receipt is
+	 * generated automatically right after confirmation — counting only `confirmed` made the badge
+	 * vanish as soon as the receipt was issued.
+	 */
+	public function count_awaiting_action(): int {
+		$sql = (string) $this->wpdb->prepare(
+			'SELECT COUNT(*) FROM %i WHERE status IN ( %s, %s )',
+			Schema::requests_table(),
+			RequestStatus::CONFIRMED,
+			RequestStatus::ACKNOWLEDGED
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $this->wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Discard any abandoned, unconfirmed (pending) requests for an order, releasing their reserved
+	 * quantities. A pending request is not a legal record (no confirmation, no dies a quo), so a
+	 * consumer who closed the page mid-flow can start a fresh declaration without being blocked by the
+	 * abandoned attempt's reservation. Confirmed (or later) requests are never touched.
+	 *
+	 * @param int $order_id Order id.
+	 */
+	public function discard_pending_for_order( int $order_id ): void {
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- only the literal COLUMNS const is concatenated; values bound via prepare().
+		$sql = (string) $this->wpdb->prepare(
+			'SELECT ' . self::COLUMNS . ' FROM %i WHERE order_id = %d AND status = %s',
+			Schema::requests_table(),
+			$order_id,
+			RequestStatus::PENDING
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return;
+		}
+
+		foreach ( $rows as $row ) {
+			$request = WithdrawalRequest::from_row( $row );
+			$this->release_quantities( $order_id, $request->requested_items );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$this->wpdb->delete( Schema::requests_table(), array( 'id' => $request->id ), array( '%d' ) );
+		}
+	}
+
+	/**
 	 * The admin-list WHERE clause for the active status + search filters. Returns a literal string
 	 * (one of a fixed set of match arms) so it is safe to embed in a prepared statement; the bound
 	 * values are produced in lock-step by {@see admin_where_params()}.
@@ -553,29 +604,34 @@ final class RequestRepository {
 		$has_status = $this->valid_status( $args ) !== '';
 		$has_search = $this->search_term( $args ) !== '';
 
+		// Unconfirmed (pending) declarations are abandoned or in-progress attempts, not real
+		// requests: they never appear in the admin list or its counts. The leading `status <> %s`
+		// (bound to "pending" by admin_where_params) is always present.
 		if ( $has_status && $has_search ) {
-			return ' WHERE status = %s AND ' . self::SEARCH_PREDICATE;
+			return ' WHERE status <> %s AND status = %s AND ' . self::SEARCH_PREDICATE;
 		}
 		if ( $has_status ) {
-			return ' WHERE status = %s';
+			return ' WHERE status <> %s AND status = %s';
 		}
 		if ( $has_search ) {
-			return ' WHERE ' . self::SEARCH_PREDICATE;
+			return ' WHERE status <> %s AND ' . self::SEARCH_PREDICATE;
 		}
 
-		return '';
+		return ' WHERE status <> %s';
 	}
 
 	/**
-	 * The bound values matching {@see admin_where()}, in placeholder order: status first (when set),
-	 * then the escaped LIKE value repeated once per searchable field.
+	 * The bound values matching {@see admin_where()}, in placeholder order: the excluded "pending"
+	 * status first, then the filter status (when set), then the escaped LIKE value repeated once per
+	 * searchable field.
 	 *
 	 * @param array{status?: string, search?: string} $args Query args.
 	 *
 	 * @return list<string>
 	 */
 	private function admin_where_params( array $args ): array {
-		$params = array();
+		// The leading `status <> %s` in every admin_where() arm excludes pending declarations.
+		$params = array( RequestStatus::PENDING );
 
 		$status = $this->valid_status( $args );
 		if ( '' !== $status ) {

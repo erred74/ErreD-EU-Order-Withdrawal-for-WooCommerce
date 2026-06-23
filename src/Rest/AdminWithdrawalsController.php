@@ -214,7 +214,7 @@ final class AdminWithdrawalsController extends Controller {
 
 		return new \WP_REST_Response(
 			array(
-				'open'             => $this->requests->count_for_admin( array( 'status' => RequestStatus::CONFIRMED ) ),
+				'open'             => $this->requests->count_awaiting_action(),
 				'acknowledged'     => $this->requests->count_for_admin( array( 'status' => RequestStatus::ACKNOWLEDGED ) ),
 				'total'            => $this->requests->count_for_admin( array() ),
 				'recent_confirmed' => $this->requests->count_confirmed_since( $since ),

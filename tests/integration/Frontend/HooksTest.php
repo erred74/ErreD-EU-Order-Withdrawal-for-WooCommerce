@@ -95,6 +95,34 @@ final class HooksTest extends TestCase {
 		);
 	}
 
+	public function test_order_view_button_is_the_single_on_page_entry_and_authorises_a_guest(): void {
+		$container = new Container();
+		$order     = $this->make_completed_order();
+		$hooks     = new Hooks( $container->eligibility_adapter(), $container->flow_urls(), $container->settings() );
+
+		// The single on-page button (order-received page + My Account order view) must sign its link
+		// with a token, so the one button works for guests and members alike instead of failing with
+		// "this withdrawal link is not valid or has expired".
+		wp_set_current_user( 0 );
+
+		ob_start();
+		$hooks->order_view_button( $order );
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'recedere dal contratto qui', $html );
+		$this->assertStringContainsString( FlowUrls::QV_TOKEN . '=', $html );
+
+		$parsed = array();
+		preg_match( '/' . FlowUrls::QV_TOKEN . '=([^"&]+)/', $html, $parsed );
+		$token = isset( $parsed[1] ) ? urldecode( $parsed[1] ) : '';
+
+		$this->assertNotSame( '', $token );
+		$this->assertTrue(
+			$container->permission_gate()->can_act_on_order( $this->order_id, $token, time() ),
+			'The single button token must authorise the withdrawal flow for a guest.'
+		);
+	}
+
 	public function test_email_button_is_skipped_for_admin_copy(): void {
 		$container = new Container();
 		$order     = $this->make_completed_order();

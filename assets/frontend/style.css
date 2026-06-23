@@ -12,6 +12,41 @@
 	--recesso-dig-border: #d5d8dc;
 	--recesso-dig-muted: #50575e;
 	--recesso-dig-focus: #2271b1;
+	--recesso-dig-accent: #c8102e;
+	--recesso-dig-accent-hover: #a50d26;
+}
+
+/* Give the flow's submit/confirm controls a clear, self-contained button
+   look: the flow lives on a plain page where the theme/WooCommerce `.button`
+   styles are not guaranteed to load, else the control renders as bare text. */
+.wp-block-recesso-digitale-flow__submit,
+.wp-block-recesso-digitale-flow__confirm {
+	background-color: var(--recesso-dig-accent);
+	border: 0;
+	border-radius: 4px;
+	color: #fff;
+	cursor: pointer;
+	display: inline-block;
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.2;
+	padding: 0.75em 1.5em;
+	text-decoration: none;
+	transition: background-color 0.15s ease-in-out;
+}
+
+.wp-block-recesso-digitale-flow__submit:hover,
+.wp-block-recesso-digitale-flow__confirm:hover,
+.wp-block-recesso-digitale-flow__submit:focus,
+.wp-block-recesso-digitale-flow__confirm:focus {
+	background-color: var(--recesso-dig-accent-hover);
+	color: #fff;
+}
+
+.wp-block-recesso-digitale-flow__submit:focus-visible,
+.wp-block-recesso-digitale-flow__confirm:focus-visible {
+	outline: 2px solid var(--recesso-dig-focus);
+	outline-offset: 2px;
 }
 
 .wp-block-recesso-digitale-flow__title {

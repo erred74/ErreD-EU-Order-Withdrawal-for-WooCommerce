@@ -69,7 +69,7 @@ final class RequestRepositoryTest extends TestCase {
 	}
 
 	public function test_admin_search_matches_text_fields_and_order_id(): void {
-		$this->repo->create_declaration(
+		$request = $this->repo->create_declaration(
 			self::ORDER_ID,
 			array(
 				'consumer_name'      => 'Searchable Tester ' . self::ORDER_ID,
@@ -80,6 +80,8 @@ final class RequestRepositoryTest extends TestCase {
 			),
 			'2026-06-19 10:00:00'
 		);
+		// Confirm it so it is a real (listed) request: the admin list excludes unconfirmed pending ones.
+		$this->repo->confirm( $request->id, '2026-06-19 11:00:00' );
 
 		// Free-text search matches the consumer name, the confirmation email and the order id.
 		$this->assertSame( 1, $this->repo->count_for_admin( array( 'search' => 'Searchable Tester' ) ) );
@@ -109,6 +111,61 @@ final class RequestRepositoryTest extends TestCase {
 			$request->requested_items
 		);
 		$this->assertNull( $request->confirmed_at_gmt );
+	}
+
+	public function test_count_awaiting_action_includes_confirmed_and_acknowledged(): void {
+		// The count is global (all orders), so measure deltas against a baseline.
+		$baseline = $this->repo->count_awaiting_action();
+
+		$request = $this->repo->create_declaration( self::ORDER_ID, $this->declaration_data(), '2026-06-19 10:00:00' );
+
+		// A pending (not yet confirmed) request is awaiting the consumer, not the merchant.
+		$this->assertSame( $baseline, $this->repo->count_awaiting_action() );
+
+		// Once confirmed it is open and awaiting the merchant's decision → counts for the badge.
+		$this->repo->confirm( $request->id, '2026-06-19 11:00:00' );
+		$this->assertSame( $baseline + 1, $this->repo->count_awaiting_action() );
+
+		// Issuing the durable-medium receipt moves it to "acknowledged"; it is still open and must
+		// keep counting (counting only "confirmed" made the menu badge vanish once the receipt ran).
+		$this->repo->attach_receipt( $request->id, str_repeat( 'a', 64 ), '/protected/a.pdf', '2026-06-19 11:01:00' );
+		$this->assertSame( $baseline + 1, $this->repo->count_awaiting_action() );
+	}
+
+	public function test_pending_requests_are_excluded_from_the_admin_listing(): void {
+		$baseline_count = $this->repo->count_for_admin( array() );
+
+		$request = $this->repo->create_declaration( self::ORDER_ID, $this->declaration_data(), '2026-06-19 10:00:00' );
+
+		// While pending it must not appear in the admin list or its total.
+		$this->assertSame( $baseline_count, $this->repo->count_for_admin( array() ) );
+		$ids = array_map( static fn( $r ) => $r->id, $this->repo->query_for_admin( array( 'per_page' => 100 ) ) );
+		$this->assertNotContains( $request->id, $ids );
+
+		// Once confirmed it becomes a real request and is listed.
+		$this->repo->confirm( $request->id, '2026-06-19 11:00:00' );
+		$this->assertSame( $baseline_count + 1, $this->repo->count_for_admin( array() ) );
+		$ids = array_map( static fn( $r ) => $r->id, $this->repo->query_for_admin( array( 'per_page' => 100 ) ) );
+		$this->assertContains( $request->id, $ids );
+	}
+
+	public function test_discard_pending_for_order_removes_the_row_and_frees_the_reservation(): void {
+		// An abandoned, unconfirmed declaration reserves units; discarding it must free them so a
+		// fresh declaration for the same units succeeds.
+		$abandoned = $this->repo->create_declaration( self::ORDER_ID, $this->data( array( 10 => 1 ), array( 10 => 1 ) ), '2026-06-19 10:00:00' );
+
+		$this->repo->discard_pending_for_order( self::ORDER_ID );
+
+		$this->assertNull( $this->repo->find_by_id( $abandoned->id ), 'The abandoned pending request should be removed.' );
+
+		// The reservation is released, so a new declaration for the same single unit is not blocked.
+		$fresh = $this->repo->create_declaration( self::ORDER_ID, $this->data( array( 10 => 1 ), array( 10 => 1 ) ), '2026-06-19 10:05:00' );
+		$this->assertGreaterThan( 0, $fresh->id );
+
+		// A confirmed request, by contrast, is not discarded.
+		$this->repo->confirm( $fresh->id, '2026-06-19 10:06:00' );
+		$this->repo->discard_pending_for_order( self::ORDER_ID );
+		$this->assertNotNull( $this->repo->find_by_id( $fresh->id ), 'A confirmed request must never be discarded.' );
 	}
 
 	public function test_duplicate_open_request_is_blocked_atomically(): void {

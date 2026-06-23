@@ -39,14 +39,7 @@ defined( 'ABSPATH' ) || exit;
 		<ul class="wp-block-recesso-digitale-flow__summary-items">
 			<?php foreach ( $args['items'] as $recesso_dig_item ) : ?>
 				<li class="wp-block-recesso-digitale-flow__summary-item">
-					<?php if ( ! empty( $recesso_dig_item['thumbnail_html'] ) ) : ?>
-						<span class="wp-block-recesso-digitale-flow__item-thumb">
-							<?php
-							// Already-escaped <img> markup from WC_Product::get_image(); no external resource.
-							echo $recesso_dig_item['thumbnail_html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-							?>
-						</span>
-					<?php endif; ?>
+					<?php // The product thumbnail is intentionally omitted on this confirmation step. ?>
 					<span class="wp-block-recesso-digitale-flow__item-name">
 						<?php
 						echo esc_html(

@@ -15,10 +15,11 @@ use Recesso54bis\Support\Settings;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Surfaces the mandated «recedere dal contratto qui» control wherever an eligible order is shown:
- * the My Account orders list and single order view (logged-in owner — no token needed), and the
- * order-received page plus the customer order emails (signed, expiring token, so guest-checkout
- * customers can reach the flow without exposing orders to enumeration).
+ * Surfaces the mandated «recedere dal contratto qui» control for an eligible order: a single on-page
+ * button below the order details table (shown on the order-received page and the My Account order
+ * view, so guests and members alike see exactly one button) plus the link in the customer order
+ * emails. Every link carries a signed, expiring order token so it authorises the flow for both
+ * logged-in and guest-checkout customers without exposing orders to enumeration.
  */
 final class Hooks {
 
@@ -60,42 +61,23 @@ final class Hooks {
 	 * Register the frontend hooks.
 	 */
 	public function register(): void {
-		add_filter( 'woocommerce_my_account_my_orders_actions', array( $this, 'order_actions' ), 10, 2 );
 		add_action( 'woocommerce_order_details_after_order_table', array( $this, 'order_view_button' ), 20, 1 );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_button' ), 20, 4 );
 	}
 
 	/**
-	 * Add a withdrawal action to the My Account orders list for eligible orders.
-	 *
-	 * @param array<string, array{url: string, name: string}> $actions Existing row actions.
-	 * @param \WC_Order                                       $order   The order for the row.
-	 *
-	 * @return array<string, array{url: string, name: string}>
-	 */
-	public function order_actions( array $actions, \WC_Order $order ): array {
-		if ( $this->is_eligible( $order ) ) {
-			// WooCommerce escapes url/name when rendering these actions.
-			$actions['recesso_dig'] = array(
-				'url'  => $this->declaration_link( $order ),
-				'name' => $this->label(),
-			);
-		}
-
-		return $actions;
-	}
-
-	/**
-	 * Render the withdrawal button below the single order details for eligible orders.
+	 * Render the single withdrawal button below the order details table for eligible orders. This is
+	 * the one on-page entry point and it serves everyone: the order-received page (guest-checkout
+	 * customers right after checkout) and the My Account order view (logged-in members). The link is
+	 * signed with an expiring token so it authorises the flow for both, with no order enumeration.
 	 *
 	 * @param \WC_Order $order The order.
 	 */
-	public function order_view_button( \WC_Order $order ): void {
-		if ( ! $this->is_eligible( $order ) ) {
+	public function order_view_button( $order ): void {
+		if ( ! $order instanceof \WC_Order || ! $this->is_eligible( $order ) ) {
 			return;
 		}
 
-		// This view is also the guest order-received page, so carry a signed token.
 		$html = Templates::render(
 			'button',
 			array(
