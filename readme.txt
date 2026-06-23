@@ -1,0 +1,257 @@
+=== ErreD EU Order Withdrawal for WooCommerce ===
+Contributors: draison, recessodigitale
+Tags: woocommerce, withdrawal, recesso, cancellation, consumer
+Requires at least: 6.7
+Tested up to: 7.0
+Requires PHP: 8.2
+WC requires at least: 8.2
+WC tested up to: 10.9
+Stable tag: 0.5.1
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Digital withdrawal function for WooCommerce — the EU "easy withdrawal" duty (Directive 2023/2673), in force from 19 June 2026.
+
+== Description ==
+
+From 19 June 2026, EU Directive 2023/2673 requires online stores across the European Union to
+provide a **digital withdrawal function**: a way to cancel a distance contract online that is at
+least as easy to use as the purchase flow itself. A single "cancel" button is not enough. The law
+requires a clearly labelled, continuously available function, a two-step confirmation, and an
+acknowledgement on a durable medium whose timestamp fixes the legal moment of communication.
+
+ErreD EU Order Withdrawal for WooCommerce implements that function end to end — not just the
+button, but the declaration flow, the two-step confirmation, the durable-medium receipt, the
+eligibility rules and the merchant review tools needed to actually comply.
+
+It ships the Italian transposition out of the box (art. 54-bis of the Codice del Consumo,
+introduced by D.Lgs. 209/2025) with the legally-fixed label «recedere dal contratto qui», and it
+is fully translatable for other EU markets.
+
+The plugin does not create a right of withdrawal: it provides the online channel to exercise an
+existing one, honouring the legal exceptions (e.g. art. 59 in Italy). It is built security-first,
+is WooCommerce High-Performance Order Storage (HPOS) native, and works fully offline (no external
+service calls).
+
+**For consumers**
+
+* A clearly labelled, continuously available withdrawal function on the My Account orders screen.
+* A two-step declaration and confirmation flow ("conferma recesso"), server-rendered so it works
+  even with JavaScript disabled.
+* An acknowledgement on a durable medium (email plus a stored PDF receipt) whose timestamp fixes
+  the moment of communication — the legal start date (dies a quo) for refund deadlines.
+* Reachable by guest-checkout customers through a per-order signed link in their order emails and on
+  the order-received page, with no order enumeration.
+
+**For merchants**
+
+* A React admin screen to review requests, filter by status, search by order, name or email, view
+  the audit timeline, view/regenerate the durable receipt and mark requests refunded or rejected.
+* A menu badge counting the requests awaiting action.
+* A conservative, configurable eligibility engine (withdrawal window, start trigger, per-product
+  and per-category exclusions) that fails closed when configuration is missing.
+* Optional WooCommerce Subscriptions support: a confirmed withdrawal cancels the subscription
+  (status transition only — subscription data is never deleted).
+* An append-only audit trail and tamper-evident receipts (SHA-256 of the receipt payload).
+
+**Built to standard**
+
+* Security-first: capability + nonce/REST permission checks and input sanitisation / output
+  escaping on every privileged path; signed, rate-limited guest access.
+* Accessibility: WCAG 2.2 AA, verified with automated axe checks.
+* Fully translatable; ships a complete Italian (it_IT) translation.
+
+This plugin encodes legal and security intent; it is not legal advice. The mapping of the art. 59
+exceptions to your catalogue and the durable-medium content must be validated by a qualified legal
+professional before relying on them.
+
+== Installation ==
+
+1. Upload the plugin to the `/wp-content/plugins/` directory, or install it through the WordPress
+   plugins screen.
+2. Activate the plugin through the 'Plugins' screen in WordPress.
+3. WooCommerce 8.2 or newer (with High-Performance Order Storage) is required.
+4. Visit WooCommerce → Recesso digitale: settings to configure the withdrawal window, the window
+   start trigger and your product/category exclusions.
+
+== Source code and build process ==
+
+This plugin ships its complete, human-readable source. The compiled assets in `build/` are
+generated from the React/JS/CSS source in `assets/` with @wordpress/scripts.
+
+* JS/CSS source: `assets/admin/` and `assets/frontend/`
+* Generated bundles: `build/admin/` and `build/frontend/`
+* Rebuild the bundles: `composer install && npm ci && npm run build`
+* Runtime PHP dependencies (Dompdf) are managed with Composer.
+
+Development repository: https://github.com/erred74/ErreD-EU-Order-Withdrawal-for-WooCommerce
+
+== Frequently Asked Questions ==
+
+= Does this plugin decide whether an order can be withdrawn? =
+
+No. The plugin provides the channel and records the request; the merchant accepts or rejects each
+one. The ordinary 14-day period is shown as advisory information (it does not hide the function),
+and the merchant can pre-exclude specific products or categories (art. 59). Rejecting a request
+requires a reason, which is recorded and emailed to the consumer. The mapping of the art. 59
+exceptions to your catalogue must still be validated by a legal professional.
+
+= Does it work for guest-checkout orders? =
+
+Yes. Guests receive a per-order, single-purpose signed link (HMAC, verified in constant time and
+rate-limited). A bare order id or order key is never sufficient to submit a withdrawal, and
+responses are uniform to prevent order enumeration.
+
+= Does the withdrawal flow require JavaScript? =
+
+No. The two-step flow is server-rendered and works with JavaScript disabled; JavaScript only
+enhances the admin experience.
+
+= What is the "durable medium"? =
+
+A withdrawal acknowledgement sent by email together with a stored PDF receipt, kept in a protected
+location and downloadable only through a capability- or token-checked endpoint. The receipt records
+the content of the request and the exact date and time of transmission.
+
+= Does it support WooCommerce Subscriptions? =
+
+Optionally. If WooCommerce Subscriptions is active, a confirmed withdrawal cancels the related
+subscription by transitioning its status — it never deletes subscription data. With Subscriptions
+absent, the plugin is unaffected.
+
+= Does the plugin make external network calls? =
+
+No. It functions fully offline and loads no third-party scripts, fonts or assets.
+
+= What happens to my data on uninstall? =
+
+Nothing is removed unless you opt in via the "Delete all data on uninstall" setting. When enabled,
+the plugin removes its tables, options and the flow page on uninstall.
+
+== Screenshots ==
+
+1. Step one: the withdrawal declaration ("recedere dal contratto qui"), pre-filled from the order.
+2. Step two: the explicit "conferma recesso" confirmation.
+3. The acknowledgement screen shown after confirmation.
+4. The admin requests screen: status filter, free-text search and per-request actions.
+
+== Changelog ==
+
+= 0.5.1 =
+* Packaging: the distribution now bundles the full, human-readable JS/CSS source (`assets/`) and
+  the build manifests (`package.json`, `package-lock.json`) alongside the compiled `build/`
+  assets, and the readme documents how to rebuild them and links the public development repository.
+* Dependency: the bundled Dompdf library is updated from 3.0.0 to 3.1.5.
+* Hardening: the admin receipt download link now carries a nonce that the download endpoint
+  verifies for the admin path (the consumer link continues to use its signed, rate-limited token).
+* Hardening: saving a product's withdrawal status now verifies the WooCommerce editor nonce and
+  the `edit_product` capability explicitly.
+
+= 0.5.0 =
+* New "Withdrawal" column on the WooCommerce orders screen (HPOS and the legacy list) showing each
+  order's current withdrawal decision as a colour-coded badge.
+* The request detail panel now sets the decision through a single "Set status" dropdown (Pending,
+  Accepted, Rejected, Completed) with a "Save status" button next to "Regenerate receipt". The reason
+  field appears only when rejecting (and stays required); the orders column updates to match.
+* Hardening: the contract reference stored for a withdrawal is now always derived server-side from
+  the order number, ignoring any client-supplied value on the REST create endpoint.
+* Hardening: the receipt download endpoint now validates the stored path against an exact directory
+  boundary, preventing a similarly named sibling directory from being treated as the protected store.
+* Packaging: reproducible production builds (installed from composer.lock) and a direct-access guard
+  added to the generated PHP asset files in the distribution.
+
+= 0.4.0 =
+* Product/category "Withdrawal status" now offers the specific art. 59 / Directive classifications
+  (standard, digital content art. 16(m), service started early art. 14(4)(a), dated accommodation /
+  transport art. 16(l), other art. 16 exception) instead of a plain allow/exclude, and each maps to
+  the right eligibility outcome. Statuses saved by earlier versions keep working.
+* A one-time welcome notice after activation links straight to the settings and the auto-created
+  withdrawal page.
+* Reorganised the settings screen into clear sections (General, Withdrawal deadline, Article 16
+  exclusions, Checkout consents, Model withdrawal form, Excluded products notice, Withdrawal link
+  visibility, Data), added a notification email and a withdrawal-page selector, a "show model form"
+  toggle and an optional trader phone number.
+* The Annex I.B model withdrawal form was redesigned to match the statutory layout (header block with
+  the trader's details, fillable lines, source attribution and an optional printable view).
+
+= 0.3.1 =
+* Fix: an in-place update now reliably adds the v4 optional columns — the installed schema version is
+  only advanced once the columns actually exist, so the requests admin list and the withdrawal form no
+  longer break until a manual re-activation.
+* Hardening: the withdrawal declaration never white-screens — a transient persistence failure degrades
+  to a friendly message instead of a fatal error (the legally-required function stays usable).
+
+= 0.3.0 =
+* Art. 59 configuration: per-product and per-category "Right of withdrawal" status (allow / exclude /
+  inherit) in the product and category editors, plus an opt-in "excluded from withdrawal" notice on
+  the product page.
+* Checkout consents: optional, configurable digital-content (art. 16(m)) and service-start
+  (art. 14(4)(a)) consents, recorded on the order with timestamps and an order note.
+* Annex I.B model withdrawal form (printable), populated with configurable trader contact details,
+  shown below the public form and via the [recesso_digitale_modulo] shortcode.
+* Order notes mirror the withdrawal lifecycle; new customer emails on accept/refund/complete and an
+  admin notification (multiple recipients) when a withdrawal is confirmed.
+* Admin: Accept / Mark completed / Mark refunded actions, an at-a-glance stats summary and a CSV
+  export of requests.
+* GDPR: personal-data exporter and eraser (anonymises personal data while retaining the legal
+  acknowledgement) and a suggested privacy-policy snippet.
+* Optional refund IBAN and reason fields on the declaration (carried into the durable receipt),
+  honeypot anti-spam, an optional persistent footer link, an optional strict deadline-enforcement
+  mode with grace days, and a wpml-config.xml for WPML/Polylang.
+
+= 0.2.0 =
+* Redesigned the consumer withdrawal page: products are chosen with checkboxes, each shown with its
+  thumbnail, and a per-product quantity selector appears only when more than one unit was purchased.
+* The durable-medium acknowledgement email now lists every selected product with its quantity, along
+  with the confirmation email and the declaration timestamp, matching the PDF receipt.
+* The two-step confirmation («conferma recesso») and the completion screen now itemise exactly which
+  products and quantities are being withdrawn.
+* Internal: item resolution unified in one shared component used by the receipt, email and on-screen
+  summaries; the tamper-evident receipt hash is unchanged.
+
+= 0.1.0 =
+* Initial development release.
+* Security-first, HPOS-native withdrawal channel: continuously available function, two-step
+  server-rendered declaration/confirmation flow, signed rate-limited guest access.
+* Durable medium: acknowledgement email plus a protected, tamper-evident PDF receipt with a
+  write-once legal timestamp (dies a quo), generated asynchronously via Action Scheduler.
+* Conservative, configurable, fail-closed eligibility engine (window, start trigger, art. 59
+  exclusions) with filters for integrators.
+* React admin: list, status filter, free-text search, audit timeline, receipt view/regenerate,
+  process actions, and a menu badge for requests awaiting action.
+* Optional WooCommerce Subscriptions adapter (withdrawal cancels the subscription).
+* Merchant-decides model: the 14-day period is advisory (shown to the merchant), the withdrawal
+  function stays available, and the merchant accepts or rejects each request. Rejection requires a
+  reason, recorded in the audit trail and emailed to the consumer.
+* Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
+
+== Upgrade Notice ==
+
+= 0.5.1 =
+Bundles the full JS/CSS source alongside the compiled assets and links the public development
+repository, updates the bundled Dompdf to 3.1.5, and hardens the admin receipt download and the
+product withdrawal-status save. No data migration required.
+
+= 0.5.0 =
+Adds a withdrawal-status column to the orders screen and replaces the request detail panel's action
+buttons with a single "Set status" dropdown plus a "Save status" button. No data migration required.
+
+= 0.4.0 =
+Richer per-product/category withdrawal status (art. 59 exceptions), a post-activation welcome notice, a
+reorganised settings screen, and a redesigned Annex I.B model form. No data migration required.
+
+= 0.3.1 =
+Fixes the in-place schema upgrade (empty requests list / blank withdrawal submission after updating to
+0.3.0) and prevents the withdrawal form from white-screening on a transient error.
+
+= 0.3.0 =
+Adds art. 59 product/category configuration, checkout consents, the Annex I.B model form, status
+emails, admin actions/stats/CSV export, GDPR tools and more. Adds two optional database columns
+(applied automatically). Review the new settings under Recesso digitale → Settings.
+
+= 0.2.0 =
+Clearer withdrawal page (checkbox product picker with thumbnails and per-product quantities) and a
+fuller durable-medium acknowledgement that lists the selected products. No data migration required.
+
+= 0.1.0 =
+Initial release.

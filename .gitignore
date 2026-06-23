@@ -1,0 +1,32 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build artefacts (committed to the SVN deploy, not to git)
+/build/
+
+# Local environment
+/.wp-env/
+.wp-env.override.json
+
+# Distribution build output
+/dist/
+/.build-tmp/
+
+# E2E / Playwright output
+/artifacts/
+
+# Local-only artefacts (not shared)
+/.distcheck/
+/.build-ignore.local
+*.local.md
+
+# Tooling caches
+.phpunit.result.cache
+/phpcs.xml
+/phpstan.neon
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,171 @@
+{
+    "translation-revision-date": "2026-06-22T11:19:59+00:00",
+    "generator": "WP-CLI\/2.12.0",
+    "source": "assets\/admin\/app.js",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "it_IT",
+                "plural-forms": "nplurals=2; plural=(n != 1);"
+            },
+            "Pending": [
+                "In attesa"
+            ],
+            "Accepted": [
+                "Accettato"
+            ],
+            "Rejected": [
+                "Rifiutato"
+            ],
+            "Completed": [
+                "Completato"
+            ],
+            "ID": [
+                "ID"
+            ],
+            "Order": [
+                "Ordine"
+            ],
+            "Status": [
+                "Stato"
+            ],
+            "Confirmed (GMT)": [
+                "Confermato (GMT)"
+            ],
+            "Acknowledged (GMT)": [
+                "Ricevuta inviata (GMT)"
+            ],
+            "Receipt": [
+                "Ricevuta"
+            ],
+            "No withdrawal requests yet.": [
+                "Nessuna richiesta di recesso al momento."
+            ],
+            "Refund IBAN": [
+                "IBAN per il rimborso"
+            ],
+            "Withdrawal confirmed": [
+                "Recesso confermato"
+            ],
+            "Whole order": [
+                "Intero ordine"
+            ],
+            "Items": [
+                "Articoli"
+            ],
+            "All statuses": [
+                "Tutti gli stati"
+            ],
+            "Confirmed": [
+                "Confermato"
+            ],
+            "Acknowledged": [
+                "Ricevuta inviata"
+            ],
+            "Refunded": [
+                "Rimborsato"
+            ],
+            "Expired": [
+                "Scaduto"
+            ],
+            "Request created": [
+                "Richiesta creata"
+            ],
+            "Receipt sent": [
+                "Ricevuta inviata"
+            ],
+            "Status change": [
+                "Cambio di stato"
+            ],
+            "Access denied": [
+                "Accesso negato"
+            ],
+            "consumer": [
+                "consumatore"
+            ],
+            "system": [
+                "sistema"
+            ],
+            "administrator (#%s)": [
+                "amministratore (#%s)"
+            ],
+            "Withdrawal request": [
+                "Richiesta di recesso"
+            ],
+            "Receipt verification code": [
+                "Codice di verifica della ricevuta"
+            ],
+            "Reason": [
+                "Motivo"
+            ],
+            "Partial withdrawal": [
+                "Recesso parziale"
+            ],
+            "View receipt (PDF)": [
+                "Visualizza la ricevuta (PDF)"
+            ],
+            "No receipt yet. Use \u201cRegenerate receipt\u201d to create it.": [
+                "Nessuna ricevuta disponibile. Usa \u00abRigenera ricevuta\u00bb per crearla."
+            ],
+            "Audit timeline": [
+                "Cronologia (audit)"
+            ],
+            "Set status": [
+                "Imposta lo stato"
+            ],
+            "Reason (required to reject \u2014 sent to the customer)": [
+                "Motivazione (obbligatoria per rifiutare \u2014 inviata al cliente)"
+            ],
+            "Regenerate receipt": [
+                "Rigenera ricevuta"
+            ],
+            "Save status": [
+                "Salva stato"
+            ],
+            "awaiting action": [
+                "in attesa di azione"
+            ],
+            "confirmed (30 days)": [
+                "confermati (30 giorni)"
+            ],
+            "acknowledged": [
+                "ricevuta inviata"
+            ],
+            "total": [
+                "totale"
+            ],
+            "Filter by status": [
+                "Filtra per stato"
+            ],
+            "Search by order, name or email": [
+                "Cerca per ordine, nome o email"
+            ],
+            "Refresh": [
+                "Aggiorna"
+            ],
+            "Export CSV": [
+                "Esporta CSV"
+            ],
+            "Actions": [
+                "Azioni"
+            ],
+            "Yes": [
+                "S\u00ec"
+            ],
+            "View": [
+                "Vedi"
+            ],
+            "Previous": [
+                "Precedente"
+            ],
+            "Page": [
+                "Pagina"
+            ],
+            "Next": [
+                "Successivo"
+            ]
+        }
+    }
+}

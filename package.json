@@ -1,0 +1,28 @@
+{
+	"name": "recesso-digitale",
+	"version": "0.5.1",
+	"description": "Online withdrawal function (art. 54-bis Codice del Consumo) for WooCommerce.",
+	"license": "GPL-2.0-or-later",
+	"private": true,
+	"scripts": {
+		"build": "npm run build:frontend && npm run build:admin",
+		"build:frontend": "wp-scripts build --webpack-src-dir=assets/frontend --output-path=build/frontend",
+		"build:admin": "wp-scripts build --webpack-src-dir=assets/admin --output-path=build/admin",
+		"start": "wp-scripts start --webpack-src-dir=assets/frontend --output-path=build/frontend",
+		"lint:js": "wp-scripts lint-js",
+		"lint:css": "wp-scripts lint-style",
+		"test:js": "wp-scripts test-unit-js",
+		"test:e2e": "wp-scripts test-playwright --config=playwright.config.js --grep-invert @screenshot",
+		"test:e2e:headed": "wp-scripts test-playwright --config=playwright.config.js --grep-invert @screenshot --headed",
+		"screenshots": "wp-scripts test-playwright --config=playwright.config.js --grep @screenshot",
+		"format": "wp-scripts format",
+		"env": "wp-env",
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "^4.11.3",
+		"@wordpress/env": "^10.10.0",
+		"@wordpress/scripts": "^30.0.0"
+	}
+}

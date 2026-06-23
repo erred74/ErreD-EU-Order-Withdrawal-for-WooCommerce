@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "recesso-digitale/withdrawal-button",
+	"version": "0.1.0",
+	"title": "ErreD EU Order Withdrawal for WooCommerce",
+	"category": "widgets",
+	"icon": "undo",
+	"description": "Renders the withdrawal (recesso) flow and the «recedere dal contratto qui» entry control.",
+	"keywords": [ "recesso", "withdrawal", "woocommerce", "consumer" ],
+	"textdomain": "erred-eu-order-withdrawal-for-woocommerce",
+	"supports": {
+		"html": false,
+		"multiple": false
+	},
+	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
+	"viewStyle": "file:./style-view.css"
+}
