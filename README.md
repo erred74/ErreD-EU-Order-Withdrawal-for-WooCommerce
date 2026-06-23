@@ -52,11 +52,6 @@ Submit **only** the regenerated `dist/erred-eu-order-withdrawal-for-woocommerce.
 Check against that exact zip (extract it under its real `erred-eu-order-withdrawal-for-woocommerce`
 slug inside wp-env, then `wp plugin check erred-eu-order-withdrawal-for-woocommerce`).
 
-## Build state
-
-See [`PROGRESS.md`](PROGRESS.md) for the live build checklist. The engineering guide and rules
-live in the maintainer's local engineering guide (kept outside the repository).
-
 ## License
 
 GPL-2.0-or-later.
