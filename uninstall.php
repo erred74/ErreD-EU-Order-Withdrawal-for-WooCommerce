@@ -38,11 +38,24 @@ if ( is_readable( __DIR__ . '/vendor/autoload.php' ) ) {
 		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $recesso_dig_claims_table ) );
 	}
 
-	// Remove the auto-created flow page, if present.
+	// Remove only pages the plugin itself auto-created, identified by the created-by-plugin post
+	// meta marker. The flow page option may point to any page the merchant selected in settings,
+	// so it must never be used as a deletion criterion. As a second guard, a marked page is only
+	// deleted while it still hosts the withdrawal shortcode; a repurposed page is left untouched.
 	if ( class_exists( \Recesso54bis\Frontend\FlowPage::class ) ) {
-		$recesso_dig_flow_page = (int) get_option( \Recesso54bis\Frontend\FlowPage::OPTION, 0 );
-		if ( $recesso_dig_flow_page > 0 ) {
-			wp_delete_post( $recesso_dig_flow_page, true );
+		$recesso_dig_created_pages = get_posts(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'any',
+				'numberposts' => 20,
+				'meta_key'    => \Recesso54bis\Frontend\FlowPage::CREATED_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- One-off bounded lookup during uninstall.
+				'meta_value'  => '1', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- One-off bounded lookup during uninstall.
+			)
+		);
+		foreach ( $recesso_dig_created_pages as $recesso_dig_created_page ) {
+			if ( false !== strpos( (string) $recesso_dig_created_page->post_content, '[recesso_digitale]' ) ) {
+				wp_delete_post( (int) $recesso_dig_created_page->ID, true );
+			}
 		}
 	}
 }

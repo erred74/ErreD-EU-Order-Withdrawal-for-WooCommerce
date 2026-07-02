@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 10.9
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,11 @@ the plugin removes its tables, options and the flow page on uninstall.
 
 == Changelog ==
 
+= 0.5.3 =
+* Uninstall: only the withdrawal page auto-created by the plugin is removed. The page is now
+  identified by a created-by-plugin marker (and must still host the withdrawal shortcode), so a
+  pre-existing page the merchant selected in settings is never deleted.
+
 = 0.5.2 =
 * The withdrawal function is now a single «recedere dal contratto qui» button shown below the order
   details, available to both guest-checkout customers (order-received page) and logged-in members
@@ -238,6 +243,10 @@ the plugin removes its tables, options and the flow page on uninstall.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.5.3 =
+Safer uninstall: only the page the plugin itself auto-created can be removed when deleting data on
+uninstall; a page you selected yourself in settings is never touched. No data migration required.
 
 = 0.5.2 =
 A single, correctly-working withdrawal button for guests and members, a tidier styled confirmation
