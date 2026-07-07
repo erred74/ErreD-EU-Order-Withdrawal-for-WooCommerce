@@ -134,6 +134,7 @@ the plugin removes its tables, options and the flow page on uninstall.
 2. Step two: the explicit "conferma recesso" confirmation.
 3. The acknowledgement screen shown after confirmation.
 4. The admin requests screen: status filter, free-text search and per-request actions.
+5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
 
