@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ErreD EU Order Withdrawal for WooCommerce
  * Description:        Digital withdrawal function for WooCommerce: the EU "easy withdrawal" duty (Directive 2023/2673, in force 19 June 2026) and its Italian transposition (art. 54-bis Codice del Consumo). HPOS-native, security-first.
- * Version:           0.5.3
+ * Version:           0.5.4
  * Requires at least: 6.7
  * Requires PHP:      8.2
  * Requires Plugins:  woocommerce
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Single, canonical plugin-file path constant. Used for asset URLs, activation hooks, etc.
 define( 'RECESSO_DIG_PLUGIN_FILE', __FILE__ );
-define( 'RECESSO_DIG_VERSION', '0.5.3' );
+define( 'RECESSO_DIG_VERSION', '0.5.4' );
 
 /**
  * Guard: minimum PHP version. Fail closed with an admin notice rather than fataling.

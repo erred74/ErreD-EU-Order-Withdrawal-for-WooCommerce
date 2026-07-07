@@ -80,7 +80,7 @@ final class Menu {
 	public function register_menu(): void {
 		$this->list_hook = (string) add_submenu_page(
 			'woocommerce',
-			__( 'Recesso digitale', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			__( 'Order Withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			$this->menu_title(),
 			Capabilities::MANAGE_REQUESTS,
 			self::LIST_SLUG,
@@ -89,8 +89,8 @@ final class Menu {
 
 		add_submenu_page(
 			'woocommerce',
-			__( 'Recesso digitale — Settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			__( 'Recesso digitale: settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			__( 'Order Withdrawal — Settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			__( 'Order Withdrawal: settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			'manage_woocommerce',
 			SettingsPage::MENU_SLUG,
 			array( $this->settings, 'render_page' )
@@ -103,7 +103,7 @@ final class Menu {
 	 * badge matches the other WooCommerce/WordPress menu bubbles (colour included).
 	 */
 	private function menu_title(): string {
-		$base  = __( 'Recesso digitale', 'erred-eu-order-withdrawal-for-woocommerce' );
+		$base  = __( 'Order Withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' );
 		$count = $this->action_count();
 
 		if ( $count < 1 ) {
@@ -192,7 +192,7 @@ final class Menu {
 		$table->prepare_items();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Recesso digitale — Withdrawal requests', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></h1>
+			<h1><?php esc_html_e( 'Order Withdrawal — Requests', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></h1>
 			<div id="recesso-dig-admin-app">
 				<form method="get">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::LIST_SLUG ); ?>" />
