@@ -641,7 +641,25 @@ final class FlowController {
 
 		WC()->mailer();
 
-		return ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
+		// TODO(review): temporary — capture the exact reason wp_mail() fails during a lookup send, so we
+		// can tell an SMTP/mailer failure from a content/header problem. Remove once resolved.
+		$capture = static function ( $error ): void {
+			$reason = $error instanceof \WP_Error ? $error->get_error_message() : 'unknown';
+			$data   = $error instanceof \WP_Error ? $error->get_error_data() : array();
+			( new Logger() )->error(
+				'lookup: wp_mail failed',
+				array(
+					'reason'  => $reason,
+					'to'      => is_array( $data ) && isset( $data['to'] ) ? $data['to'] : '',
+					'subject' => is_array( $data ) && isset( $data['subject'] ) ? $data['subject'] : '',
+				)
+			);
+		};
+		add_action( 'wp_mail_failed', $capture );
+		$sent = ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
+		remove_action( 'wp_mail_failed', $capture );
+
+		return $sent;
 	}
 
 	/**
