@@ -555,8 +555,12 @@ final class FlowController {
 			$this->redirect( $this->lookup_result_url( $flow_url, 'invalid' ) );
 		}
 
+		// Email the link whenever the order and email match, regardless of eligibility: a legitimate
+		// consumer must always get a response on their own address. Eligibility is (re)checked when the
+		// link is opened — the declaration screen then explains any ineligibility (expired window, etc.)
+		// instead of leaving the consumer with silence that looks like a broken mailer.
 		$order = $this->match_order( $order_number, $email );
-		if ( $order instanceof \WC_Order && $this->eligibility->for_order( $order )->is_eligible ) {
+		if ( $order instanceof \WC_Order ) {
 			$this->send_link_email( $order, $flow_url );
 		}
 
