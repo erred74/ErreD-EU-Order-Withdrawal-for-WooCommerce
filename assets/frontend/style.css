@@ -190,6 +190,20 @@
 	margin-top: 1.25rem;
 }
 
+.wp-block-recesso-digitale-flow__notice {
+	border-left: 4px solid var(--recesso-dig-border);
+	margin-bottom: 1rem;
+	padding: 0.6rem 0.9rem;
+}
+
+.wp-block-recesso-digitale-flow__notice.wp-block-recesso-digitale-flow--success {
+	border-left-color: #1a7f37;
+}
+
+.wp-block-recesso-digitale-flow__notice.wp-block-recesso-digitale-flow--error {
+	border-left-color: #b32d2e;
+}
+
 .wp-block-recesso-digitale-flow__item-check:focus-visible,
 .wp-block-recesso-digitale-flow__qty-input:focus-visible {
 	outline: 2px solid var(--recesso-dig-focus);

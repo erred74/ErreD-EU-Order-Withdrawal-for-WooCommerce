@@ -51,6 +51,7 @@ final class EmailHooks {
 		$emails['recesso_dig_rejection']          = new WithdrawalRejectionEmail();
 		$emails['recesso_dig_status_update']      = new WithdrawalStatusUpdateEmail();
 		$emails['recesso_dig_admin_notification'] = new WithdrawalAdminNotificationEmail();
+		$emails['recesso_dig_link']               = new WithdrawalLinkEmail();
 
 		return $emails;
 	}

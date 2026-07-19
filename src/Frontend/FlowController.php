@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Recesso54bis\Frontend;
 
 use Recesso54bis\Domain\WithdrawalRequest;
+use Recesso54bis\Email\WithdrawalLinkEmail;
 use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Integration\NotEligibleException;
 use Recesso54bis\Integration\RequestedItemsResolver;
@@ -20,6 +21,7 @@ use Recesso54bis\Rest\EligibilityController;
 use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
 use Recesso54bis\Support\Nonces;
+use Recesso54bis\Support\RateLimiter;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -60,23 +62,43 @@ final class FlowController {
 	private EligibilityAdapter $eligibility;
 
 	/**
+	 * Flow URL builder (for the lookup magic link).
+	 *
+	 * @var FlowUrls
+	 */
+	private FlowUrls $urls;
+
+	/**
+	 * Rate limiter (throttles the on-page lookup form).
+	 *
+	 * @var RateLimiter
+	 */
+	private RateLimiter $rate_limiter;
+
+	/**
 	 * Construct the controller.
 	 *
-	 * @param WithdrawalService  $service     Coordination service.
-	 * @param RequestRepository  $requests    Request repository.
-	 * @param PermissionGate     $gate        Permission gate.
-	 * @param EligibilityAdapter $eligibility Eligibility adapter.
+	 * @param WithdrawalService  $service      Coordination service.
+	 * @param RequestRepository  $requests     Request repository.
+	 * @param PermissionGate     $gate         Permission gate.
+	 * @param EligibilityAdapter $eligibility  Eligibility adapter.
+	 * @param FlowUrls           $urls         Flow URL builder.
+	 * @param RateLimiter        $rate_limiter Rate limiter.
 	 */
 	public function __construct(
 		WithdrawalService $service,
 		RequestRepository $requests,
 		PermissionGate $gate,
-		EligibilityAdapter $eligibility
+		EligibilityAdapter $eligibility,
+		FlowUrls $urls,
+		RateLimiter $rate_limiter
 	) {
-		$this->service     = $service;
-		$this->requests    = $requests;
-		$this->gate        = $gate;
-		$this->eligibility = $eligibility;
+		$this->service      = $service;
+		$this->requests     = $requests;
+		$this->gate         = $gate;
+		$this->eligibility  = $eligibility;
+		$this->urls         = $urls;
+		$this->rate_limiter = $rate_limiter;
 	}
 
 	/**
@@ -87,6 +109,8 @@ final class FlowController {
 		add_action( 'admin_post_nopriv_recesso_dig_declare', array( $this, 'handle_declare' ) );
 		add_action( 'admin_post_recesso_dig_confirm', array( $this, 'handle_confirm' ) );
 		add_action( 'admin_post_nopriv_recesso_dig_confirm', array( $this, 'handle_confirm' ) );
+		add_action( 'admin_post_recesso_dig_lookup', array( $this, 'handle_lookup' ) );
+		add_action( 'admin_post_nopriv_recesso_dig_lookup', array( $this, 'handle_lookup' ) );
 	}
 
 	/**
@@ -125,7 +149,9 @@ final class FlowController {
 				$msg = isset( $_GET['recesso_dig_msg'] ) ? sanitize_text_field( wp_unslash( $_GET['recesso_dig_msg'] ) ) : '';
 				return '' === $msg ? '' : $this->message( $msg, 'info' );
 			default:
-				return '';
+				// No signed link on the URL: offer the order-lookup form, which emails a signed link to
+				// the order's own address (never rendering the flow inline), so orders are not enumerable.
+				return $this->render_lookup();
 		}
 	}
 
@@ -167,6 +193,46 @@ final class FlowController {
 		}
 
 		wp_enqueue_style( $handle );
+	}
+
+	/**
+	 * Render the order-lookup form shown when the page is reached without a signed link (the footer
+	 * link, or a direct visit). On submit the plugin emails a signed withdrawal link to the order's own
+	 * address; the flow itself is never rendered inline, so orders cannot be enumerated here.
+	 */
+	private function render_lookup(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display of a uniform post-submit notice.
+		$result = isset( $_GET['recesso_dig_lookup'] ) ? sanitize_key( wp_unslash( $_GET['recesso_dig_lookup'] ) ) : '';
+
+		$notice      = '';
+		$notice_type = 'info';
+		switch ( $result ) {
+			case 'sent':
+				// Deliberately uniform: identical whether or not an order matched, to avoid enumeration.
+				$notice      = __( 'If an order matching those details exists, we have sent a withdrawal link to the email address on file. Please check your inbox.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				$notice_type = 'success';
+				break;
+			case 'invalid':
+				$notice      = __( 'Please enter both your order number and the email address used for the order.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				$notice_type = 'error';
+				break;
+			case 'throttled':
+				$notice      = __( 'Too many requests. Please wait a few minutes and try again.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				$notice_type = 'error';
+				break;
+		}
+
+		return Templates::render(
+			'lookup',
+			array(
+				'action_url'   => esc_url_raw( admin_url( 'admin-post.php' ) ),
+				'nonce_action' => Nonces::LOOKUP,
+				'nonce_name'   => '_recesso_dig_nonce',
+				'flow_url'     => $this->current_page_url(),
+				'notice'       => $notice,
+				'notice_type'  => $notice_type,
+			)
+		);
 	}
 
 	/**
@@ -454,6 +520,120 @@ final class FlowController {
 				)
 			)
 		);
+	}
+
+	/**
+	 * Handle the order-lookup POST: email a signed withdrawal link to the order's own address.
+	 *
+	 * Anti-enumeration by design: the response is always uniform (`sent`) whether or not an order
+	 * matched, the link is delivered only to the order's stored email (never to the address typed in
+	 * the browser), attempts are rate-limited per IP, and a honeypot drops bots. The flow is never
+	 * rendered inline from here.
+	 */
+	public function handle_lookup(): void {
+		check_admin_referer( Nonces::LOOKUP, '_recesso_dig_nonce' );
+
+		$flow_url = isset( $_POST['flow_url'] ) ? esc_url_raw( wp_unslash( $_POST['flow_url'] ) ) : '';
+		$flow_url = wp_validate_redirect( $flow_url, FlowPage::url() );
+
+		// Honeypot: a hidden field only automated bots complete. If filled, show the uniform result.
+		if ( isset( $_POST['recesso_dig_hp'] ) && '' !== sanitize_text_field( wp_unslash( $_POST['recesso_dig_hp'] ) ) ) {
+			$this->redirect( $this->lookup_result_url( $flow_url, 'sent' ) );
+		}
+
+		// Throttle per IP. Fail closed on abuse: report the uniform result without sending or probing.
+		$bucket = 'lookup_' . ClientIp::get();
+		if ( $this->rate_limiter->too_many_attempts( $bucket ) ) {
+			$this->redirect( $this->lookup_result_url( $flow_url, 'throttled' ) );
+		}
+		$this->rate_limiter->hit( $bucket );
+
+		$order_number = isset( $_POST['order_number'] ) ? sanitize_text_field( wp_unslash( $_POST['order_number'] ) ) : '';
+		$email        = isset( $_POST['order_email'] ) ? sanitize_email( wp_unslash( $_POST['order_email'] ) ) : '';
+
+		if ( '' === $order_number || false === is_email( $email ) ) {
+			$this->redirect( $this->lookup_result_url( $flow_url, 'invalid' ) );
+		}
+
+		$order = $this->match_order( $order_number, $email );
+		if ( $order instanceof \WC_Order && $this->eligibility->for_order( $order )->is_eligible ) {
+			$this->send_link_email( $order, $flow_url );
+		}
+
+		// Always the same response, so the page never reveals whether an order exists.
+		$this->redirect( $this->lookup_result_url( $flow_url, 'sent' ) );
+	}
+
+	/**
+	 * Resolve the order for a lookup only when both the order number and the email match. The email is
+	 * compared in constant time to avoid a timing oracle. Returns null on any mismatch (fail closed).
+	 *
+	 * @param string $order_number The order number as the consumer sees it.
+	 * @param string $email        The email address entered.
+	 */
+	private function match_order( string $order_number, string $email ): ?\WC_Order {
+		$candidate_id = absint( $order_number );
+		if ( $candidate_id <= 0 ) {
+			return null;
+		}
+
+		$order = wc_get_order( $candidate_id );
+		if ( ! $order instanceof \WC_Order ) {
+			return null;
+		}
+
+		// The value the consumer typed must be the order's own number (covers custom numbering schemes),
+		// not merely any id that parses out of it.
+		if ( 0 !== strcasecmp( trim( $order->get_order_number() ), trim( $order_number ) )
+			&& (string) $order->get_id() !== trim( $order_number ) ) {
+			return null;
+		}
+
+		$order_email = strtolower( (string) $order->get_billing_email() );
+		if ( '' === $order_email || ! hash_equals( $order_email, strtolower( $email ) ) ) {
+			return null;
+		}
+
+		return $order;
+	}
+
+	/**
+	 * Email a freshly-signed withdrawal link to the order's own address through the store's mailer.
+	 *
+	 * @param \WC_Order $order    The matched order.
+	 * @param string    $flow_url The page hosting the flow (base for the link).
+	 */
+	private function send_link_email( \WC_Order $order, string $flow_url ): void {
+		if ( ! function_exists( 'WC' ) || ! class_exists( '\WC_Email' ) ) {
+			return;
+		}
+
+		$url = $this->urls->declaration_url( $flow_url, $order->get_id(), $this->lookup_token_expiry() );
+
+		WC()->mailer();
+		( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
+	}
+
+	/**
+	 * The expiry (Unix timestamp) for a lookup-issued withdrawal-link token. Shares the same generous,
+	 * filterable lifetime as the entry links in order emails, so the link stays usable for the whole
+	 * period the consumer might act.
+	 */
+	private function lookup_token_expiry(): int {
+		/** This filter is documented in src/Frontend/Hooks.php */
+		$ttl = (int) apply_filters( 'recesso_dig_entry_token_ttl', 60 * DAY_IN_SECONDS );
+
+		return time() + max( DAY_IN_SECONDS, $ttl );
+	}
+
+	/**
+	 * Build the redirect URL that shows a uniform lookup result on the flow page.
+	 *
+	 * @param string $flow_url The page hosting the flow.
+	 * @param string $result   Result token: `sent`, `invalid` or `throttled`.
+	 */
+	private function lookup_result_url( string $flow_url, string $result ): string {
+		return add_query_arg( 'recesso_dig_lookup', $result, $flow_url );
 	}
 
 	/**

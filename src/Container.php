@@ -199,7 +199,9 @@ final class Container {
 				$this->withdrawal_service(),
 				$this->request_repository(),
 				$this->permission_gate(),
-				$this->eligibility_adapter()
+				$this->eligibility_adapter(),
+				$this->flow_urls(),
+				$this->rate_limiter()
 			)
 		);
 	}

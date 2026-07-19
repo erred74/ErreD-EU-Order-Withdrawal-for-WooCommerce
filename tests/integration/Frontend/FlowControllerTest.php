@@ -125,6 +125,29 @@ final class FlowControllerTest extends TestCase {
 		}
 	}
 
+	public function test_lookup_form_renders_without_a_signed_link(): void {
+		// A direct visit (e.g. the footer link) carries no step: the order-lookup form must appear,
+		// never the flow itself — otherwise orders would be enumerable.
+		$_GET = array();
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'name="order_number"', $html );
+		$this->assertStringContainsString( 'name="order_email"', $html );
+		$this->assertStringContainsString( 'recesso_dig_lookup', $html );
+		$this->assertStringNotContainsString( 'name="consumer_name"', $html );
+	}
+
+	public function test_lookup_result_notice_is_uniform(): void {
+		// The post-submit notice must be identical whether or not an order matched (anti-enumeration).
+		$_GET = array( 'recesso_dig_lookup' => 'sent' );
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'sent a withdrawal link', $html );
+		$this->assertStringContainsString( 'name="order_number"', $html );
+	}
+
 	public function test_declaration_denies_invalid_token(): void {
 		$_GET = array(
 			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,

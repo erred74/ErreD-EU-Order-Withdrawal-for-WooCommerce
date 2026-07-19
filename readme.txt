@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 10.9
-Stable tag: 0.5.4
+Stable tag: 0.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,14 @@ the plugin removes its tables, options and the flow page on uninstall.
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.5.5 =
+* Withdrawal page: visiting the page without a signed link (e.g. via the persistent footer link) now
+  shows an order-lookup form instead of a blank page. The consumer enters their order number and the
+  email used on the order, and the plugin emails a secure, signed withdrawal link to that order's
+  address. The link is never rendered inline and the response is always uniform, so orders cannot be
+  enumerated; requests are rate-limited per IP and protected by a honeypot.
+* New "Withdrawal link request" email (WooCommerce → Settings → Emails) carries the requested link.
 
 = 0.5.4 =
 * Admin: the WooCommerce menu entries and the requests-page heading now default to English
