@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 10.9
-Stable tag: 0.5.5
+Stable tag: 0.5.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,13 @@ the plugin removes its tables, options and the flow page on uninstall.
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.5.6 =
+* Order-lookup: the withdrawal link is now emailed whenever the submitted order number and email
+  match, regardless of the order's current eligibility — a legitimate consumer always gets a
+  response on their own address, and the declaration screen explains any ineligibility (e.g. an
+  expired window) when the link is opened. Adds temporary diagnostic logging (WooCommerce → Status
+  → Logs) to trace lookup delivery.
 
 = 0.5.5 =
 * Withdrawal page: visiting the page without a signed link (e.g. via the persistent footer link) now

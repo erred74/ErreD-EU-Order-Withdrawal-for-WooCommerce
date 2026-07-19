@@ -20,6 +20,7 @@ use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Rest\EligibilityController;
 use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
+use Recesso54bis\Support\Logger;
 use Recesso54bis\Support\Nonces;
 use Recesso54bis\Support\RateLimiter;
 
@@ -551,7 +552,18 @@ final class FlowController {
 		$order_number = isset( $_POST['order_number'] ) ? sanitize_text_field( wp_unslash( $_POST['order_number'] ) ) : '';
 		$email        = isset( $_POST['order_email'] ) ? sanitize_email( wp_unslash( $_POST['order_email'] ) ) : '';
 
+		// TODO(review): temporary diagnostic logging (WooCommerce → Status → Logs, source
+		// "recesso-digitale") to trace why a lookup does or does not email a link. Remove once resolved.
+		$log = new Logger();
+
 		if ( '' === $order_number || false === is_email( $email ) ) {
+			$log->info(
+				'lookup: invalid input',
+				array(
+					'order_number_empty' => '' === $order_number,
+					'email_valid'        => false !== is_email( $email ),
+				)
+			);
 			$this->redirect( $this->lookup_result_url( $flow_url, 'invalid' ) );
 		}
 
@@ -561,7 +573,20 @@ final class FlowController {
 		// instead of leaving the consumer with silence that looks like a broken mailer.
 		$order = $this->match_order( $order_number, $email );
 		if ( $order instanceof \WC_Order ) {
-			$this->send_link_email( $order, $flow_url );
+			$sent = $this->send_link_email( $order, $flow_url );
+			$log->info(
+				'lookup: matched, link email dispatched',
+				array(
+					'order_id'  => $order->get_id(),
+					'recipient' => $order->get_billing_email(),
+					'send_ok'   => $sent,
+				)
+			);
+		} else {
+			$log->info(
+				'lookup: no order matched the submitted number + email',
+				array( 'submitted_order_number' => $order_number )
+			);
 		}
 
 		// Always the same response, so the page never reveals whether an order exists.
@@ -607,15 +632,16 @@ final class FlowController {
 	 * @param \WC_Order $order    The matched order.
 	 * @param string    $flow_url The page hosting the flow (base for the link).
 	 */
-	private function send_link_email( \WC_Order $order, string $flow_url ): void {
+	private function send_link_email( \WC_Order $order, string $flow_url ): bool {
 		if ( ! function_exists( 'WC' ) || ! class_exists( '\WC_Email' ) ) {
-			return;
+			return false;
 		}
 
 		$url = $this->urls->declaration_url( $flow_url, $order->get_id(), $this->lookup_token_expiry() );
 
 		WC()->mailer();
-		( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
+
+		return ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
 	}
 
 	/**
