@@ -641,23 +641,44 @@ final class FlowController {
 
 		WC()->mailer();
 
-		// TODO(review): temporary — capture the exact reason wp_mail() fails during a lookup send, so we
-		// can tell an SMTP/mailer failure from a content/header problem. Remove once resolved.
-		$capture = static function ( $error ): void {
-			$reason = $error instanceof \WP_Error ? $error->get_error_message() : 'unknown';
-			$data   = $error instanceof \WP_Error ? $error->get_error_data() : array();
-			( new Logger() )->error(
-				'lookup: wp_mail failed',
-				array(
-					'reason'  => $reason,
-					'to'      => is_array( $data ) && isset( $data['to'] ) ? $data['to'] : '',
-					'subject' => is_array( $data ) && isset( $data['subject'] ) ? $data['subject'] : '',
-				)
-			);
+		// TODO(review): temporary diagnostic — the store mailer works (PostSMTP test passes) yet this
+		// specific email's wp_mail() returns false with no wp_mail_failed line. Capture the failure
+		// reason and PHPMailer's own error, and run a plain control wp_mail() to the same recipient, to
+		// tell a WC_Email-specific problem (content/headers/from) from a wp_mail/recipient problem.
+		// Remove once resolved.
+		$fail_reason = '';
+		$capture     = static function ( $error ) use ( &$fail_reason ): void {
+			if ( $error instanceof \WP_Error ) {
+				$fail_reason = $error->get_error_message();
+			}
 		};
 		add_action( 'wp_mail_failed', $capture );
+
 		$sent = ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
+
+		$control = wp_mail(
+			$order->get_billing_email(),
+			'Recesso diagnostic (control)',
+			'This is a plain control message sent while diagnosing the withdrawal-link email.',
+			array( 'Content-Type: text/plain' )
+		);
+
 		remove_action( 'wp_mail_failed', $capture );
+
+		$phpmailer_error = '';
+		if ( isset( $GLOBALS['phpmailer'] ) && is_object( $GLOBALS['phpmailer'] ) && ! empty( $GLOBALS['phpmailer']->ErrorInfo ) ) {
+			$phpmailer_error = (string) $GLOBALS['phpmailer']->ErrorInfo;
+		}
+
+		( new Logger() )->error(
+			'lookup: send diagnostic',
+			array(
+				'wc_email_sent'   => $sent,
+				'plain_wp_mail'   => $control,
+				'fail_reason'     => '' === $fail_reason ? '(wp_mail_failed did not fire)' : $fail_reason,
+				'phpmailer_error' => '' === $phpmailer_error ? '(none)' : $phpmailer_error,
+			)
+		);
 
 		return $sent;
 	}
