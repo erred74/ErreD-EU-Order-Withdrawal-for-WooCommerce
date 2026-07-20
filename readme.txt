@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 10.9
-Stable tag: 0.5.8
+Stable tag: 0.5.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -138,12 +138,14 @@ the plugin removes its tables, options and the flow page on uninstall.
 
 == Changelog ==
 
-= 0.5.6 =
-* Order-lookup: the withdrawal link is now emailed whenever the submitted order number and email
-  match, regardless of the order's current eligibility — a legitimate consumer always gets a
-  response on their own address, and the declaration screen explains any ineligibility (e.g. an
-  expired window) when the link is opened. Adds temporary diagnostic logging (WooCommerce → Status
-  → Logs) to trace lookup delivery.
+= 0.5.9 =
+* Fix: the order-lookup form never actually sent the withdrawal-link email. WooCommerce does not
+  autoload its WC_Email base class, so on the front-end request the send bailed out before the email
+  was built. The mailer is now initialised first, so the link is delivered.
+* Order-lookup: the link is emailed whenever the submitted order number and email match, regardless
+  of the order's current eligibility — a legitimate consumer always gets a response on their own
+  address, and the declaration screen explains any ineligibility (e.g. an expired window) when the
+  link is opened.
 
 = 0.5.5 =
 * Withdrawal page: visiting the page without a signed link (e.g. via the persistent footer link) now

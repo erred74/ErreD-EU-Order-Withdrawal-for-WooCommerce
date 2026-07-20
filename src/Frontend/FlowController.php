@@ -20,7 +20,6 @@ use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Rest\EligibilityController;
 use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
-use Recesso54bis\Support\Logger;
 use Recesso54bis\Support\Nonces;
 use Recesso54bis\Support\RateLimiter;
 
@@ -552,18 +551,7 @@ final class FlowController {
 		$order_number = isset( $_POST['order_number'] ) ? sanitize_text_field( wp_unslash( $_POST['order_number'] ) ) : '';
 		$email        = isset( $_POST['order_email'] ) ? sanitize_email( wp_unslash( $_POST['order_email'] ) ) : '';
 
-		// TODO(review): temporary diagnostic logging (WooCommerce → Status → Logs, source
-		// "recesso-digitale") to trace why a lookup does or does not email a link. Remove once resolved.
-		$log = new Logger();
-
 		if ( '' === $order_number || false === is_email( $email ) ) {
-			$log->info(
-				'lookup: invalid input',
-				array(
-					'order_number_empty' => '' === $order_number,
-					'email_valid'        => false !== is_email( $email ),
-				)
-			);
 			$this->redirect( $this->lookup_result_url( $flow_url, 'invalid' ) );
 		}
 
@@ -573,20 +561,7 @@ final class FlowController {
 		// instead of leaving the consumer with silence that looks like a broken mailer.
 		$order = $this->match_order( $order_number, $email );
 		if ( $order instanceof \WC_Order ) {
-			$sent = $this->send_link_email( $order, $flow_url );
-			$log->info(
-				'lookup: matched, link email dispatched',
-				array(
-					'order_id'  => $order->get_id(),
-					'recipient' => $order->get_billing_email(),
-					'send_ok'   => $sent,
-				)
-			);
-		} else {
-			$log->info(
-				'lookup: no order matched the submitted number + email',
-				array( 'submitted_order_number' => $order_number )
-			);
+			$this->send_link_email( $order, $flow_url );
 		}
 
 		// Always the same response, so the page never reveals whether an order exists.
@@ -633,54 +608,24 @@ final class FlowController {
 	 * @param string    $flow_url The page hosting the flow (base for the link).
 	 */
 	private function send_link_email( \WC_Order $order, string $flow_url ): bool {
-		if ( ! function_exists( 'WC' ) || ! class_exists( '\WC_Email' ) ) {
+		if ( ! function_exists( 'WC' ) ) {
+			return false;
+		}
+
+		// Initialise WooCommerce's mailer FIRST: it loads the abstract WC_Email class that
+		// WithdrawalLinkEmail extends. WooCommerce does not autoload WC_Email (its autoloader looks in
+		// includes/, but the class lives in includes/emails/), so constructing the email — or guarding
+		// on class_exists( 'WC_Email' ) — before the mailer is initialised bails out on a plain
+		// front-end/admin-post request, which is why the lookup link was never sent.
+		WC()->mailer();
+
+		if ( ! class_exists( '\WC_Email' ) ) {
 			return false;
 		}
 
 		$url = $this->urls->declaration_url( $flow_url, $order->get_id(), $this->lookup_token_expiry() );
 
-		WC()->mailer();
-
-		// TODO(review): temporary diagnostic — the store mailer works (PostSMTP test passes) yet this
-		// specific email's wp_mail() returns false with no wp_mail_failed line. Capture the failure
-		// reason and PHPMailer's own error, and run a plain control wp_mail() to the same recipient, to
-		// tell a WC_Email-specific problem (content/headers/from) from a wp_mail/recipient problem.
-		// Remove once resolved.
-		$fail_reason = '';
-		$capture     = static function ( $error ) use ( &$fail_reason ): void {
-			if ( $error instanceof \WP_Error ) {
-				$fail_reason = $error->get_error_message();
-			}
-		};
-		add_action( 'wp_mail_failed', $capture );
-
-		$sent = ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
-
-		$control = wp_mail(
-			$order->get_billing_email(),
-			'Recesso diagnostic (control)',
-			'This is a plain control message sent while diagnosing the withdrawal-link email.',
-			array( 'Content-Type: text/plain' )
-		);
-
-		remove_action( 'wp_mail_failed', $capture );
-
-		$phpmailer_error = '';
-		if ( isset( $GLOBALS['phpmailer'] ) && is_object( $GLOBALS['phpmailer'] ) && ! empty( $GLOBALS['phpmailer']->ErrorInfo ) ) {
-			$phpmailer_error = (string) $GLOBALS['phpmailer']->ErrorInfo;
-		}
-
-		( new Logger() )->error(
-			'lookup: send diagnostic',
-			array(
-				'wc_email_sent'   => $sent,
-				'plain_wp_mail'   => $control,
-				'fail_reason'     => '' === $fail_reason ? '(wp_mail_failed did not fire)' : $fail_reason,
-				'phpmailer_error' => '' === $phpmailer_error ? '(none)' : $phpmailer_error,
-			)
-		);
-
-		return $sent;
+		return ( new WithdrawalLinkEmail() )->trigger_for( $order, $url );
 	}
 
 	/**
