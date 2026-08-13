@@ -9,6 +9,7 @@
 /node_modules
 /tests
 /artifacts
+/docs
 /.wordpress-org
 /playwright.config.js
 /bin

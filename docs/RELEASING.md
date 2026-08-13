@@ -70,8 +70,11 @@ that the new column actually landed.
 `bin/build-dist.sh` stages the plugin from `.distignore`. What ends up in the zip:
 
 - `recesso-digitale.php`, `uninstall.php`, `readme.txt`, `wpml-config.xml`
-- `src/`, `templates/`, `languages/`, `docs/`
+- `src/`, `templates/`, `languages/`
 - `build/` — compiled assets — **and** `assets/`, `package.json`, `package-lock.json`
+
+`docs/` is excluded: this file and the roadmap are for maintainers, and there is no reason to copy
+them onto every user's server.
 
 That last point is not optional. wp.org guideline #4 requires the human-readable source of every
 compiled bundle to ship with it. A previous release stripped `assets/` and was **pended at review**
