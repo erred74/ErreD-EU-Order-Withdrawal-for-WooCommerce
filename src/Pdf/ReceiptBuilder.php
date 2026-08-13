@@ -36,7 +36,8 @@ final class ReceiptBuilder {
 	 * @param WithdrawalRequest $request The confirmed request.
 	 * @param \WC_Order         $order   The related order.
 	 *
-	 * @return array{path: string, hash: string}
+	 * @return array{path: string, hash: string, payload: array<string, mixed>} The stored file, its
+	 *               tamper-evident hash, and the exact payload that hash was computed over.
 	 *
 	 * @throws \RuntimeException When the receipt cannot be written.
 	 */
@@ -47,13 +48,23 @@ final class ReceiptBuilder {
 		$path    = $this->store( $this->render_pdf( $html ), $request->id );
 
 		return array(
-			'path' => $path,
-			'hash' => $hash,
+			'path'    => $path,
+			'hash'    => $hash,
+			// Returned so the hash can be independently recomputed and audited; the scheduler only
+			// stores the path and the hash.
+			'payload' => $payload,
 		);
 	}
 
 	/**
 	 * The canonical, deterministically-ordered receipt payload that is hashed.
+	 *
+	 * The payload is versioned by the `receipt_schema` key it carries, and the version is chosen from
+	 * the request's own content rather than from the plugin version. A request without a consumer
+	 * self-declaration — every request issued before that option existed, and every request on a shop
+	 * that does not ask for one — produces byte-for-byte the v1 payload, so receipts issued by earlier
+	 * versions still recompute to their stored hash. Only a request that actually carries a
+	 * declaration extends the shape, and says so by hashing as v2.
 	 *
 	 * @param WithdrawalRequest $request The request.
 	 * @param \WC_Order         $order   The order.
@@ -61,7 +72,7 @@ final class ReceiptBuilder {
 	 * @return array<string, mixed>
 	 */
 	private function canonical_payload( WithdrawalRequest $request, \WC_Order $order ): array {
-		return array(
+		$payload = array(
 			'consumer_name'      => $request->consumer_name,
 			'confirmation_email' => $request->confirmation_email,
 			'contract_reference' => $request->contract_reference,
@@ -78,6 +89,13 @@ final class ReceiptBuilder {
 			'order_currency'     => $order->get_currency(),
 			'receipt_schema'     => 'recesso-digitale/1',
 		);
+
+		if ( '' !== trim( $request->consumer_declaration ) ) {
+			$payload['consumer_declaration'] = $request->consumer_declaration;
+			$payload['receipt_schema']       = 'recesso-digitale/2';
+		}
+
+		return $payload;
 	}
 
 	/**

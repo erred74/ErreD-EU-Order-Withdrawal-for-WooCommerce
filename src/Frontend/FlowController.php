@@ -16,12 +16,14 @@ use Recesso54bis\Integration\NotEligibleException;
 use Recesso54bis\Integration\RequestedItemsResolver;
 use Recesso54bis\Integration\WithdrawalService;
 use Recesso54bis\Persistence\DuplicateOpenRequestException;
+use Recesso54bis\Persistence\LogRepository;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Rest\EligibilityController;
 use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
 use Recesso54bis\Support\Nonces;
 use Recesso54bis\Support\RateLimiter;
+use Recesso54bis\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -76,6 +78,13 @@ final class FlowController {
 	private RateLimiter $rate_limiter;
 
 	/**
+	 * Audit log repository (records lookups that matched no order).
+	 *
+	 * @var LogRepository
+	 */
+	private LogRepository $log;
+
+	/**
 	 * Construct the controller.
 	 *
 	 * @param WithdrawalService  $service      Coordination service.
@@ -84,6 +93,7 @@ final class FlowController {
 	 * @param EligibilityAdapter $eligibility  Eligibility adapter.
 	 * @param FlowUrls           $urls         Flow URL builder.
 	 * @param RateLimiter        $rate_limiter Rate limiter.
+	 * @param LogRepository      $log          Audit log repository.
 	 */
 	public function __construct(
 		WithdrawalService $service,
@@ -91,7 +101,8 @@ final class FlowController {
 		PermissionGate $gate,
 		EligibilityAdapter $eligibility,
 		FlowUrls $urls,
-		RateLimiter $rate_limiter
+		RateLimiter $rate_limiter,
+		LogRepository $log
 	) {
 		$this->service      = $service;
 		$this->requests     = $requests;
@@ -99,6 +110,46 @@ final class FlowController {
 		$this->eligibility  = $eligibility;
 		$this->urls         = $urls;
 		$this->rate_limiter = $rate_limiter;
+		$this->log          = $log;
+	}
+
+	/**
+	 * Record a lookup whose order number and email matched no order, so the merchant can reconcile a
+	 * mistyped reference against their own records.
+	 *
+	 * Deliberately *not* a withdrawal record: the requests table only ever holds declarations bound to
+	 * a real, authorised order, which is what makes a stored `confirmed_at_gmt` trustworthy. The email
+	 * is masked before it is written, because this log is not covered by the personal-data eraser and
+	 * the merchant only needs enough to recognise the customer, not a full address.
+	 *
+	 * @param string $order_number The reference the visitor submitted.
+	 * @param string $email        The address the visitor submitted.
+	 */
+	private function record_unmatched_lookup( string $order_number, string $email ): void {
+		$this->log->record(
+			0,
+			LogRepository::EVENT_LOOKUP_UNMATCHED,
+			'consumer',
+			array(
+				'order_number' => $order_number,
+				'email'        => $this->mask_email( $email ),
+			)
+		);
+	}
+
+	/**
+	 * Mask an email address to its first character and domain (`a***@example.com`), enough to
+	 * recognise a customer without storing the address itself.
+	 *
+	 * @param string $email The address.
+	 */
+	private function mask_email( string $email ): string {
+		$at = strrpos( $email, '@' );
+		if ( false === $at || $at < 1 ) {
+			return '***';
+		}
+
+		return substr( $email, 0, 1 ) . '***' . substr( $email, $at );
 	}
 
 	/**
@@ -261,6 +312,8 @@ final class FlowController {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display of a prior validation error flag.
 		$error = isset( $_GET['recesso_dig_error'] ) ? sanitize_text_field( wp_unslash( $_GET['recesso_dig_error'] ) ) : '';
 
+		$settings = new Settings();
+
 		return Templates::render(
 			'declaration',
 			array(
@@ -274,9 +327,26 @@ final class FlowController {
 				'consumer_name'      => trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() ),
 				'confirmation_email' => $order->get_billing_email(),
 				'lines'              => $this->line_choices( $order, $eligibility->available_quantities ),
-				'error'              => '' === $error ? '' : __( 'Please provide a valid name and email address, and select at least one item to withdraw.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				'intro'              => $settings->form_intro_enabled() ? $settings->form_intro_text( $order->get_order_number() ) : '',
+				'declaration_text'   => $settings->consumer_declaration_enabled() ? $settings->consumer_declaration_text() : '',
+				'error'              => '' === $error ? '' : $this->declaration_error_message( $settings ),
 			)
 		);
+	}
+
+	/**
+	 * The validation message shown when a declaration submission is rejected. It names the consumer
+	 * self-declaration only when the merchant actually asks for it, so the consumer is never told to
+	 * tick a box that is not on the form.
+	 *
+	 * @param Settings $settings Settings reader.
+	 */
+	private function declaration_error_message( Settings $settings ): string {
+		if ( $settings->consumer_declaration_enabled() ) {
+			return __( 'Please provide a valid name and email address, select at least one item to withdraw, and confirm that you bought as a consumer.', 'erred-eu-order-withdrawal-for-woocommerce' );
+		}
+
+		return __( 'Please provide a valid name and email address, and select at least one item to withdraw.', 'erred-eu-order-withdrawal-for-woocommerce' );
 	}
 
 	/**
@@ -438,7 +508,15 @@ final class FlowController {
 			$requested_items[ $line_id ] = $quantity > 0 ? $quantity : 1;
 		}
 
-		if ( '' === $consumer_name || false === is_email( $email ) || array() === $requested_items ) {
+		// The optional "I bought as a consumer" self-declaration. The exact wording shown on the form
+		// is stored, not a bare flag, so the receipt records what the consumer actually agreed to.
+		$settings             = new Settings();
+		$declaration_required = $settings->consumer_declaration_enabled();
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified by check_admin_referer above.
+		$declaration_given = isset( $_POST['consumer_declaration'] );
+		$declaration       = ( $declaration_required && $declaration_given ) ? $settings->consumer_declaration_text() : '';
+
+		if ( '' === $consumer_name || false === is_email( $email ) || array() === $requested_items || ( $declaration_required && ! $declaration_given ) ) {
 			$this->redirect(
 				$this->step_url(
 					FlowUrls::STEP_DECLARE,
@@ -460,12 +538,13 @@ final class FlowController {
 			$request = $this->service->create_declaration(
 				$order,
 				array(
-					'consumer_name'      => $consumer_name,
-					'contract_reference' => $order->get_order_number(),
-					'confirmation_email' => $email,
-					'requested_items'    => $requested_items,
-					'refund_iban'        => $iban,
-					'withdrawal_reason'  => $reason,
+					'consumer_name'        => $consumer_name,
+					'contract_reference'   => $order->get_order_number(),
+					'confirmation_email'   => $email,
+					'requested_items'      => $requested_items,
+					'refund_iban'          => $iban,
+					'withdrawal_reason'    => $reason,
+					'consumer_declaration' => $declaration,
 				),
 				ClientIp::packed()
 			);
@@ -562,6 +641,8 @@ final class FlowController {
 		$order = $this->match_order( $order_number, $email );
 		if ( $order instanceof \WC_Order ) {
 			$this->send_link_email( $order, $flow_url );
+		} else {
+			$this->record_unmatched_lookup( $order_number, $email );
 		}
 
 		// Always the same response, so the page never reveals whether an order exists.

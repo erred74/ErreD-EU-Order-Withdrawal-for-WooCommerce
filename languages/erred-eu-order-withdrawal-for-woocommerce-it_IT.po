@@ -3,8 +3,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: ErreD EU Order Withdrawal for WooCommerce 0.5.0\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/erred-eu-order-withdrawal-for-woocommerce\n"
-"POT-Creation-Date: 2026-07-19T17:40:26+00:00\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/erred-eu-order-"
+"withdrawal-for-woocommerce\n"
+"POT-Creation-Date: 2026-08-13T19:00:53+00:00\n"
 "Language: it_IT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,8 +21,8 @@ msgstr "ErreD EU Order Withdrawal for WooCommerce"
 #. Description of the plugin
 #: recesso-digitale.php
 msgid ""
-"Digital withdrawal function for WooCommerce: the EU \"easy withdrawal\" duty"
-" (Directive 2023/2673, in force 19 June 2026) and its Italian transposition "
+"Digital withdrawal function for WooCommerce: the EU \"easy withdrawal\" duty "
+"(Directive 2023/2673, in force 19 June 2026) and its Italian transposition "
 "(art. 54-bis Codice del Consumo). HPOS-native, security-first."
 msgstr ""
 "Funzione di recesso digitale per WooCommerce: l'obbligo UE di \"recesso "
@@ -39,8 +40,8 @@ msgid ""
 "ErreD EU Order Withdrawal for WooCommerce requires PHP 8.2 or newer and has "
 "been deactivated."
 msgstr ""
-"ErreD EU Order Withdrawal for WooCommerce richiede PHP 8.2 o successivo ed è"
-" stato disattivato."
+"ErreD EU Order Withdrawal for WooCommerce richiede PHP 8.2 o successivo ed è "
+"stato disattivato."
 
 #: recesso-digitale.php:52
 msgid ""
@@ -72,40 +73,66 @@ msgstr "Apri le impostazioni"
 msgid "Edit withdrawal page"
 msgstr "Modifica la pagina di recesso"
 
-#: src/Admin/CsvExporter.php:76 src/Frontend/FlowController.php:402
-#: src/Frontend/FlowController.php:456 src/Frontend/FlowController.php:509
+#: src/Admin/CsvExporter.php:77 src/Frontend/FlowController.php:472
+#: src/Frontend/FlowController.php:534 src/Frontend/FlowController.php:588
 #: src/Pdf/ReceiptDownloadController.php:81 src/Rest/Controller.php:103
 msgid "You are not authorized to perform this action."
 msgstr "Non sei autorizzato a eseguire questa azione."
 
-#: src/Admin/Menu.php:83 src/Admin/Menu.php:106
+#: src/Admin/Menu.php:84 src/Admin/Menu.php:107
 msgid "Order Withdrawal"
 msgstr "Recesso digitale"
 
-#: src/Admin/Menu.php:92
+#: src/Admin/Menu.php:93 src/Admin/SettingsPage.php:899
 msgid "Order Withdrawal — Settings"
 msgstr "Recesso digitale — Impostazioni"
 
-#: src/Admin/Menu.php:93
+#: src/Admin/Menu.php:94
 msgid "Order Withdrawal: settings"
 msgstr "Recesso digitale: impostazioni"
 
 #. translators: %1$s: menu label, %2$s: count badge markup.
-#: src/Admin/Menu.php:115
+#: src/Admin/Menu.php:116
 #, php-format
 msgctxt "admin menu item with count badge"
 msgid "%1$s %2$s"
 msgstr "%1$s %2$s"
 
-#: src/Admin/Menu.php:195
+#: src/Admin/Menu.php:199
 msgid "Order Withdrawal — Requests"
 msgstr "Recesso digitale — Richieste di recesso"
 
-#: src/Admin/Menu.php:200
+#: src/Admin/Menu.php:204
 msgid "Search requests"
 msgstr "Cerca richieste"
 
+#: src/Admin/Menu.php:230
+msgid "Recent unmatched lookups"
+msgstr "Richieste di link non abbinate recenti"
+
+#: src/Admin/Menu.php:232
+msgid ""
+"Someone asked for a withdrawal link with an order number and email that did "
+"not match any order. No withdrawal request was created. Most of these are "
+"typos — check the reference against your records and, if it is a genuine "
+"customer, send them the link from their order."
+msgstr "Qualcuno ha chiesto un link di recesso indicando un numero d’ordine e un’email che non corrispondono ad alcun ordine. Nessuna richiesta di recesso è stata creata. Nella maggior parte dei casi si tratta di errori di battitura: verifica il riferimento nei tuoi archivi e, se si tratta di un cliente reale, inviagli il link dal suo ordine."
+
+#: src/Admin/Menu.php:237
+msgid "When (GMT)"
+msgstr "Quando (GMT)"
+
+#: src/Admin/Menu.php:238
+msgid "Order number submitted"
+msgstr "Numero d’ordine inserito"
+
+#: src/Admin/Menu.php:239
+msgid "Email submitted"
+msgstr "Email inserita"
+
 #: src/Admin/OrderColumn.php:74 src/Admin/OrderColumn.php:79
+#: templates/frontend/account-withdrawal.php:40
+#: templates/frontend/account-withdrawal.php:52
 msgid "Withdrawal"
 msgstr "Recesso"
 
@@ -125,19 +152,21 @@ msgstr "Rifiutato"
 msgid "Completed"
 msgstr "Completato"
 
-#: src/Admin/RequestsListTable.php:57 assets/admin/app.js:602
+#: src/Admin/RequestsListTable.php:57 assets/admin/app.js:623
 msgid "ID"
 msgstr "ID"
 
 #: src/Admin/RequestsListTable.php:58 src/Privacy/PrivacyHooks.php:87
 #: templates/emails/partials/request-summary-plain.php:40
-#: templates/emails/partials/request-summary.php:49 assets/admin/app.js:221
-#: assets/admin/app.js:608
+#: templates/emails/partials/request-summary.php:49
+#: templates/frontend/account-withdrawal.php:38
+#: templates/frontend/account-withdrawal.php:46 assets/admin/app.js:221
+#: assets/admin/app.js:629
 msgid "Order"
 msgstr "Ordine"
 
 #: src/Admin/RequestsListTable.php:59 src/Privacy/PrivacyHooks.php:91
-#: assets/admin/app.js:229 assets/admin/app.js:614
+#: assets/admin/app.js:229 assets/admin/app.js:635
 msgid "Status"
 msgstr "Stato"
 
@@ -152,7 +181,7 @@ msgstr "Consumatore"
 #: src/Email/WithdrawalAdminNotificationEmail.php:93
 #: src/Email/WithdrawalAdminNotificationEmail.php:114
 #: src/Privacy/PrivacyHooks.php:119 assets/admin/app.js:239
-#: assets/admin/app.js:620
+#: assets/admin/app.js:641
 msgid "Confirmed (GMT)"
 msgstr "Confermato (GMT)"
 
@@ -160,7 +189,7 @@ msgstr "Confermato (GMT)"
 msgid "Acknowledged (GMT)"
 msgstr "Ricevuta inviata (GMT)"
 
-#: src/Admin/RequestsListTable.php:63 assets/admin/app.js:626
+#: src/Admin/RequestsListTable.php:63 assets/admin/app.js:647
 msgid "Receipt"
 msgstr "Ricevuta"
 
@@ -168,127 +197,195 @@ msgstr "Ricevuta"
 msgid "Download"
 msgstr "Scarica"
 
-#: src/Admin/RequestsListTable.php:162 assets/admin/app.js:643
+#: src/Admin/RequestsListTable.php:162 assets/admin/app.js:664
 msgid "No withdrawal requests yet."
 msgstr "Nessuna richiesta di recesso al momento."
 
-#: src/Admin/SettingsPage.php:232
+#: src/Admin/SettingsPage.php:346
 msgid "General"
 msgstr "Generale"
 
-#: src/Admin/SettingsPage.php:236
+#: src/Admin/SettingsPage.php:350
 msgid "Notification email"
 msgstr "Email di notifica"
 
-#: src/Admin/SettingsPage.php:237
+#: src/Admin/SettingsPage.php:351
 msgid "Withdrawal page"
 msgstr "Pagina di recesso"
 
-#: src/Admin/SettingsPage.php:241
+#: src/Admin/SettingsPage.php:355
+msgid "Eligible order statuses"
+msgstr "Stati ordine ammessi"
+
+#: src/Admin/SettingsPage.php:359
+msgid "Offer withdrawal for"
+msgstr "Offri il recesso per"
+
+#: src/Admin/SettingsPage.php:363
 msgid "Withdrawal deadline"
 msgstr "Termine di recesso"
 
-#: src/Admin/SettingsPage.php:245
+#: src/Admin/SettingsPage.php:367
 msgid "Withdrawal window (days)"
 msgstr "Periodo di recesso (giorni)"
 
-#: src/Admin/SettingsPage.php:246
+#: src/Admin/SettingsPage.php:368
 msgid "Calculate deadline from"
 msgstr "Calcola il termine da"
 
-#: src/Admin/SettingsPage.php:247
+#: src/Admin/SettingsPage.php:369
 msgid "Grace days"
 msgstr "Giorni di tolleranza"
 
-#: src/Admin/SettingsPage.php:248
+#: src/Admin/SettingsPage.php:370
 msgid "Deadline enforcement"
 msgstr "Applicazione del termine"
 
-#: src/Admin/SettingsPage.php:252
+#: src/Admin/SettingsPage.php:374
 msgid "Article 16 exclusions"
 msgstr "Esclusioni art. 16"
 
-#: src/Admin/SettingsPage.php:256
+#: src/Admin/SettingsPage.php:378
 msgid "Default policy for unconfigured products"
 msgstr "Politica predefinita per i prodotti non configurati"
 
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:382
 msgid "Checkout consents"
 msgstr "Consensi al checkout"
 
-#: src/Admin/SettingsPage.php:264
+#: src/Admin/SettingsPage.php:386
+msgid "When to show the consents"
+msgstr "Quando mostrare i consensi"
+
+#: src/Admin/SettingsPage.php:387
 msgid "Digital content consent (Art. 16(m))"
 msgstr "Consenso contenuto digitale (art. 16(m))"
 
-#: src/Admin/SettingsPage.php:265
+#: src/Admin/SettingsPage.php:388
 msgid "Require digital-content consent"
 msgstr "Rendi obbligatorio il consenso al contenuto digitale"
 
-#: src/Admin/SettingsPage.php:266
+#: src/Admin/SettingsPage.php:389
 msgid "Digital-content consent text"
 msgstr "Testo del consenso al contenuto digitale"
 
-#: src/Admin/SettingsPage.php:267
+#: src/Admin/SettingsPage.php:390
 msgid "Service-start consent (Art. 14(4)(a))"
 msgstr "Consenso avvio servizio (art. 14(4)(a))"
 
-#: src/Admin/SettingsPage.php:268
+#: src/Admin/SettingsPage.php:391
 msgid "Service-start consent text"
 msgstr "Testo del consenso all'avvio del servizio"
 
-#: src/Admin/SettingsPage.php:272
+#: src/Admin/SettingsPage.php:395
 msgid "Model withdrawal form"
 msgstr "Modulo di recesso tipo"
 
-#: src/Admin/SettingsPage.php:276
+#: src/Admin/SettingsPage.php:399
 msgid "Show model form"
 msgstr "Mostra il modulo tipo"
 
-#: src/Admin/SettingsPage.php:277
+#: src/Admin/SettingsPage.php:400
 msgid "Trader name"
 msgstr "Nome del professionista"
 
-#: src/Admin/SettingsPage.php:278
+#: src/Admin/SettingsPage.php:401
 msgid "Trader postal address"
 msgstr "Indirizzo postale del professionista"
 
-#: src/Admin/SettingsPage.php:279
+#: src/Admin/SettingsPage.php:402
 msgid "Trader phone (optional)"
 msgstr "Telefono del professionista (facoltativo)"
 
-#: src/Admin/SettingsPage.php:280
+#: src/Admin/SettingsPage.php:403
 msgid "Trader contact email"
 msgstr "Email di contatto del professionista"
 
-#: src/Admin/SettingsPage.php:284
+#: src/Admin/SettingsPage.php:407
 msgid "Excluded products notice"
 msgstr "Avviso prodotti esclusi"
 
-#: src/Admin/SettingsPage.php:288
+#: src/Admin/SettingsPage.php:411
 msgid "Show notice on excluded products"
 msgstr "Mostra l'avviso sui prodotti esclusi"
 
-#: src/Admin/SettingsPage.php:289
-msgid "Exclusion notice text"
-msgstr "Testo dell'avviso di esclusione"
+#: src/Admin/SettingsPage.php:412
+msgid "Notice for digital content (Art. 16(m))"
+msgstr "Avviso per i contenuti digitali (art. 16(m))"
 
-#: src/Admin/SettingsPage.php:293
+#: src/Admin/SettingsPage.php:413
+msgid "Notice for dated services (Art. 16(l))"
+msgstr "Avviso per i servizi con data fissata (art. 16(l))"
+
+#: src/Admin/SettingsPage.php:414
+msgid "Notice for other Article 16 exceptions"
+msgstr "Avviso per le altre eccezioni dell’articolo 16"
+
+#: src/Admin/SettingsPage.php:418
+msgid "Withdrawal emails"
+msgstr "Email di recesso"
+
+#: src/Admin/SettingsPage.php:422
+msgid "From name"
+msgstr "Nome mittente"
+
+#: src/Admin/SettingsPage.php:423
+msgid "From address"
+msgstr "Indirizzo mittente"
+
+#: src/Admin/SettingsPage.php:424
+msgid "Accepted email text"
+msgstr "Testo dell’email di accettazione"
+
+#: src/Admin/SettingsPage.php:425
+msgid "Rejected email text"
+msgstr "Testo dell’email di rifiuto"
+
+#: src/Admin/SettingsPage.php:426
+msgid "Completed email text"
+msgstr "Testo dell’email di completamento"
+
+#: src/Admin/SettingsPage.php:430
+msgid "Public withdrawal form"
+msgstr "Modulo di recesso pubblico"
+
+#: src/Admin/SettingsPage.php:434
+msgid "Intro text"
+msgstr "Testo introduttivo"
+
+#: src/Admin/SettingsPage.php:435
+msgid "Consumer self-declaration"
+msgstr "Autodichiarazione del consumatore"
+
+#: src/Admin/SettingsPage.php:439
+msgid "Permissions"
+msgstr "Permessi"
+
+#: src/Admin/SettingsPage.php:443
+msgid "Roles that manage requests"
+msgstr "Ruoli che gestiscono le richieste"
+
+#: src/Admin/SettingsPage.php:447
 msgid "Withdrawal link visibility"
 msgstr "Visibilità del link di recesso"
 
-#: src/Admin/SettingsPage.php:297
+#: src/Admin/SettingsPage.php:451
 msgid "Show withdrawal link in footer"
 msgstr "Mostra link di recesso nel footer"
 
-#: src/Admin/SettingsPage.php:301
+#: src/Admin/SettingsPage.php:452
+msgid "My Account tab"
+msgstr "Scheda in Il mio account"
+
+#: src/Admin/SettingsPage.php:456
 msgid "Data"
 msgstr "Dati"
 
-#: src/Admin/SettingsPage.php:305
+#: src/Admin/SettingsPage.php:460
 msgid "Delete all data on uninstall"
 msgstr "Elimina tutti i dati alla disinstallazione"
 
-#: src/Admin/SettingsPage.php:312
+#: src/Admin/SettingsPage.php:467
 msgid ""
 "Configure where notifications are sent and which page hosts the withdrawal "
 "form."
@@ -296,27 +393,27 @@ msgstr ""
 "Configura dove vengono inviate le notifiche e quale pagina ospita il modulo "
 "di recesso."
 
-#: src/Admin/SettingsPage.php:319
+#: src/Admin/SettingsPage.php:474
 msgid ""
-"EU Directive 2023/2673 keeps the withdrawal function continuously available."
-" These settings tune the advisory deadline shown to the merchant; in "
-"Advisory mode the function is never hidden."
+"EU Directive 2023/2673 keeps the withdrawal function continuously available. "
+"These settings tune the advisory deadline shown to the merchant; in Advisory "
+"mode the function is never hidden."
 msgstr ""
 "La direttiva UE 2023/2673 mantiene la funzione di recesso sempre "
 "disponibile. Queste impostazioni regolano il termine indicativo mostrato al "
 "commerciante; in modalità Indicativa la funzione non viene mai nascosta."
 
-#: src/Admin/SettingsPage.php:326
+#: src/Admin/SettingsPage.php:481
 msgid ""
 "Mark individual products or whole categories as excluded from the right of "
 "withdrawal in the product and category editors (Withdrawal status). This "
 "default applies to products without an explicit status."
 msgstr ""
-"Contrassegna singoli prodotti o intere categorie come esclusi dal diritto di"
-" recesso negli editor di prodotto e categoria (Stato del recesso). Questo "
+"Contrassegna singoli prodotti o intere categorie come esclusi dal diritto di "
+"recesso negli editor di prodotto e categoria (Stato del recesso). Questo "
 "valore predefinito si applica ai prodotti senza uno stato esplicito."
 
-#: src/Admin/SettingsPage.php:333
+#: src/Admin/SettingsPage.php:488
 msgid ""
 "Optional consents shown at checkout for products excluded under Article "
 "16(m) (digital content) or starting early under Article 14(4)(a) (services)."
@@ -325,18 +422,18 @@ msgstr ""
 "dell'art. 16(m) (contenuto digitale) o avviati anticipatamente ai sensi "
 "dell'art. 14(4)(a) (servizi)."
 
-#: src/Admin/SettingsPage.php:340
+#: src/Admin/SettingsPage.php:495
 msgid ""
 "The statutory model withdrawal form (Annex I.B of Directive 2011/83/EU), "
-"shown below the public withdrawal form and via the [recesso_digitale_modulo]"
-" shortcode. The contact details below populate its header."
+"shown below the public withdrawal form and via the [recesso_digitale_modulo] "
+"shortcode. The contact details below populate its header."
 msgstr ""
-"Il modulo di recesso tipo previsto dalla legge (allegato I.B della direttiva"
-" 2011/83/UE), mostrato sotto il modulo di recesso pubblico e tramite lo "
+"Il modulo di recesso tipo previsto dalla legge (allegato I.B della direttiva "
+"2011/83/UE), mostrato sotto il modulo di recesso pubblico e tramite lo "
 "shortcode [recesso_digitale_modulo]. I dati di contatto qui sotto ne "
 "compilano l'intestazione."
 
-#: src/Admin/SettingsPage.php:347
+#: src/Admin/SettingsPage.php:502
 msgid ""
 "Optionally show a notice on the product page of items excluded from the "
 "right of withdrawal."
@@ -344,80 +441,383 @@ msgstr ""
 "Mostra facoltativamente un avviso nella pagina dei prodotti esclusi dal "
 "diritto di recesso."
 
-#: src/Admin/SettingsPage.php:354
+#: src/Admin/SettingsPage.php:509
 msgid ""
-"Reinforce that the withdrawal function is continuously available and easily "
-"accessible (art. 54-bis)."
-msgstr ""
-"Rafforza il fatto che la funzione di recesso è sempre disponibile e "
-"facilmente accessibile (art. 54-bis)."
+"Pick the WooCommerce order statuses from which a customer may declare a "
+"withdrawal. The choice applies to the button below the order details, the "
+"block in the order emails and the My Account tab alike. Unticking every "
+"status silences the prompt without deactivating the plugin."
+msgstr "Scegli gli stati ordine di WooCommerce dai quali il cliente può dichiarare il recesso. La scelta vale allo stesso modo per il pulsante sotto il dettaglio dell’ordine, per il blocco nelle email d’ordine e per la scheda in Il mio account. Togliendo la spunta a tutti gli stati il prompt sparisce senza disattivare il plugin."
 
-#: src/Admin/SettingsPage.php:366
-msgid "Recesso Digitale — Settings"
-msgstr "Recesso Digitale — Impostazioni"
+#: src/Admin/SettingsPage.php:516
+msgid ""
+"Choose who the plugin's emails come from and how the status-change messages "
+"to your customers are worded. Subjects and headings stay under WooCommerce → "
+"Settings → Emails, alongside every other store email."
+msgstr "Scegli il mittente delle email del plugin e come sono formulati i messaggi di cambio stato inviati ai clienti. Oggetti e intestazioni restano in WooCommerce → Impostazioni → Email, insieme a tutte le altre email del negozio."
 
-#: src/Admin/SettingsPage.php:397
+#: src/Admin/SettingsPage.php:523
+msgid ""
+"Fine-tune the public withdrawal form. The two-step confirmation, the "
+"itemised summary and the acknowledgement of receipt are fixed: they are what "
+"the law requires of the function."
+msgstr "Rifinisci il modulo di recesso pubblico. La conferma in due passaggi, il riepilogo dettagliato e la conferma di ricevimento non sono modificabili: sono ciò che la legge richiede alla funzione."
+
+#: src/Admin/SettingsPage.php:530
+msgid ""
+"Choose which roles, besides the administrator, can view and manage "
+"withdrawal requests. Each request holds personal data (name, email, IP "
+"address), so access is scoped to the roles you pick here rather than to "
+"everyone who can edit the shop."
+msgstr "Scegli quali ruoli, oltre all’amministratore, possono vedere e gestire le richieste di recesso. Ogni richiesta contiene dati personali (nome, email, indirizzo IP): l’accesso è quindi limitato ai ruoli che indichi qui, invece che a chiunque possa modificare il negozio."
+
+#: src/Admin/SettingsPage.php:537
+msgid ""
+"The withdrawal function must be clearly identifiable and accessible "
+"throughout the period it can be exercised (art. 54-bis). The usual practice "
+"is a permanent link in the site footer, next to the privacy policy and the "
+"terms of sale. Nothing is injected into your theme automatically — pick "
+"whichever of these routes suits it."
+msgstr "La funzione di recesso deve essere chiaramente identificabile e accessibile per tutto il periodo in cui può essere esercitata (art. 54-bis). La prassi consueta è un link permanente nel footer del sito, accanto alla privacy policy e alle condizioni di vendita. Nulla viene inserito automaticamente nel tuo tema: scegli la via che gli si adatta."
+
+#: src/Admin/SettingsPage.php:542
+msgid "The setting below."
+msgstr "L’impostazione qui sotto."
+
+#: src/Admin/SettingsPage.php:543
+msgid ""
+"Appends the link to the footer on every page, wherever your theme prints "
+"wp_footer."
+msgstr "Aggiunge il link al footer di ogni pagina, dove il tema stampa wp_footer."
+
+#: src/Admin/SettingsPage.php:547
+msgid "Classic themes (Appearance → Menus)."
+msgstr "Temi classici (Aspetto → Menu)."
+
+#: src/Admin/SettingsPage.php:548
+msgid ""
+"Open the menu assigned to your footer, add the withdrawal page from the left "
+"column and save."
+msgstr "Apri il menu assegnato al footer, aggiungi la pagina di recesso dalla colonna di sinistra e salva."
+
+#: src/Admin/SettingsPage.php:552
+msgid "Block themes (Appearance → Editor)."
+msgstr "Temi a blocchi (Aspetto → Editor)."
+
+#: src/Admin/SettingsPage.php:553
+msgid ""
+"Edit the Footer template part, insert a Navigation or Page List block and "
+"point it at the withdrawal page."
+msgstr "Modifica la parte di template Footer, inserisci un blocco Navigazione o Elenco pagine e puntalo alla pagina di recesso."
+
+#: src/Admin/SettingsPage.php:557
+msgid "Shortcode, anywhere a shortcode is accepted."
+msgstr "Shortcode, ovunque sia accettato uno shortcode."
+
+#: src/Admin/SettingsPage.php:559
+msgid "optional attributes:"
+msgstr "attributi facoltativi:"
+
+#: src/Admin/SettingsPage.php:560 src/Admin/WithdrawalStatusFields.php:115
+#: src/Admin/WithdrawalStatusFields.php:132
+#: src/Frontend/AccountEndpoint.php:132 src/Frontend/Hooks.php:116
+#: src/Frontend/Hooks.php:127
+msgid "Right of withdrawal"
+msgstr "Diritto di recesso"
+
+#: src/Admin/SettingsPage.php:576
+msgid "Public withdrawal form:"
+msgstr "Modulo di recesso pubblico:"
+
+#: src/Admin/SettingsPage.php:583
+msgid ""
+"No withdrawal page is selected yet. Pick one under General below — the "
+"withdrawal function is not reachable until you do."
+msgstr "Non è ancora stata scelta una pagina di recesso. Selezionane una in Generale qui sotto: finché non lo fai, la funzione di recesso non è raggiungibile."
+
+#: src/Admin/SettingsPage.php:594
+msgid "Placing the withdrawal function"
+msgstr "Dove collocare la funzione di recesso"
+
+#: src/Admin/SettingsPage.php:598
+msgid ""
+"the full two-step withdrawal form. The page selected under General already "
+"contains it."
+msgstr "il modulo di recesso completo in due passaggi. La pagina selezionata in Generale lo contiene già."
+
+#: src/Admin/SettingsPage.php:603
+msgid "a link to that page, for footers, widgets and menus."
+msgstr "un link a quella pagina, per footer, widget e menu."
+
+#: src/Admin/SettingsPage.php:607
+msgid "the Annex I.B model withdrawal form."
+msgstr "il modulo di recesso tipo dell’Allegato I.B."
+
+#: src/Admin/SettingsPage.php:611
+msgid ""
+"the \"excluded from withdrawal\" notice, for product templates built with a "
+"page builder."
+msgstr "l’avviso «escluso dal recesso», per i template prodotto realizzati con un page builder."
+
+#: src/Admin/SettingsPage.php:615
+msgid "Legal note"
+msgstr "Nota legale"
+
+#: src/Admin/SettingsPage.php:618
+msgid ""
+"This plugin provides the technical tools for the online withdrawal function "
+"required by Directive (EU) 2023/2673, transposed in Italy as art. 54-bis of "
+"the Codice del Consumo. It does not guarantee legal compliance, and it does "
+"not decide whether a withdrawal is valid — you do. Which products fall under "
+"the art. 59 exceptions, and how the durable-medium receipt is worded, depend "
+"on your catalogue and your jurisdiction: have them reviewed by a lawyer "
+"specialised in consumer law."
+msgstr "Questo plugin fornisce gli strumenti tecnici per la funzione di recesso online richiesta dalla Direttiva (UE) 2023/2673, recepita in Italia con l’art. 54-bis del Codice del Consumo. Non garantisce la conformità legale e non decide se un recesso è valido: quello lo decidi tu. Quali prodotti ricadano nelle eccezioni dell’art. 59, e come sia formulata la conferma su supporto durevole, dipendono dal tuo catalogo e dalla tua giurisdizione: falli verificare da un avvocato specializzato in diritto dei consumatori."
+
+#: src/Admin/SettingsPage.php:632
+msgid "Order statuses eligible for withdrawal"
+msgstr "Stati ordine ammessi al recesso"
+
+#: src/Admin/SettingsPage.php:651
+msgid ""
+"Defaults to Processing and Completed. Statuses registered by other plugins "
+"(a shipping extension, for example) appear here automatically."
+msgstr "Per impostazione predefinita In lavorazione e Completato. Gli stati registrati da altri plugin (per esempio un’estensione di spedizione) compaiono qui automaticamente."
+
+#: src/Admin/SettingsPage.php:665
+msgid "Roles allowed to manage withdrawal requests"
+msgstr "Ruoli abilitati a gestire le richieste di recesso"
+
+#: src/Admin/SettingsPage.php:672
+msgid "Administrator (always allowed)"
+msgstr "Amministratore (sempre abilitato)"
+
+#: src/Admin/SettingsPage.php:694
+msgid ""
+"Ticking a role lets it view and manage requests; unticking it revokes access "
+"as soon as you save. Existing sites start with the shop manager, which is "
+"the role the plugin granted on activation."
+msgstr "Spuntare un ruolo gli consente di vedere e gestire le richieste; togliendo la spunta l’accesso viene revocato appena salvi. I siti esistenti partono dal gestore negozio, il ruolo a cui il plugin ha concesso l’accesso in fase di attivazione."
+
+#: src/Admin/SettingsPage.php:705
+msgid ""
+"Sender name for the acknowledgement, the admin notification and the status "
+"updates. Leave empty to use the WooCommerce sender, so all your store emails "
+"stay consistent."
+msgstr "Nome del mittente per la conferma di ricevimento, la notifica all’amministratore e gli aggiornamenti di stato. Lascia vuoto per usare il mittente di WooCommerce e mantenere coerenti tutte le email del negozio."
+
+#: src/Admin/SettingsPage.php:716
+msgid ""
+"Sender address for this plugin's emails only. An address on your own domain "
+"improves deliverability. Leave empty to use the WooCommerce sender."
+msgstr "Indirizzo del mittente solo per le email di questo plugin. Un indirizzo sul tuo dominio migliora la recapitabilità. Lascia vuoto per usare il mittente di WooCommerce."
+
+#: src/Admin/SettingsPage.php:748
+msgid ""
+"Leave empty to use the bundled text shown in the field. The order reference "
+"and the reason you record when rejecting are always appended automatically."
+msgstr "Lascia vuoto per usare il testo incluso mostrato nel campo. Il riferimento dell’ordine e la motivazione che registri in caso di rifiuto vengono sempre aggiunti automaticamente."
+
+#: src/Admin/SettingsPage.php:755
+msgid "Show the intro paragraph above the form."
+msgstr "Mostra il paragrafo introduttivo sopra il modulo."
+
+#: src/Admin/SettingsPage.php:760
+msgid ""
+"Untick the box to hide the intro entirely. Leave the text empty to use the "
+"bundled sentence shown in the field, which names the order and follows the "
+"language of each visitor."
+msgstr "Togli la spunta per nascondere del tutto l’introduzione. Lascia il testo vuoto per usare la frase inclusa mostrata nel campo, che indica l’ordine e segue la lingua di ciascun visitatore."
+
+#: src/Admin/SettingsPage.php:768
+msgid "Require a \"bought as a consumer\" self-declaration on the form."
+msgstr "Richiedi nel modulo un’autodichiarazione di «acquisto in qualità di consumatore»."
+
+#: src/Admin/SettingsPage.php:773
+msgid ""
+"The right of withdrawal protects consumers — natural persons acting outside "
+"their trade or profession — not business buyers. When enabled, the form "
+"shows a required checkbox and the declaration is recorded in the durable-"
+"medium receipt. It is a good-faith declaration, not a legal guarantee: "
+"review business purchases yourself."
+msgstr "Il diritto di recesso tutela i consumatori — le persone fisiche che agiscono per scopi estranei alla propria attività — non gli acquirenti professionali. Se attivata, il modulo mostra una casella obbligatoria e la dichiarazione viene registrata nella conferma su supporto durevole. È una dichiarazione in buona fede, non una garanzia legale: gli acquisti professionali verificali tu."
+
+#: src/Admin/SettingsPage.php:781
+msgid "Add a \"Right of withdrawal\" tab to My Account."
+msgstr "Aggiungi una scheda «Diritto di recesso» a Il mio account."
+
+#: src/Admin/SettingsPage.php:784
+msgid ""
+"The tab lists the customer's orders that are currently eligible and offers "
+"the withdrawal control for each, so a logged-in customer can find the "
+"function without hunting through past orders."
+msgstr "La scheda elenca gli ordini del cliente attualmente ammessi e offre il comando di recesso per ciascuno, così un cliente collegato trova la funzione senza cercare tra gli ordini passati."
+
+#: src/Admin/SettingsPage.php:820
+msgid "Title"
+msgstr "Titolo"
+
+#: src/Admin/SettingsPage.php:823
+msgid "Body"
+msgstr "Testo"
+
+#: src/Admin/SettingsPage.php:828
+msgid ""
+"Leave a field empty to use the bundled wording shown in it, which follows "
+"the language of each visitor. The body accepts the {withdrawal_page_link} "
+"placeholder, which expands to a link to your withdrawal page."
+msgstr "Lascia vuoto un campo per usare il testo incluso mostrato al suo interno, che segue la lingua di ciascun visitatore. Il testo accetta il segnaposto {withdrawal_page_link}, che diventa un link alla tua pagina di recesso."
+
+#: src/Admin/SettingsPage.php:926
+msgid ""
+"Fourteen days is the statutory minimum (art. 52). Raise it if you offer a "
+"longer return window; lowering it below fourteen has no legal effect."
+msgstr "Quattordici giorni sono il minimo di legge (art. 52). Aumentalo se offri una finestra di reso più lunga; ridurlo sotto quattordici non ha alcun effetto giuridico."
+
+#: src/Admin/SettingsPage.php:936
 msgid "Delivery (goods)"
 msgstr "Consegna (beni)"
 
-#: src/Admin/SettingsPage.php:398
+#: src/Admin/SettingsPage.php:937
 msgid "Conclusion of contract (services)"
 msgstr "Conclusione del contratto (servizi)"
 
-#: src/Admin/SettingsPage.php:409
+#: src/Admin/SettingsPage.php:942
+msgid ""
+"For goods the period runs from delivery, which WooCommerce cannot know: the "
+"order completion date is used as the proxy. For services it runs from the "
+"conclusion of the contract, so the order date is used. This only affects the "
+"advisory deadline shown to you."
+msgstr "Per i beni il periodo decorre dalla consegna, che WooCommerce non può conoscere: viene usata come approssimazione la data di completamento dell’ordine. Per i servizi decorre dalla conclusione del contratto, quindi viene usata la data dell’ordine. Questo incide solo sulla scadenza indicativa mostrata a te."
+
+#: src/Admin/SettingsPage.php:952
 msgid "Advisory — always available, merchant decides (recommended)"
 msgstr "Advisory — sempre disponibile, decide il venditore (consigliato)"
 
-#: src/Admin/SettingsPage.php:410
+#: src/Admin/SettingsPage.php:953
 msgid "Strict — hide the function outside the window"
 msgstr "Rigida — nascondi la funzione fuori dal periodo"
 
-#: src/Admin/SettingsPage.php:434
+#: src/Admin/SettingsPage.php:958
+msgid ""
+"Keep Advisory. Because the real period runs from delivery, strict mode can "
+"turn away a consumer who is still within their actual window — and the "
+"function is supposed to stay continuously available. Use it only where the "
+"order or completion date is a reliable proxy for delivery."
+msgstr "Mantieni Indicativa. Poiché il periodo reale decorre dalla consegna, la modalità rigida può respingere un consumatore che è ancora nei termini effettivi — e la funzione dovrebbe restare continuamente disponibile. Usala solo dove la data dell’ordine o di completamento è un’approssimazione affidabile della consegna."
+
+#: src/Admin/SettingsPage.php:975
+msgid ""
+"Extra days added on top of the window when computing the advisory deadline. "
+"Useful when your real return policy is more generous than the statutory "
+"minimum."
+msgstr "Giorni aggiuntivi sommati alla finestra nel calcolo della scadenza indicativa. Utile quando la tua politica di reso è più generosa del minimo di legge."
+
+#: src/Admin/SettingsPage.php:985
 msgid "Allow withdrawal (recommended)"
 msgstr "Consenti il recesso (consigliato)"
 
-#: src/Admin/SettingsPage.php:435
+#: src/Admin/SettingsPage.php:986
 msgid "Exclude from withdrawal"
 msgstr "Escludi dal recesso"
 
-#: src/Admin/SettingsPage.php:436
+#: src/Admin/SettingsPage.php:987
 msgid "Unconfigured — fail closed"
 msgstr "Non configurato — blocco prudenziale"
 
-#: src/Admin/SettingsPage.php:450
+#: src/Admin/SettingsPage.php:992
+msgid ""
+"Applies to products with no explicit \"Withdrawal status\" of their own or "
+"on their category. Keep \"Allow\": the right of withdrawal is the rule and "
+"the exceptions are the exception, and you still decide each request. "
+"\"Unconfigured\" makes any unclassified product block the whole order — "
+"safe, but it hides the function until your catalogue is fully classified."
+msgstr "Vale per i prodotti privi di uno «Stato recesso» esplicito, proprio o della loro categoria. Mantieni «Consenti»: il diritto di recesso è la regola e le eccezioni sono l’eccezione, e resti comunque tu a decidere ogni richiesta. «Non configurato» fa sì che un prodotto non classificato blocchi l’intero ordine: prudente, ma nasconde la funzione finché il catalogo non è interamente classificato."
+
+#: src/Admin/SettingsPage.php:1005
 msgid ""
 "Display a notice on the product page for products excluded from withdrawal."
 msgstr ""
 "Mostra un avviso nella pagina prodotto per i prodotti esclusi dal recesso."
 
-#: src/Admin/SettingsPage.php:463 src/Support/Settings.php:211
+#: src/Admin/SettingsPage.php:1009
 msgid ""
-"For this product the right of withdrawal does not apply (art. 59 of the "
-"Italian Consumer Code)."
-msgstr ""
-"Per questo prodotto il diritto di recesso non si applica (art. 59 del Codice"
-" del Consumo)."
+"Rendered between the price and the add-to-cart button. Not required by law "
+"as such, but it tells the consumer before they buy that this item cannot be "
+"returned, which heads off the dispute later."
+msgstr "Viene mostrato tra il prezzo e il pulsante di aggiunta al carrello. Non è richiesto dalla legge in quanto tale, ma avvisa il consumatore prima dell’acquisto che l’articolo non è restituibile, prevenendo la contestazione successiva."
 
-#: src/Admin/SettingsPage.php:472
+#: src/Admin/SettingsPage.php:1019
+msgid ""
+"Show each consent only when the cart contains a product classified for it."
+msgstr "Mostra ciascun consenso solo quando il carrello contiene un prodotto classificato per quel consenso."
+
+#: src/Admin/SettingsPage.php:1023
+msgid ""
+"The consent then follows the \"Withdrawal status\" you set on the product or "
+"category: the digital-content box appears only with Article 16(m) items in "
+"the cart, the service box only with Article 14(4)(a) items. Left unticked, "
+"every enabled consent is shown on every checkout — the behaviour of earlier "
+"versions, kept as the default so updating changes nothing."
+msgstr "Il consenso segue allora lo «Stato recesso» impostato sul prodotto o sulla categoria: la casella dei contenuti digitali compare solo con articoli ex art. 16(m) nel carrello, quella dei servizi solo con articoli ex art. 14(4)(a). Senza spunta, ogni consenso attivo viene mostrato a ogni checkout — il comportamento delle versioni precedenti, mantenuto come predefinito perché l’aggiornamento non cambi nulla."
+
+#: src/Admin/SettingsPage.php:1031
 msgid "Show the digital-content consent at checkout."
 msgstr "Mostra il consenso al contenuto digitale al checkout."
 
-#: src/Admin/SettingsPage.php:479
+#: src/Admin/SettingsPage.php:1034
+msgid ""
+"Mandatory if you sell digital content. Required for downloads, online "
+"courses, software and eBooks when you want to rely on the Article 16(m) "
+"exception. Without this consent given and recorded, the consumer keeps the "
+"14-day right of withdrawal even after accessing the content. Otherwise "
+"optional."
+msgstr "Obbligatorio se vendi contenuti digitali. Necessario per download, corsi online, software ed eBook quando vuoi avvalerti dell’eccezione dell’art. 16(m). Senza questo consenso prestato e registrato, il consumatore conserva il diritto di recesso di 14 giorni anche dopo aver acceduto al contenuto. Negli altri casi è facoltativo."
+
+#: src/Admin/SettingsPage.php:1042
 msgid "The order cannot be placed until this consent is given."
 msgstr ""
 "L'ordine non può essere completato finché questo consenso non è prestato."
 
-#: src/Admin/SettingsPage.php:493
+#: src/Admin/SettingsPage.php:1045
+msgid ""
+"Blocking checkout is a deliberate, catalogue-specific choice, so it is off "
+"by default. Turn it on only where the Article 16(m) exception is the basis "
+"of your sale."
+msgstr "Bloccare il checkout è una scelta deliberata e specifica del catalogo, perciò è disattivata per impostazione predefinita. Attivala solo dove l’eccezione dell’art. 16(m) è il presupposto della tua vendita."
+
+#: src/Admin/SettingsPage.php:1061
 msgid "Show the optional service-start consent at checkout."
 msgstr "Mostra il consenso facoltativo all'avvio del servizio al checkout."
 
-#: src/Admin/SettingsPage.php:507
+#: src/Admin/SettingsPage.php:1064
+msgid ""
+"Useful for ongoing services (maintenance plans, consultancy, subscriptions). "
+"With this consent recorded you may charge a proportionate amount for the "
+"work already done if the consumer withdraws within the window; without it, "
+"an early withdrawal means a full refund regardless of the work delivered."
+msgstr "Utile per i servizi continuativi (piani di manutenzione, consulenza, abbonamenti). Con questo consenso registrato puoi addebitare un importo proporzionato al lavoro già svolto se il consumatore recede entro la finestra; senza, un recesso anticipato comporta il rimborso integrale a prescindere dal lavoro prestato."
+
+#: src/Admin/SettingsPage.php:1082
+msgid ""
+"Leave empty to use the bundled text shown in the field, which follows the "
+"language of each customer. Your own text is shown exactly as written, in "
+"every language."
+msgstr "Lascia vuoto per usare il testo incluso mostrato nel campo, che segue la lingua di ciascun cliente. Il testo che scrivi tu viene mostrato esattamente com’è, in ogni lingua."
+
+#: src/Admin/SettingsPage.php:1089
 msgid "Add a persistent «recedere dal contratto qui» link to the site footer."
 msgstr ""
-"Aggiungi un link permanente «recedere dal contratto qui» nel footer del "
-"sito."
+"Aggiungi un link permanente «recedere dal contratto qui» nel footer del sito."
 
-#: src/Admin/SettingsPage.php:521
+#: src/Admin/SettingsPage.php:1092
+msgid ""
+"The simplest way to satisfy the \"continuously available\" requirement. If "
+"your theme builds its footer from a menu or a template part, use one of the "
+"other routes above instead."
+msgstr "Il modo più semplice per soddisfare il requisito di «continua disponibilità». Se il tuo tema costruisce il footer da un menu o da una parte di template, usa invece una delle altre vie indicate sopra."
+
+#: src/Admin/SettingsPage.php:1107
 msgid ""
 "Comma-separated email addresses notified when a withdrawal is confirmed. "
 "Defaults to the site admin email."
@@ -426,11 +826,18 @@ msgstr ""
 "confermato. Per impostazione predefinita l'email dell'amministratore del "
 "sito."
 
-#: src/Admin/SettingsPage.php:535
+#: src/Admin/SettingsPage.php:1111
+msgid ""
+"Someone has to see a confirmed withdrawal: the acknowledgement to the "
+"consumer is automatic, but the refund is not. Separate several addresses "
+"with commas."
+msgstr "Qualcuno deve vedere un recesso confermato: la conferma al consumatore è automatica, il rimborso no. Separa più indirizzi con la virgola."
+
+#: src/Admin/SettingsPage.php:1125
 msgid "— Select a page —"
 msgstr "— Seleziona una pagina —"
 
-#: src/Admin/SettingsPage.php:557
+#: src/Admin/SettingsPage.php:1147
 msgid ""
 "The page that contains the withdrawal form. Make sure it includes the "
 "[recesso_digitale] shortcode. The plugin creates one automatically on "
@@ -440,13 +847,45 @@ msgstr ""
 "shortcode [recesso_digitale]. Il plugin ne crea una automaticamente "
 "all'attivazione."
 
-#: src/Admin/SettingsPage.php:570
+#: src/Admin/SettingsPage.php:1151
+msgid ""
+"Without it the withdrawal function has nowhere to live: the buttons in order "
+"emails and in My Account have no destination."
+msgstr "Senza di essa la funzione di recesso non ha dove risiedere: i pulsanti nelle email d’ordine e in Il mio account non hanno destinazione."
+
+#: src/Admin/SettingsPage.php:1164
 msgid "Display the model form below the public withdrawal form."
 msgstr "Mostra il modulo tipo sotto il modulo di recesso pubblico."
 
-#: src/Admin/SettingsPage.php:661
+#: src/Admin/SettingsPage.php:1168
+msgid ""
+"Providing the Annex I.B model form is a separate, pre-contractual obligation "
+"(art. 6(1)(h)): the online function complements it, it does not replace it. "
+"The model is generated from the trader details below, so it works as soon as "
+"they are filled in."
+msgstr "Fornire il modulo tipo dell’Allegato I.B è un obbligo precontrattuale a sé (art. 6(1)(h)): la funzione online lo integra, non lo sostituisce. Il modulo è generato dai dati del professionista qui sotto, quindi funziona non appena li compili."
+
+#: src/Admin/SettingsPage.php:1210
+msgid "Mandatory."
+msgstr "Obbligatorio."
+
+#: src/Admin/SettingsPage.php:1211
+msgid "Recommended."
+msgstr "Consigliato."
+
+#: src/Admin/SettingsPage.php:1212
+msgid "Optional."
+msgstr "Facoltativo."
+
+#: src/Admin/SettingsPage.php:1281
 msgid "Remove tables and options when the plugin is deleted."
 msgstr "Rimuovi tabelle e opzioni quando il plugin viene eliminato."
+
+#: src/Admin/SettingsPage.php:1285
+msgid ""
+"Off by default, and deliberately so: withdrawal records and their receipts "
+"are legal evidence. Only tick this if you are sure you no longer need them."
+msgstr "Disattivata per impostazione predefinita, e deliberatamente: i registri di recesso e le relative conferme sono prove legali. Spunta questa voce solo se sei certo di non averne più bisogno."
 
 #: src/Admin/WithdrawalStatusFields.php:51
 msgid "— Inherit from category (Standard)"
@@ -465,21 +904,21 @@ msgid ""
 "Digital content (Art. 16(m)) — excluded, requires mandatory consent at "
 "checkout"
 msgstr ""
-"Contenuto digitale (art. 16(m)) — escluso, richiede consenso obbligatorio al"
-" checkout"
+"Contenuto digitale (art. 16(m)) — escluso, richiede consenso obbligatorio al "
+"checkout"
 
 #: src/Admin/WithdrawalStatusFields.php:58
 msgid ""
-"Service started early (Art. 14(4)(a)) — withdrawal applies, optional consent"
-" at checkout for pro-rata billing"
+"Service started early (Art. 14(4)(a)) — withdrawal applies, optional consent "
+"at checkout for pro-rata billing"
 msgstr ""
 "Servizio avviato anticipatamente (art. 14(4)(a)) — il recesso si applica, "
 "consenso facoltativo al checkout per l'addebito pro-rata"
 
 #: src/Admin/WithdrawalStatusFields.php:59
 msgid ""
-"Dated accommodation, transport, car rental, catering or leisure (Art. 16(l))"
-" — excluded, no consent needed"
+"Dated accommodation, transport, car rental, catering or leisure (Art. 16(l)) "
+"— excluded, no consent needed"
 msgstr ""
 "Alloggio a data fissa, trasporto, autonoleggio, ristorazione o tempo libero "
 "(art. 16(l)) — escluso, nessun consenso necessario"
@@ -489,8 +928,8 @@ msgid ""
 "Other Article 16 exception — excluded (perishable, custom-made, hygiene-"
 "sealed, sealed media, etc.), no consent needed"
 msgstr ""
-"Altra eccezione dell'articolo 16 — escluso (deperibile, su misura, sigillato"
-" per igiene, supporti sigillati, ecc.), nessun consenso necessario"
+"Altra eccezione dell'articolo 16 — escluso (deperibile, su misura, sigillato "
+"per igiene, supporti sigillati, ecc.), nessun consenso necessario"
 
 #: src/Admin/WithdrawalStatusFields.php:74
 msgid "Withdrawal status"
@@ -498,19 +937,13 @@ msgstr "Stato del recesso"
 
 #: src/Admin/WithdrawalStatusFields.php:76
 msgid ""
-"Defines whether this product is excluded from the EU right of withdrawal and"
-" which checkout consent (if any) is shown to the customer. Categories can "
-"set a default that products inherit."
+"Defines whether this product is excluded from the EU right of withdrawal and "
+"which checkout consent (if any) is shown to the customer. Categories can set "
+"a default that products inherit."
 msgstr ""
 "Definisce se questo prodotto è escluso dal diritto di recesso UE e quale "
 "consenso al checkout (se previsto) viene mostrato al cliente. Le categorie "
 "possono impostare un valore predefinito che i prodotti ereditano."
-
-#: src/Admin/WithdrawalStatusFields.php:115
-#: src/Admin/WithdrawalStatusFields.php:132 src/Frontend/Hooks.php:116
-#: src/Frontend/Hooks.php:127
-msgid "Right of withdrawal"
-msgstr "Diritto di recesso"
 
 #: src/Admin/WithdrawalStatusFields.php:118
 #: src/Admin/WithdrawalStatusFields.php:136
@@ -537,8 +970,7 @@ msgstr ""
 msgid "Acknowledgement of your withdrawal request"
 msgstr "Avviso di ricevimento della tua richiesta di recesso"
 
-#: src/Email/WithdrawalAcknowledgementEmail.php:66
-#: templates/pdf/receipt.php:43
+#: src/Email/WithdrawalAcknowledgementEmail.php:66 templates/pdf/receipt.php:43
 msgid "Acknowledgement of withdrawal receipt"
 msgstr "Avviso di ricevimento del recesso"
 
@@ -589,8 +1021,8 @@ msgstr "Il tuo link per il recesso dell'ordine {order_number}"
 msgid "Exercise your right of withdrawal"
 msgstr "Esercita il tuo diritto di recesso"
 
-#: src/Email/WithdrawalLinkEmail.php:109 src/Frontend/FooterLink.php:62
-#: src/Frontend/Hooks.php:210
+#: src/Email/WithdrawalLinkEmail.php:113 src/Frontend/AccountEndpoint.php:149
+#: src/Frontend/FooterLink.php:125 src/Frontend/Hooks.php:210
 msgid "recedere dal contratto qui"
 msgstr "recedere dal contratto qui"
 
@@ -600,14 +1032,14 @@ msgstr "Rifiuto del recesso"
 
 #: src/Email/WithdrawalRejectionEmail.php:47
 msgid ""
-"Sent to the consumer when the merchant does not accept a withdrawal request,"
-" with the reason."
+"Sent to the consumer when the merchant does not accept a withdrawal request, "
+"with the reason."
 msgstr ""
 "Inviata al consumatore quando il venditore non accetta una richiesta di "
 "recesso, con la motivazione."
 
 #: src/Email/WithdrawalRejectionEmail.php:59
-#: src/Email/WithdrawalStatusUpdateEmail.php:59
+#: src/Email/WithdrawalStatusUpdateEmail.php:60
 msgid "Update on your withdrawal request"
 msgstr "Aggiornamento sulla tua richiesta di recesso"
 
@@ -615,11 +1047,11 @@ msgstr "Aggiornamento sulla tua richiesta di recesso"
 msgid "Your withdrawal request was not accepted"
 msgstr "La tua richiesta di recesso non è stata accettata"
 
-#: src/Email/WithdrawalStatusUpdateEmail.php:46
+#: src/Email/WithdrawalStatusUpdateEmail.php:47
 msgid "Withdrawal status update (recesso)"
 msgstr "Aggiornamento stato recesso"
 
-#: src/Email/WithdrawalStatusUpdateEmail.php:47
+#: src/Email/WithdrawalStatusUpdateEmail.php:48
 msgid ""
 "Sent to the consumer when the merchant accepts, refunds or completes a "
 "withdrawal."
@@ -627,95 +1059,103 @@ msgstr ""
 "Inviata al consumatore quando il venditore accetta, rimborsa o completa un "
 "recesso."
 
-#: src/Email/WithdrawalStatusUpdateEmail.php:66
+#: src/Email/WithdrawalStatusUpdateEmail.php:67
 msgid "Your withdrawal request has been updated"
 msgstr "La tua richiesta di recesso è stata aggiornata"
 
-#: src/Email/WithdrawalStatusUpdateEmail.php:109
-msgid "We have accepted your withdrawal request."
-msgstr "Abbiamo accettato la tua richiesta di recesso."
-
-#: src/Email/WithdrawalStatusUpdateEmail.php:111
-msgid "Your withdrawal has been refunded."
-msgstr "Il tuo recesso è stato rimborsato."
-
-#: src/Email/WithdrawalStatusUpdateEmail.php:113
-msgid "Your withdrawal has been completed."
-msgstr "Il tuo recesso è stato completato."
-
-#: src/Email/WithdrawalStatusUpdateEmail.php:115
+#: src/Email/WithdrawalStatusUpdateEmail.php:119
 msgid "Your withdrawal request has been updated."
 msgstr "La tua richiesta di recesso è stata aggiornata."
 
-#: src/Frontend/CheckoutConsents.php:109
-msgid "Please confirm the required consent to place your order."
-msgstr "Conferma il consenso obbligatorio per completare l'ordine."
+#: src/Frontend/BlockCheckoutConsents.php:229
+msgid ""
+"Whether the digital-content consent (Article 16(m)) applies to this cart."
+msgstr "Indica se il consenso per i contenuti digitali (art. 16(m)) si applica a questo carrello."
 
-#: src/Frontend/CheckoutConsents.php:125
+#: src/Frontend/BlockCheckoutConsents.php:235
+msgid ""
+"Whether the service-start consent (Article 14(4)(a)) applies to this cart."
+msgstr "Indica se il consenso all’avvio del servizio (art. 14(4)(a)) si applica a questo carrello."
+
+#: src/Frontend/BlockCheckoutConsents.php:261
+#: src/Frontend/CheckoutConsents.php:210
 msgid "Digital-content consent (art. 16(m))"
 msgstr "Consenso contenuto digitale (art. 16(m))"
 
-#: src/Frontend/CheckoutConsents.php:128
+#: src/Frontend/BlockCheckoutConsents.php:265
+#: src/Frontend/CheckoutConsents.php:213
 msgid "Service-start consent (art. 14(4)(a))"
 msgstr "Consenso avvio servizio (art. 14(4)(a))"
 
 #. translators: 1: consent label, 2: given/declined.
-#: src/Frontend/CheckoutConsents.php:154
+#: src/Frontend/BlockCheckoutConsents.php:287
+#: src/Frontend/CheckoutConsents.php:239
 #, php-format
 msgid "Recesso: %1$s — %2$s."
 msgstr "Recesso: %1$s — %2$s."
 
-#: src/Frontend/CheckoutConsents.php:156
+#: src/Frontend/BlockCheckoutConsents.php:289
+#: src/Frontend/CheckoutConsents.php:241
 msgid "given"
 msgstr "prestato"
 
-#: src/Frontend/CheckoutConsents.php:156
+#: src/Frontend/BlockCheckoutConsents.php:289
+#: src/Frontend/CheckoutConsents.php:241
 msgid "declined"
 msgstr "rifiutato"
 
-#: src/Frontend/FlowController.php:212
+#: src/Frontend/CheckoutConsents.php:187
+msgid "Please confirm the required consent to place your order."
+msgstr "Conferma il consenso obbligatorio per completare l'ordine."
+
+#: src/Frontend/FlowController.php:263
 msgid ""
-"If an order matching those details exists, we have sent a withdrawal link to"
-" the email address on file. Please check your inbox."
+"If an order matching those details exists, we have sent a withdrawal link to "
+"the email address on file. Please check your inbox."
 msgstr ""
 "Se esiste un ordine corrispondente a questi dati, abbiamo inviato un link "
 "per il recesso all'indirizzo email associato. Controlla la tua casella di "
 "posta."
 
-#: src/Frontend/FlowController.php:216
+#: src/Frontend/FlowController.php:267
 msgid ""
-"Please enter both your order number and the email address used for the "
-"order."
+"Please enter both your order number and the email address used for the order."
 msgstr ""
 "Inserisci sia il numero d'ordine sia l'indirizzo email usato per l'ordine."
 
-#: src/Frontend/FlowController.php:220
+#: src/Frontend/FlowController.php:271
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "Troppe richieste. Attendi qualche minuto e riprova."
 
-#: src/Frontend/FlowController.php:248 src/Frontend/FlowController.php:253
-#: src/Frontend/FlowController.php:340 src/Frontend/FlowController.php:374
+#: src/Frontend/FlowController.php:299 src/Frontend/FlowController.php:304
+#: src/Frontend/FlowController.php:410 src/Frontend/FlowController.php:444
 msgid "This withdrawal link is not valid or has expired."
 msgstr "Questo link di recesso non è valido o è scaduto."
 
-#: src/Frontend/FlowController.php:277
+#: src/Frontend/FlowController.php:346
+msgid ""
+"Please provide a valid name and email address, select at least one item to "
+"withdraw, and confirm that you bought as a consumer."
+msgstr "Inserisci un nome e un indirizzo email validi, seleziona almeno un articolo da restituire e conferma di aver acquistato in qualità di consumatore."
+
+#: src/Frontend/FlowController.php:349
 msgid ""
 "Please provide a valid name and email address, and select at least one item "
 "to withdraw."
 msgstr ""
-"Inserisci un nome e un indirizzo email validi e seleziona almeno un articolo"
-" da recedere."
+"Inserisci un nome e un indirizzo email validi e seleziona almeno un articolo "
+"da recedere."
 
-#: src/Frontend/FlowController.php:363
+#: src/Frontend/FlowController.php:433
 msgid "Confirm withdrawal"
 msgstr "conferma recesso"
 
-#: src/Frontend/FlowController.php:473 src/Rest/EligibilityController.php:137
+#: src/Frontend/FlowController.php:552 src/Rest/EligibilityController.php:137
 #: src/Rest/WithdrawalsController.php:220
 msgid "A withdrawal request is already in progress for this order."
 msgstr "Una richiesta di recesso è già in corso per questo ordine."
 
-#: src/Frontend/FlowController.php:483
+#: src/Frontend/FlowController.php:562
 msgid ""
 "We could not record your withdrawal right now. Please try again in a few "
 "moments."
@@ -753,42 +1193,52 @@ msgid_plural ""
 "You have %d days from receipt to exercise your withdrawal right without "
 "giving any reason."
 msgstr[0] ""
-"Hai %d giorno dalla ricezione per esercitare il tuo diritto di recesso senza"
-" fornire alcuna motivazione."
+"Hai %d giorno dalla ricezione per esercitare il tuo diritto di recesso senza "
+"fornire alcuna motivazione."
 msgstr[1] ""
-"Hai %d giorni dalla ricezione per esercitare il tuo diritto di recesso senza"
-" fornire alcuna motivazione."
+"Hai %d giorni dalla ricezione per esercitare il tuo diritto di recesso senza "
+"fornire alcuna motivazione."
 
-#: src/Integration/OrderNotes.php:56
+#: src/Frontend/ProductNotice.php:138
+msgid "Read about the right of withdrawal"
+msgstr "Informazioni sul diritto di recesso"
+
+#: src/Integration/OrderNotes.php:57
 msgid "Recesso: withdrawal request received (pending confirmation)."
 msgstr "Recesso: richiesta di recesso ricevuta (in attesa di conferma)."
 
 #. translators: %s: confirmation date and time (GMT).
-#: src/Integration/OrderNotes.php:69
+#: src/Integration/OrderNotes.php:70
 #, php-format
 msgid "Recesso: withdrawal confirmed by the consumer on %s (GMT)."
 msgstr "Recesso: recesso confermato dal consumatore il %s (GMT)."
 
-#: src/Integration/OrderNotes.php:88
+#: src/Integration/OrderNotes.php:89 src/Integration/OrderNotes.php:113
 msgid "Recesso: withdrawal request rejected by the merchant."
 msgstr "Recesso: richiesta di recesso rifiutata dal venditore."
 
-#: src/Integration/OrderNotes.php:89
+#: src/Integration/OrderNotes.php:90 src/Integration/OrderNotes.php:112
 msgid "Recesso: withdrawal request accepted by the merchant."
 msgstr "Recesso: richiesta di recesso accettata dal venditore."
 
-#: src/Integration/OrderNotes.php:90
+#: src/Integration/OrderNotes.php:91 src/Integration/OrderNotes.php:114
 msgid "Recesso: withdrawal marked as refunded."
 msgstr "Recesso: recesso contrassegnato come rimborsato."
 
-#: src/Integration/OrderNotes.php:91
+#: src/Integration/OrderNotes.php:92 src/Integration/OrderNotes.php:115
 msgid "Recesso: withdrawal completed."
 msgstr "Recesso: recesso completato."
 
+#: src/Integration/OrderNotes.php:118
+msgid ""
+"Recesso: the withdrawal decision was reset; the request is awaiting a "
+"decision again."
+msgstr "Recesso: la decisione sul recesso è stata annullata; la richiesta è nuovamente in attesa di decisione."
+
 #: src/Integration/SubscriptionsAdapter.php:79
 msgid ""
-"Subscription cancelled following a confirmed withdrawal (recesso, art. "
-"54-bis)."
+"Subscription cancelled following a confirmed withdrawal (recesso, art. 54-"
+"bis)."
 msgstr ""
 "Abbonamento annullato a seguito di un recesso confermato (art. 54-bis)."
 
@@ -796,7 +1246,7 @@ msgstr ""
 msgid "The receipt is not available."
 msgstr "La ricevuta non è disponibile."
 
-#: src/Plugin.php:113
+#: src/Plugin.php:120
 msgid ""
 "ErreD EU Order Withdrawal for WooCommerce requires WooCommerce to be "
 "installed and active. The withdrawal function is currently inactive."
@@ -836,7 +1286,7 @@ msgstr "Motivo del recesso"
 msgid "IP address"
 msgstr "Indirizzo IP"
 
-#: src/Privacy/PrivacyHooks.php:115 templates/pdf/receipt.php:90
+#: src/Privacy/PrivacyHooks.php:115 templates/pdf/receipt.php:96
 msgid "Declaration submitted (GMT)"
 msgstr "Dichiarazione inviata (GMT)"
 
@@ -894,8 +1344,7 @@ msgstr ""
 
 #: src/Rest/EligibilityController.php:139
 msgid "This order cannot be withdrawn in its current state."
-msgstr ""
-"Questo ordine non può essere oggetto di recesso nel suo stato attuale."
+msgstr "Questo ordine non può essere oggetto di recesso nel suo stato attuale."
 
 #: src/Rest/EligibilityController.php:141
 msgid "No items in this order are eligible for withdrawal."
@@ -909,7 +1358,85 @@ msgstr "Il recesso non è disponibile per questo ordine."
 msgid "This order is not eligible for withdrawal."
 msgstr "Questo ordine non è ammesso al recesso."
 
-#: src/Support/Settings.php:241
+#: src/Support/Settings.php:261
+msgid ""
+"For this product the right of withdrawal does not apply (art. 59 of the "
+"Italian Consumer Code)."
+msgstr ""
+"Per questo prodotto il diritto di recesso non si applica (art. 59 del Codice "
+"del Consumo)."
+
+#: src/Support/Settings.php:279
+msgid "Digital content — the right of withdrawal is lost on access"
+msgstr "Contenuto digitale — il diritto di recesso si perde con l’accesso"
+
+#: src/Support/Settings.php:280
+msgid ""
+"This is digital content under Article 16(m) of Directive 2011/83/EU. By "
+"starting to access, download or view it after purchase you expressly request "
+"its immediate supply and acknowledge that you thereby lose the right of "
+"withdrawal. {withdrawal_page_link}"
+msgstr "Questo è un contenuto digitale ai sensi dell’art. 16(m) della Direttiva 2011/83/UE. Iniziando ad accedervi, a scaricarlo o a visualizzarlo dopo l’acquisto, ne richiedi espressamente la fornitura immediata e riconosci di perdere per ciò stesso il diritto di recesso. {withdrawal_page_link}"
+
+#: src/Support/Settings.php:286
+msgid "Dated service — excluded from the right of withdrawal"
+msgstr "Servizio con data fissata — escluso dal diritto di recesso"
+
+#: src/Support/Settings.php:287
+msgid ""
+"This service is excluded from the right of withdrawal under Article 16(l) of "
+"Directive 2011/83/EU, which covers accommodation other than for residential "
+"purposes, transport of goods, vehicle rental, catering and leisure services "
+"when the contract sets a specific date or period of performance. Please "
+"check the booking conditions before purchasing. {withdrawal_page_link}"
+msgstr "Questo servizio è escluso dal diritto di recesso ai sensi dell’art. 16(l) della Direttiva 2011/83/UE, che riguarda l’alloggio per fini diversi da quelli residenziali, il trasporto di beni, il noleggio di veicoli, la ristorazione e i servizi per il tempo libero quando il contratto fissa una data o un periodo di esecuzione specifici. Verifica le condizioni di prenotazione prima dell’acquisto. {withdrawal_page_link}"
+
+#: src/Support/Settings.php:296
+msgid "Excluded from the right of withdrawal"
+msgstr "Escluso dal diritto di recesso"
+
+#: src/Support/Settings.php:301
+msgid ""
+"This product is excluded from the right of withdrawal under one of the "
+"exceptions in Article 16 of Directive 2011/83/EU (perishable goods, made-to-"
+"measure or personalised items, hygiene-sealed goods, sealed audio, video or "
+"software media unsealed after delivery, and similar). Please check the "
+"conditions before purchasing. {withdrawal_page_link}"
+msgstr "Questo prodotto è escluso dal diritto di recesso in base a una delle eccezioni dell’art. 16 della Direttiva 2011/83/UE (beni deperibili, articoli su misura o personalizzati, beni sigillati per ragioni igieniche, supporti audio, video o software sigillati aperti dopo la consegna e simili). Verifica le condizioni prima dell’acquisto. {withdrawal_page_link}"
+
+#: src/Support/Settings.php:330
+msgid ""
+"We have accepted your withdrawal request and will proceed with the refund "
+"within the legal deadline."
+msgstr "Abbiamo accolto la tua richiesta di recesso e procederemo al rimborso entro i termini di legge."
+
+#: src/Support/Settings.php:331
+msgid "We have reviewed your withdrawal request and are unable to accept it."
+msgstr "Abbiamo esaminato la tua richiesta di recesso e non possiamo accoglierla."
+
+#: src/Support/Settings.php:332
+msgid ""
+"Your withdrawal has been processed and the refund issued. The funds may take "
+"a few business days to reach your account."
+msgstr "Il tuo recesso è stato lavorato e il rimborso è stato emesso. Possono servire alcuni giorni lavorativi perché le somme arrivino sul tuo conto."
+
+#. translators: %s: order/contract reference.
+#: src/Support/Settings.php:357
+#, php-format
+msgid ""
+"You are exercising your right of withdrawal for order %s. Please confirm "
+"your details below."
+msgstr ""
+"Stai esercitando il diritto di recesso per l'ordine %s. Conferma i tuoi dati "
+"qui sotto."
+
+#: src/Support/Settings.php:376
+msgid ""
+"I confirm that I made this purchase as a consumer, that is, as a natural "
+"person acting for purposes outside my trade, business, craft or profession."
+msgstr "Confermo di aver effettuato questo acquisto in qualità di consumatore, ossia come persona fisica che agisce per scopi estranei all’attività imprenditoriale, commerciale, artigianale o professionale eventualmente svolta."
+
+#: src/Support/Settings.php:419
 msgid ""
 "I request immediate access to the digital content and acknowledge that I "
 "therefore lose my right of withdrawal."
@@ -917,7 +1444,7 @@ msgstr ""
 "Richiedo l'accesso immediato al contenuto digitale e riconosco di perdere "
 "così il mio diritto di recesso."
 
-#: src/Support/Settings.php:263
+#: src/Support/Settings.php:451
 msgid "I request that the service begins during the withdrawal period."
 msgstr "Richiedo che il servizio inizi durante il periodo di recesso."
 
@@ -996,20 +1523,19 @@ msgid ""
 "the attached receipt, is your acknowledgement of receipt on a durable "
 "medium, as required by EU consumer law. Please keep it as proof."
 msgstr ""
-"Abbiamo ricevuto e registrato la tua richiesta di recesso. Questo messaggio,"
-" con la ricevuta allegata, costituisce la tua conferma di ricezione su "
+"Abbiamo ricevuto e registrato la tua richiesta di recesso. Questo messaggio, "
+"con la ricevuta allegata, costituisce la tua conferma di ricezione su "
 "supporto durevole, come richiesto dalla normativa europea a tutela dei "
 "consumatori. Conservalo come prova."
 
-#. translators: 1: number of days in the withdrawal window, 2: when the window
-#. starts (e.g. delivery or the conclusion of the contract).
+#. translators: 1: number of days in the withdrawal window, 2: when the window starts (e.g. delivery or the conclusion of the contract).
 #: templates/emails/plain/withdrawal-acknowledgement.php:41
 #: templates/emails/withdrawal-acknowledgement.php:54
 #, php-format
 msgid ""
-"Your withdrawal is subject to the legal deadlines and conditions: the "
-"%1$d-day period (for goods, counted from %2$s; for digital content, from the"
-" start of the download) and the statutory exceptions to the right of "
+"Your withdrawal is subject to the legal deadlines and conditions: the %1$d-"
+"day period (for goods, counted from %2$s; for digital content, from the "
+"start of the download) and the statutory exceptions to the right of "
 "withdrawal. We verify these before confirming, so submitting a request does "
 "not by itself guarantee its acceptance."
 msgstr ""
@@ -1022,8 +1548,8 @@ msgstr ""
 #: templates/emails/plain/withdrawal-acknowledgement.php:47
 #: templates/emails/withdrawal-acknowledgement.php:62
 msgid ""
-"We will review the request and confirm next steps within 24 hours. If you do"
-" not hear from us, please reply to this email."
+"We will review the request and confirm next steps within 24 hours. If you do "
+"not hear from us, please reply to this email."
 msgstr ""
 "Esamineremo la richiesta e confermeremo i passi successivi entro 24 ore. Se "
 "non ricevi nostre comunicazioni, rispondi a questa email."
@@ -1042,8 +1568,7 @@ msgstr "Grazie, %s"
 #. translators: %s: order number.
 #: templates/emails/plain/withdrawal-link.php:21
 #, php-format
-msgid ""
-"You requested a link to exercise your right of withdrawal for order %s."
+msgid "You requested a link to exercise your right of withdrawal for order %s."
 msgstr ""
 "Hai richiesto un link per esercitare il diritto di recesso per l'ordine %s."
 
@@ -1056,26 +1581,16 @@ msgstr "Hai richiesto un link per esercitare il diritto di recesso."
 msgid "If you did not request this, you can safely ignore this email."
 msgstr "Se non hai effettuato questa richiesta, puoi ignorare questa email."
 
-#: templates/emails/plain/withdrawal-rejection.php:19
-#: templates/emails/withdrawal-rejection.php:24
-msgid ""
-"We have reviewed your request to withdraw from the contract and we are "
-"unable to accept it."
-msgstr ""
-"Abbiamo esaminato la tua richiesta di recesso dal contratto e non possiamo "
-"accettarla."
-
-#: templates/emails/plain/withdrawal-rejection.php:24
-#: templates/emails/withdrawal-rejection.php:30
+#: templates/emails/plain/withdrawal-rejection.php:25
+#: templates/emails/withdrawal-rejection.php:31
 msgid "Reason:"
 msgstr "Motivazione:"
 
-#: templates/emails/plain/withdrawal-rejection.php:27
-#: templates/emails/withdrawal-rejection.php:35
+#: templates/emails/plain/withdrawal-rejection.php:28
+#: templates/emails/withdrawal-rejection.php:36
 msgid ""
 "If you believe this decision is incorrect, please reply to this email so we "
-"can review it. This message does not affect any statutory right you may "
-"have."
+"can review it. This message does not affect any statutory right you may have."
 msgstr ""
 "Se ritieni che questa decisione non sia corretta, rispondi a questa email "
 "per farcela rivedere. Questo messaggio non pregiudica eventuali diritti di "
@@ -1103,6 +1618,39 @@ msgstr ""
 "Hai richiesto un link per esercitare il diritto di recesso. Usa il pulsante "
 "qui sotto per continuare."
 
+#: templates/frontend/account-withdrawal.php:17
+msgid ""
+"You may withdraw from a distance contract without giving any reason, within "
+"the legal period. Choose the order you wish to withdraw from; you will be "
+"asked to confirm, and you will receive an acknowledgement of receipt on a "
+"durable medium."
+msgstr "Puoi recedere da un contratto a distanza senza doverne indicare il motivo, entro i termini di legge. Scegli l’ordine dal quale vuoi recedere: ti sarà chiesta una conferma e riceverai una conferma di ricevimento su supporto durevole."
+
+#: templates/frontend/account-withdrawal.php:22
+msgid ""
+"None of your orders is currently eligible for withdrawal. If you believe an "
+"order should be, please contact us."
+msgstr "Nessuno dei tuoi ordini è attualmente ammesso al recesso. Se ritieni che un ordine debba esserlo, contattaci."
+
+#: templates/frontend/account-withdrawal.php:27
+msgid "Open the withdrawal form"
+msgstr "Apri il modulo di recesso"
+
+#: templates/frontend/account-withdrawal.php:34
+msgid "Orders eligible for withdrawal"
+msgstr "Ordini ammessi al recesso"
+
+#: templates/frontend/account-withdrawal.php:39
+#: templates/frontend/account-withdrawal.php:49
+msgid "Date"
+msgstr "Data"
+
+#. translators: %s: order number.
+#: templates/frontend/account-withdrawal.php:61
+#, php-format
+msgid "for order %s"
+msgstr "per l’ordine %s"
+
 #: templates/frontend/confirm.php:16
 msgid "Confirm your withdrawal"
 msgstr "Conferma il tuo recesso"
@@ -1112,8 +1660,8 @@ msgid ""
 "Please review your withdrawal request and confirm. After confirmation you "
 "will receive an acknowledgement of receipt on a durable medium."
 msgstr ""
-"Controlla la tua richiesta di recesso e conferma. Dopo la conferma riceverai"
-" un avviso di ricevimento su supporto durevole."
+"Controlla la tua richiesta di recesso e conferma. Dopo la conferma riceverai "
+"un avviso di ricevimento su supporto durevole."
 
 #: templates/frontend/confirm.php:24
 msgid "Order/contract"
@@ -1131,45 +1679,35 @@ msgstr "Prodotti oggetto del recesso"
 msgid "Withdrawal declaration"
 msgstr "Dichiarazione di recesso"
 
-#. translators: %s: order/contract reference.
-#: templates/frontend/declaration.php:28
-#, php-format
-msgid ""
-"You are exercising your right of withdrawal for order %s. Please confirm "
-"your details below."
-msgstr ""
-"Stai esercitando il diritto di recesso per l'ordine %s. Conferma i tuoi dati"
-" qui sotto."
-
-#: templates/frontend/declaration.php:43 templates/frontend/lookup.php:48
+#: templates/frontend/declaration.php:39 templates/frontend/lookup.php:48
 msgid "Leave this field empty"
 msgstr "Lascia vuoto questo campo"
 
-#: templates/frontend/declaration.php:48
+#: templates/frontend/declaration.php:44
 msgid "Your name"
 msgstr "Il tuo nome"
 
-#: templates/frontend/declaration.php:60
+#: templates/frontend/declaration.php:56
 msgid "Email address for the confirmation"
 msgstr "Indirizzo email per la conferma"
 
-#: templates/frontend/declaration.php:71
+#: templates/frontend/declaration.php:67
 msgid "The acknowledgement of receipt will be sent here."
 msgstr "L'avviso di ricevimento sarà inviato a questo indirizzo."
 
-#: templates/frontend/declaration.php:76
+#: templates/frontend/declaration.php:72
 msgid "IBAN for the refund (optional)"
 msgstr "IBAN per il rimborso (facoltativo)"
 
-#: templates/frontend/declaration.php:88
+#: templates/frontend/declaration.php:84
 msgid "Reason for withdrawal (optional)"
 msgstr "Motivo del recesso (facoltativo)"
 
-#: templates/frontend/declaration.php:94
+#: templates/frontend/declaration.php:90
 msgid "Items to withdraw"
 msgstr "Articoli da recedere"
 
-#: templates/frontend/declaration.php:96
+#: templates/frontend/declaration.php:92
 msgid ""
 "Select the products you want to withdraw. For products bought in several "
 "units you can also choose how many to withdraw."
@@ -1178,12 +1716,12 @@ msgstr ""
 "unità puoi anche scegliere quante unità recedere."
 
 #. translators: %d: total units of this product available to withdraw.
-#: templates/frontend/declaration.php:134
+#: templates/frontend/declaration.php:130
 #, php-format
 msgid "Quantity (max %d)"
 msgstr "Quantità (max %d)"
 
-#: templates/frontend/declaration.php:160
+#: templates/frontend/declaration.php:173
 msgid "Continue"
 msgstr "Continua"
 
@@ -1198,16 +1736,16 @@ msgid ""
 "Your withdrawal for %1$s has been recorded. An acknowledgement of receipt "
 "has been sent to %2$s on a durable medium."
 msgstr ""
-"Il tuo recesso per %1$s è stato registrato. Un avviso di ricevimento è stato"
-" inviato a %2$s su supporto durevole."
+"Il tuo recesso per %1$s è stato registrato. Un avviso di ricevimento è stato "
+"inviato a %2$s su supporto durevole."
 
 #: templates/frontend/lookup.php:38
 msgid ""
 "Enter your order number and the email address you used for the order. We "
 "will send a secure withdrawal link to that email address."
 msgstr ""
-"Inserisci il numero d'ordine e l'indirizzo email che hai usato per l'ordine."
-" Invieremo un link sicuro per il recesso a quell'indirizzo email."
+"Inserisci il numero d'ordine e l'indirizzo email che hai usato per l'ordine. "
+"Invieremo un link sicuro per il recesso a quell'indirizzo email."
 
 #: templates/frontend/lookup.php:53
 msgid "Order number"
@@ -1227,8 +1765,7 @@ msgstr "Modulo di recesso tipo (allegato I.B della direttiva 2011/83/UE)"
 
 #: templates/frontend/model-form.php:26
 msgid ""
-"Complete and return this form only if you wish to withdraw from the "
-"contract."
+"Complete and return this form only if you wish to withdraw from the contract."
 msgstr ""
 "Compilare e restituire il presente modulo solo se si desidera recedere dal "
 "contratto."
@@ -1279,8 +1816,8 @@ msgid ""
 "Source: Annex I, Part B of Directive 2011/83/EU of the European Parliament "
 "and of the Council on consumer rights."
 msgstr ""
-"Fonte: allegato I, parte B della direttiva 2011/83/UE del Parlamento europeo"
-" e del Consiglio sui diritti dei consumatori."
+"Fonte: allegato I, parte B della direttiva 2011/83/UE del Parlamento europeo "
+"e del Consiglio sui diritti dei consumatori."
 
 #: templates/frontend/model-form.php:78
 msgid "Open printable version"
@@ -1298,19 +1835,23 @@ msgstr "Tipo di recesso"
 msgid "Partial (selected items)"
 msgstr "Parziale (articoli selezionati)"
 
-#: templates/pdf/receipt.php:69 assets/admin/app.js:314
+#: templates/pdf/receipt.php:69 assets/admin/app.js:327
 msgid "Whole order"
 msgstr "Intero ordine"
 
-#: templates/pdf/receipt.php:74 assets/admin/app.js:303
+#: templates/pdf/receipt.php:74 assets/admin/app.js:316
 msgid "Items"
 msgstr "Articoli"
 
-#: templates/pdf/receipt.php:94
+#: templates/pdf/receipt.php:91 assets/admin/app.js:302
+msgid "Consumer declaration"
+msgstr "Dichiarazione del consumatore"
+
+#: templates/pdf/receipt.php:100
 msgid "Order total"
 msgstr "Totale ordine"
 
-#: templates/pdf/receipt.php:100
+#: templates/pdf/receipt.php:106
 msgid "Integrity hash (SHA-256):"
 msgstr "Hash di integrità (SHA-256):"
 
@@ -1376,99 +1917,99 @@ msgstr "Codice di verifica della ricevuta"
 msgid "Reason"
 msgstr "Motivo"
 
-#: assets/admin/app.js:310
+#: assets/admin/app.js:323
 msgid "Partial withdrawal"
 msgstr "Recesso parziale"
 
-#: assets/admin/app.js:335
+#: assets/admin/app.js:349
 msgid "View receipt (PDF)"
 msgstr "Visualizza la ricevuta (PDF)"
 
-#: assets/admin/app.js:344
+#: assets/admin/app.js:358
 msgid "No receipt yet. Use “Regenerate receipt” to create it."
 msgstr "Nessuna ricevuta disponibile. Usa «Rigenera ricevuta» per crearla."
 
-#: assets/admin/app.js:353
+#: assets/admin/app.js:367
 msgid "Audit timeline"
 msgstr "Cronologia (audit)"
 
-#: assets/admin/app.js:361
+#: assets/admin/app.js:375
 msgid "Set status"
 msgstr "Imposta lo stato"
 
-#: assets/admin/app.js:373
+#: assets/admin/app.js:388
 msgid "Reason (required to reject — sent to the customer)"
 msgstr "Motivazione (obbligatoria per rifiutare — inviata al cliente)"
 
-#: assets/admin/app.js:396
+#: assets/admin/app.js:412
 msgid "Regenerate receipt"
 msgstr "Rigenera ricevuta"
 
-#: assets/admin/app.js:415
+#: assets/admin/app.js:432
 msgid "Save status"
 msgstr "Salva stato"
 
-#: assets/admin/app.js:506
+#: assets/admin/app.js:523
 msgid "awaiting action"
 msgstr "in attesa di azione"
 
-#: assets/admin/app.js:513
+#: assets/admin/app.js:530
 msgid "confirmed (30 days)"
 msgstr "confermati (30 giorni)"
 
-#: assets/admin/app.js:520
+#: assets/admin/app.js:537
 msgid "acknowledged"
 msgstr "ricevuta inviata"
 
-#: assets/admin/app.js:527
+#: assets/admin/app.js:544
 msgid "total"
 msgstr "totale"
 
-#: assets/admin/app.js:542
+#: assets/admin/app.js:559
 msgid "Filter by status"
 msgstr "Filtra per stato"
 
-#: assets/admin/app.js:554
+#: assets/admin/app.js:572
 msgid "Search by order, name or email"
 msgstr "Cerca per ordine, nome o email"
 
-#: assets/admin/app.js:571
+#: assets/admin/app.js:591
 msgid "Refresh"
 msgstr "Aggiorna"
 
-#: assets/admin/app.js:586
+#: assets/admin/app.js:607
 msgid "Export CSV"
 msgstr "Esporta CSV"
 
-#: assets/admin/app.js:632
+#: assets/admin/app.js:653
 msgid "Actions"
 msgstr "Azioni"
 
-#: assets/admin/app.js:660
+#: assets/admin/app.js:681
 msgid "Yes"
 msgstr "Sì"
 
-#: assets/admin/app.js:671
+#: assets/admin/app.js:692
 msgid "View"
 msgstr "Vedi"
 
-#: assets/admin/app.js:690
+#: assets/admin/app.js:712
 msgid "Previous"
 msgstr "Precedente"
 
 #. translators: 1: current page, 2: total pages.
-#: assets/admin/app.js:699
+#: assets/admin/app.js:721
 msgid "Page"
 msgstr "Pagina"
 
-#: assets/admin/app.js:711
+#: assets/admin/app.js:734
 msgid "Next"
 msgstr "Successivo"
 
 #: assets/frontend/index.js:17
 msgid ""
-"Recesso Digitale: the withdrawal flow («recedere dal contratto qui») renders"
-" here on the front end."
+"Recesso Digitale: the withdrawal flow («recedere dal contratto qui») renders "
+"here on the front end."
 msgstr ""
 "Recesso Digitale: il flusso di recesso («recedere dal contratto qui») viene "
 "mostrato qui nel front-end."
@@ -1511,24 +2052,54 @@ msgctxt "block keyword"
 msgid "consumer"
 msgstr "consumatore"
 
-#~ msgid ""
-#~ "Online withdrawal function (\"recedere dal contratto qui\") for WooCommerce,"
-#~ " implementing art. 54-bis of the Italian Codice del Consumo (D.Lgs. "
-#~ "209/2025, EU Directive 2023/2673)."
-#~ msgstr ""
-#~ "Funzione di recesso online («recedere dal contratto qui») per WooCommerce, "
-#~ "che attua l'art. 54-bis del Codice del Consumo italiano (D.Lgs. 209/2025, "
-#~ "Direttiva UE 2023/2673)."
+#~ msgid "Exclusion notice text"
+#~ msgstr "Testo dell'avviso di esclusione"
 
 #~ msgid ""
-#~ "Recesso Digitale 54-bis requires PHP 8.2 or newer and has been deactivated."
+#~ "Reinforce that the withdrawal function is continuously available and "
+#~ "easily accessible (art. 54-bis)."
+#~ msgstr ""
+#~ "Rafforza il fatto che la funzione di recesso è sempre disponibile e "
+#~ "facilmente accessibile (art. 54-bis)."
+
+#~ msgid "Recesso Digitale — Settings"
+#~ msgstr "Recesso Digitale — Impostazioni"
+
+#~ msgid "We have accepted your withdrawal request."
+#~ msgstr "Abbiamo accettato la tua richiesta di recesso."
+
+#~ msgid "Your withdrawal has been refunded."
+#~ msgstr "Il tuo recesso è stato rimborsato."
+
+#~ msgid "Your withdrawal has been completed."
+#~ msgstr "Il tuo recesso è stato completato."
+
+#~ msgid ""
+#~ "We have reviewed your request to withdraw from the contract and we are "
+#~ "unable to accept it."
+#~ msgstr ""
+#~ "Abbiamo esaminato la tua richiesta di recesso dal contratto e non "
+#~ "possiamo accettarla."
+
+#~ msgid ""
+#~ "Online withdrawal function (\"recedere dal contratto qui\") for "
+#~ "WooCommerce, implementing art. 54-bis of the Italian Codice del Consumo "
+#~ "(D.Lgs. 209/2025, EU Directive 2023/2673)."
+#~ msgstr ""
+#~ "Funzione di recesso online («recedere dal contratto qui») per "
+#~ "WooCommerce, che attua l'art. 54-bis del Codice del Consumo italiano "
+#~ "(D.Lgs. 209/2025, Direttiva UE 2023/2673)."
+
+#~ msgid ""
+#~ "Recesso Digitale 54-bis requires PHP 8.2 or newer and has been "
+#~ "deactivated."
 #~ msgstr ""
 #~ "Recesso Digitale 54-bis richiede PHP 8.2 o successivo ed è stato "
 #~ "disattivato."
 
 #~ msgid ""
-#~ "Recesso Digitale 54-bis is missing its autoloader. Run \"composer install\" "
-#~ "or reinstall the plugin."
+#~ "Recesso Digitale 54-bis is missing its autoloader. Run \"composer "
+#~ "install\" or reinstall the plugin."
 #~ msgstr ""
 #~ "Recesso Digitale 54-bis non trova il suo autoloader. Esegui \"composer "
 #~ "install\" o reinstalla il plugin."
@@ -1537,11 +2108,11 @@ msgstr "consumatore"
 #~ msgstr "Recesso Digitale 54-bis è attivo."
 
 #~ msgid ""
-#~ "Recesso Digitale 54-bis requires WooCommerce to be installed and active. The"
-#~ " withdrawal function is currently inactive."
+#~ "Recesso Digitale 54-bis requires WooCommerce to be installed and active. "
+#~ "The withdrawal function is currently inactive."
 #~ msgstr ""
-#~ "Recesso Digitale 54-bis richiede che WooCommerce sia installato e attivo. La"
-#~ " funzione di recesso è attualmente inattiva."
+#~ "Recesso Digitale 54-bis richiede che WooCommerce sia installato e attivo. "
+#~ "La funzione di recesso è attualmente inattiva."
 
 #~ msgid "Recesso Digitale 54-bis"
 #~ msgstr "Recesso Digitale 54-bis"
@@ -1554,9 +2125,9 @@ msgstr "consumatore"
 #~ msgstr "Recesso Digitale"
 
 #~ msgid ""
-#~ "We confirm that we have received your request to withdraw from the contract."
-#~ " This message, with the attached receipt, is your acknowledgement on a "
-#~ "durable medium."
+#~ "We confirm that we have received your request to withdraw from the "
+#~ "contract. This message, with the attached receipt, is your "
+#~ "acknowledgement on a durable medium."
 #~ msgstr ""
 #~ "Confermiamo di aver ricevuto la tua richiesta di recesso dal contratto. "
 #~ "Questo messaggio, con la ricevuta allegata, costituisce il tuo avviso di "
@@ -1566,8 +2137,8 @@ msgstr "consumatore"
 #~ "The date and time of transmission shown above fixes the moment your "
 #~ "withdrawal was communicated."
 #~ msgstr ""
-#~ "La data e l'ora di trasmissione sopra indicate fissano il momento in cui il "
-#~ "recesso è stato comunicato."
+#~ "La data e l'ora di trasmissione sopra indicate fissano il momento in cui "
+#~ "il recesso è stato comunicato."
 
 #~ msgid "Request received (GMT)"
 #~ msgstr "Richiesta ricevuta (GMT)"
@@ -1630,30 +2201,30 @@ msgstr "consumatore"
 #~ msgstr "Escludi dal recesso (art. 59)"
 
 #~ msgid ""
-#~ "Whether this product can be withdrawn under art. 59 of the Italian Consumer "
-#~ "Code."
+#~ "Whether this product can be withdrawn under art. 59 of the Italian "
+#~ "Consumer Code."
 #~ msgstr ""
-#~ "Se questo prodotto può essere oggetto di recesso ai sensi dell'art. 59 del "
-#~ "Codice del Consumo."
+#~ "Se questo prodotto può essere oggetto di recesso ai sensi dell'art. 59 "
+#~ "del Codice del Consumo."
 
 #~ msgid ""
 #~ "(complete and return this form only if you wish to withdraw from the "
 #~ "contract)"
 #~ msgstr ""
-#~ "(compilare e restituire il presente modulo solo se si desidera recedere dal "
-#~ "contratto)"
+#~ "(compilare e restituire il presente modulo solo se si desidera recedere "
+#~ "dal contratto)"
 
 #~ msgid ""
-#~ "I/We hereby give notice that I/We withdraw from my/our contract of sale of "
-#~ "the following goods / for the provision of the following service:"
+#~ "I/We hereby give notice that I/We withdraw from my/our contract of sale "
+#~ "of the following goods / for the provision of the following service:"
 #~ msgstr ""
 #~ "Con la presente io/noi notifico/notifichiamo il recesso dal mio/nostro "
 #~ "contratto di vendita dei seguenti beni / di prestazione del seguente "
 #~ "servizio:"
 
 #~ msgid ""
-#~ "Please provide a valid name and email address, and choose a quantity for at "
-#~ "least one item."
+#~ "Please provide a valid name and email address, and choose a quantity for "
+#~ "at least one item."
 #~ msgstr ""
 #~ "Inserisci un nome e un indirizzo email validi e scegli una quantità per "
 #~ "almeno un articolo."
@@ -1662,19 +2233,19 @@ msgstr "consumatore"
 #~ msgstr "Articoli e quantità da recedere"
 
 #~ msgid ""
-#~ "Choose how many units of each product you want to withdraw. Set 0 to keep an"
-#~ " item."
+#~ "Choose how many units of each product you want to withdraw. Set 0 to keep "
+#~ "an item."
 #~ msgstr ""
-#~ "Scegli quante unità di ogni prodotto vuoi recedere. Imposta 0 per mantenere "
-#~ "un articolo."
+#~ "Scegli quante unità di ogni prodotto vuoi recedere. Imposta 0 per "
+#~ "mantenere un articolo."
 
 #, php-format
 #~ msgid "(available: %d)"
 #~ msgstr "(disponibili: %d)"
 
 #~ msgid ""
-#~ "Select the products you want to withdraw from. You may choose some or all of"
-#~ " them."
+#~ "Select the products you want to withdraw from. You may choose some or all "
+#~ "of them."
 #~ msgstr ""
 #~ "Seleziona i prodotti dai quali vuoi recedere. Puoi sceglierne alcuni o "
 #~ "tutti."
@@ -1692,8 +2263,8 @@ msgstr "consumatore"
 #~ msgstr "Non configurato — blocco prudenziale (consigliato)"
 
 #~ msgid ""
-#~ "Renders the withdrawal (recesso) flow and the «recedere dal contratto qui» "
-#~ "entry control."
+#~ "Renders the withdrawal (recesso) flow and the «recedere dal contratto "
+#~ "qui» entry control."
 #~ msgstr ""
 #~ "Mostra il flusso di recesso e il controllo di accesso «recedere dal "
 #~ "contratto qui»."

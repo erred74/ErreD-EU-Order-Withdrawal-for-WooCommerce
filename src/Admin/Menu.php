@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Admin;
 
+use Recesso54bis\Persistence\LogRepository;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Support\Capabilities;
 
@@ -91,7 +92,7 @@ final class Menu {
 			'woocommerce',
 			__( 'Order Withdrawal — Settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			__( 'Order Withdrawal: settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			'manage_woocommerce',
+			Capabilities::MANAGE_REQUESTS,
 			SettingsPage::MENU_SLUG,
 			array( $this->settings, 'render_page' )
 		);
@@ -205,6 +206,53 @@ final class Menu {
 					?>
 				</form>
 			</div>
+		</div>
+		<?php
+		$this->render_unmatched_lookups();
+	}
+
+	/**
+	 * Render the read-only "unmatched lookups" panel: recent attempts to request a withdrawal link
+	 * whose order number and email matched no order.
+	 *
+	 * These are not withdrawal requests and never become one — the requests table only holds
+	 * declarations bound to a real, authorised order. The panel exists so a merchant can spot a
+	 * customer who mistyped their reference and reach out, instead of the attempt vanishing silently.
+	 * Addresses are stored masked, so the panel shows enough to recognise a customer and no more.
+	 */
+	private function render_unmatched_lookups(): void {
+		$rows = ( new LogRepository() )->recent_by_event( LogRepository::EVENT_LOOKUP_UNMATCHED, 20 );
+		if ( array() === $rows ) {
+			return;
+		}
+		?>
+		<div class="wrap">
+			<h2><?php esc_html_e( 'Recent unmatched lookups', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></h2>
+			<p class="description">
+				<?php esc_html_e( 'Someone asked for a withdrawal link with an order number and email that did not match any order. No withdrawal request was created. Most of these are typos — check the reference against your records and, if it is a genuine customer, send them the link from their order.', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+			</p>
+			<table class="widefat striped">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'When (GMT)', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Order number submitted', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Email submitted', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $rows as $recesso_dig_row ) : ?>
+						<?php
+						$recesso_dig_payload = json_decode( (string) ( $recesso_dig_row['payload'] ?? '' ), true );
+						$recesso_dig_payload = is_array( $recesso_dig_payload ) ? $recesso_dig_payload : array();
+						?>
+						<tr>
+							<td><?php echo esc_html( (string) ( $recesso_dig_row['created_at_gmt'] ?? '' ) ); ?></td>
+							<td><?php echo esc_html( (string) ( $recesso_dig_payload['order_number'] ?? '' ) ); ?></td>
+							<td><?php echo esc_html( (string) ( $recesso_dig_payload['email'] ?? '' ) ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
 		</div>
 		<?php
 	}

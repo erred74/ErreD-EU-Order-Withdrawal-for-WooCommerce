@@ -51,8 +51,10 @@ final class Plugin {
 			return;
 		}
 
-		// Forward-migrate the schema when the plugin is updated in place (cheap when already current).
+		// Forward-migrate the schema when the plugin is updated in place (cheap when already current),
+		// then run the non-schema upgrade tasks for the new version.
 		add_action( 'admin_init', array( \Recesso54bis\Activation\Migrations::class, 'maybe_upgrade' ) );
+		add_action( 'admin_init', array( \Recesso54bis\Activation\Upgrades::class, 'maybe_run' ) );
 
 		$container = new Container();
 
@@ -65,8 +67,13 @@ final class Plugin {
 		( new \Recesso54bis\Frontend\Shortcode( $flow ) )->register();
 		( new \Recesso54bis\Frontend\Block( $flow ) )->register();
 		( new \Recesso54bis\Frontend\Hooks( $container->eligibility_adapter(), $container->flow_urls(), $container->settings() ) )->register();
+		( new \Recesso54bis\Frontend\AccountEndpoint( $container->eligibility_adapter(), $container->flow_urls(), $container->settings() ) )->register();
 		( new \Recesso54bis\Frontend\ProductNotice( $container->eligibility_adapter(), $container->settings() ) )->register();
-		( new \Recesso54bis\Frontend\CheckoutConsents( $container->settings(), $container->clock() ) )->register();
+		// Checkout consents: the classic (shortcode) checkout and the Checkout block share one
+		// applicability resolver, so both surfaces show exactly the same consents for a given cart.
+		$consents = new \Recesso54bis\Frontend\CheckoutConsents( $container->settings(), $container->clock(), $container->eligibility_adapter() );
+		$consents->register();
+		( new \Recesso54bis\Frontend\BlockCheckoutConsents( $container->settings(), $container->clock(), $consents ) )->register();
 		( new \Recesso54bis\Frontend\ModelForm( $container->settings() ) )->register();
 		( new \Recesso54bis\Frontend\FooterLink( $container->settings() ) )->register();
 

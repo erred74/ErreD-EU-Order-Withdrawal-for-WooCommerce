@@ -109,14 +109,15 @@ final class WithdrawalService {
 		$request = $this->requests->create_declaration(
 			$order->get_id(),
 			array(
-				'consumer_name'      => $data['consumer_name'] ?? '',
-				'contract_reference' => $data['contract_reference'] ?? '',
-				'confirmation_email' => $data['confirmation_email'] ?? '',
-				'requested_items'    => $requested_items,
-				'refund_iban'        => $data['refund_iban'] ?? '',
-				'withdrawal_reason'  => $data['withdrawal_reason'] ?? '',
-				'line_totals'        => $this->line_totals( $order ),
-				'request_ip'         => $ip_packed,
+				'consumer_name'        => $data['consumer_name'] ?? '',
+				'contract_reference'   => $data['contract_reference'] ?? '',
+				'confirmation_email'   => $data['confirmation_email'] ?? '',
+				'requested_items'      => $requested_items,
+				'refund_iban'          => $data['refund_iban'] ?? '',
+				'withdrawal_reason'    => $data['withdrawal_reason'] ?? '',
+				'consumer_declaration' => $data['consumer_declaration'] ?? '',
+				'line_totals'          => $this->line_totals( $order ),
+				'request_ip'           => $ip_packed,
 			),
 			$this->clock->now_gmt()
 		);

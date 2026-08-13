@@ -3,16 +3,42 @@
 	WPML / Polylang configuration.
 
 	The plugin's interface strings are translated through the standard gettext catalogue
-	(languages/recesso-digitale.pot). This file additionally exposes the merchant-configurable text
-	options (notice and consent wording, trader contact details) to WPML String Translation and
-	Polylang so they can be translated per language.
+	(languages/recesso-digitale.pot). This file additionally exposes every merchant-configurable
+	text option to WPML String Translation and Polylang, so wording the merchant writes themselves
+	can be translated per language too.
+
+	Any option holding customer-facing copy belongs here. A field left empty keeps the bundled
+	default, which already follows each visitor's language through gettext and needs no entry.
 -->
 <wpml-config>
 	<admin-texts>
+		<!-- Product-page exclusion notices, per art. 16 exception. -->
 		<key name="recesso_dig_product_notice_text" />
+		<key name="recesso_dig_notice_digital_title" />
+		<key name="recesso_dig_notice_digital_body" />
+		<key name="recesso_dig_notice_dated_title" />
+		<key name="recesso_dig_notice_dated_body" />
+		<key name="recesso_dig_notice_other_title" />
+		<key name="recesso_dig_notice_other_body" />
+
+		<!-- Checkout consents. -->
 		<key name="recesso_dig_consent_digital_text" />
 		<key name="recesso_dig_consent_service_text" />
+
+		<!-- Public withdrawal form. -->
+		<key name="recesso_dig_form_intro_text" />
+		<key name="recesso_dig_consumer_declaration_text" />
+
+		<!-- Status-change emails and their sender name. -->
+		<key name="recesso_dig_email_from_name" />
+		<key name="recesso_dig_email_accepted_text" />
+		<key name="recesso_dig_email_rejected_text" />
+		<key name="recesso_dig_email_completed_text" />
+
+		<!-- Trader details shown in the Annex I.B model form. -->
 		<key name="recesso_dig_trader_name" />
 		<key name="recesso_dig_trader_address" />
+		<key name="recesso_dig_trader_phone" />
+		<key name="recesso_dig_trader_email" />
 	</admin-texts>
 </wpml-config>

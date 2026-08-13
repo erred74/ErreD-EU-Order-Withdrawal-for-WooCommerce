@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Integration;
 
+use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Persistence\RequestRepository;
 
@@ -85,16 +86,38 @@ final class OrderNotes {
 		}
 
 		$message = match ( $action ) {
-			'reject'   => __( 'Recesso: withdrawal request rejected by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			'accept'   => __( 'Recesso: withdrawal request accepted by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			'refunded' => __( 'Recesso: withdrawal marked as refunded.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			'complete' => __( 'Recesso: withdrawal completed.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			default    => '',
+			'reject'     => __( 'Recesso: withdrawal request rejected by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			'accept'     => __( 'Recesso: withdrawal request accepted by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			'refunded'   => __( 'Recesso: withdrawal marked as refunded.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			'complete'   => __( 'Recesso: withdrawal completed.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			// The "set status" dropdown in the request detail panel is the primary decision path. It
+			// reports a single action name, so the note is derived from the status the request now
+			// carries (the record is re-read above, after the transition).
+			'set_status' => $this->message_for_status( $request->status ),
+			default      => '',
 		};
 
 		if ( '' !== $message ) {
 			$this->note( $request->order_id, $message );
 		}
+	}
+
+	/**
+	 * The order-note wording for a request's resulting status.
+	 *
+	 * @param string $status The request status after the transition.
+	 */
+	private function message_for_status( string $status ): string {
+		return match ( $status ) {
+			RequestStatus::ACCEPTED     => __( 'Recesso: withdrawal request accepted by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			RequestStatus::REJECTED     => __( 'Recesso: withdrawal request rejected by the merchant.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			RequestStatus::REFUNDED     => __( 'Recesso: withdrawal marked as refunded.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			RequestStatus::COMPLETED    => __( 'Recesso: withdrawal completed.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			// The dropdown's "Pending" entry undoes a decision: the request returns to its resting
+			// state (confirmed, or acknowledged once a receipt exists) and awaits a fresh decision.
+			RequestStatus::CONFIRMED, RequestStatus::ACKNOWLEDGED => __( 'Recesso: the withdrawal decision was reset; the request is awaiting a decision again.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			default                     => '',
+		};
 	}
 
 	/**

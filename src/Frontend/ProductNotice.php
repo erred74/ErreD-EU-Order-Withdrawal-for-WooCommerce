@@ -48,9 +48,13 @@ final class ProductNotice {
 	}
 
 	/**
-	 * Hook the notice, only when enabled by the merchant.
+	 * Hook the notice, only when enabled by the merchant. The shortcode is always registered, so a
+	 * page builder can place the notice even where the standard hook does not fire; it renders
+	 * nothing unless the notice is enabled and the product is actually excluded.
 	 */
 	public function register(): void {
+		add_shortcode( 'recesso_digitale_avviso_esclusione', array( $this, 'shortcode' ) );
+
 		if ( ! $this->settings->product_notice_enabled() ) {
 			return;
 		}
@@ -63,24 +67,77 @@ final class ProductNotice {
 	 * Render the notice for the current product when it is excluded from withdrawal.
 	 */
 	public function render(): void {
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup is built from an escaped template.
+		echo $this->notice_html();
+	}
+
+	/**
+	 * Shortcode bridge, for themes and page builders (Divi, Elementor, Bricks and the like) whose
+	 * product templates do not fire `woocommerce_single_product_summary`.
+	 *
+	 * @param array<string, string>|string $atts Shortcode attributes (unused).
+	 *
+	 * @return string
+	 */
+	public function shortcode( $atts = array() ): string {
+		unset( $atts );
+
+		if ( ! $this->settings->product_notice_enabled() ) {
+			return '';
+		}
+
+		return $this->notice_html();
+	}
+
+	/**
+	 * Build the notice markup for the current product, or an empty string when it does not apply.
+	 */
+	private function notice_html(): string {
 		global $product;
 
 		$product_obj = $product instanceof \WC_Product ? $product : wc_get_product( get_the_ID() );
 		if ( ! $product_obj instanceof \WC_Product ) {
-			return;
+			return '';
 		}
 
-		$status = $this->eligibility->product_exclusion( $product_obj->get_id() );
-		if ( true !== ( $status['excluded'] ?? false ) ) {
-			return;
+		$exclusion = $this->eligibility->product_exclusion( $product_obj->get_id() );
+		if ( true !== ( $exclusion['excluded'] ?? false ) ) {
+			return '';
 		}
 
-		$html = Templates::render(
+		// The wording follows the specific exception the merchant classified the product under, so a
+		// digital download and a made-to-measure item do not carry the same explanation.
+		$notice = $this->settings->exclusion_notice( $this->eligibility->product_status( $product_obj->get_id() ) );
+
+		return Templates::render(
 			'product-exclusion-notice',
-			array( 'text' => $this->settings->product_notice_text() )
+			array(
+				'title' => $notice['title'],
+				'body'  => $this->expand_placeholders( $notice['body'] ),
+			)
+		);
+	}
+
+	/**
+	 * Expand the placeholders a merchant may use in the notice body. Currently only
+	 * `{withdrawal_page_link}`, which becomes a link to the configured withdrawal page — or is
+	 * removed entirely when no page is configured, so the notice never shows a dangling placeholder.
+	 *
+	 * @param string $body The configured body text.
+	 */
+	private function expand_placeholders( string $body ): string {
+		$url = FlowPage::url();
+
+		if ( '' === $url ) {
+			return trim( str_replace( '{withdrawal_page_link}', '', $body ) );
+		}
+
+		$link = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( $url ),
+			esc_html__( 'Read about the right of withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup is built from an escaped template.
-		echo $html;
+		return trim( str_replace( '{withdrawal_page_link}', $link, $body ) );
 	}
 }

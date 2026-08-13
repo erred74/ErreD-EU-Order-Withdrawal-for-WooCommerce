@@ -31,8 +31,10 @@ final class Migrations {
 	 * withdrawals. Version 3 restructured that table into a per-line quantity ledger (claimed_qty;
 	 * dropped request_id) for partial-by-quantity withdrawals. Version 4 added the optional
 	 * `refund_iban` and `withdrawal_reason` columns to the requests table (dbDelta adds them in place).
+	 * Version 5 added `consumer_declaration`, holding the exact "bought as a consumer" wording the
+	 * consumer agreed to when the merchant asks for that declaration.
 	 */
-	public const CURRENT_VERSION = '4';
+	public const CURRENT_VERSION = '5';
 
 	/**
 	 * Ensure the schema is at the current version. Safe to call repeatedly (dbDelta is idempotent).
@@ -42,8 +44,15 @@ final class Migrations {
 
 		self::drop_legacy_claims_table();
 
-		foreach ( Schema::statements() as $statement ) {
-			dbDelta( $statement );
+		self::apply_schema();
+
+		// A table that has been through several in-place upgrades can accumulate instant-DDL metadata
+		// until MySQL refuses a further ADD COLUMN with "Row size too large", even though the same
+		// schema creates cleanly from scratch. Rebuilding the table discards that metadata; it is only
+		// attempted when the columns are genuinely missing, so a healthy schema never pays for it.
+		if ( ! self::requests_columns_present() ) {
+			self::rebuild_requests_table();
+			self::apply_schema();
 		}
 
 		// Only mark the schema as current once the expected columns are actually present. If a dbDelta
@@ -53,6 +62,27 @@ final class Migrations {
 		if ( self::requests_columns_present() ) {
 			update_option( self::VERSION_OPTION, self::CURRENT_VERSION );
 		}
+	}
+
+	/**
+	 * Run dbDelta over every table statement.
+	 */
+	private static function apply_schema(): void {
+		foreach ( Schema::statements() as $statement ) {
+			dbDelta( $statement );
+		}
+	}
+
+	/**
+	 * Rebuild the requests table in place, keeping every row. `ALTER TABLE ... FORCE` is a null
+	 * alteration that rewrites the table with a clean row format; it neither drops nor rewrites data,
+	 * so the legal records it holds are untouched.
+	 */
+	private static function rebuild_requests_table(): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i FORCE', Schema::requests_table() ) );
 	}
 
 	/**
@@ -76,7 +106,7 @@ final class Migrations {
 		global $wpdb;
 
 		$table    = Schema::requests_table();
-		$required = array( 'refund_iban', 'withdrawal_reason' );
+		$required = array( 'refund_iban', 'withdrawal_reason', 'consumer_declaration' );
 
 		foreach ( $required as $column ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

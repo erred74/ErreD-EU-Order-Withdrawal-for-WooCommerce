@@ -114,6 +114,9 @@ class WithdrawalRejectionEmail extends \WC_Email {
 			array(
 				'request'       => $this->request,
 				'reason'        => $this->reason,
+				// The merchant may reword the opening sentence on the plugin's settings screen; the
+				// reason and the closing note below it are always kept.
+				'intro'         => ( new \Recesso54bis\Support\Settings() )->status_email_text( 'rejected' ),
 				'email_heading' => $this->get_heading(),
 				'sent_to_admin' => false,
 				'plain_text'    => false,

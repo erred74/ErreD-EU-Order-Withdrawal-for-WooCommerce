@@ -24,6 +24,13 @@ final class LogRepository {
 	public const EVENT_ACCESS_DENIED = 'access_denied';
 
 	/**
+	 * A lookup whose order number and email matched no order. Recorded so the merchant can spot a
+	 * customer who mistyped their reference, without any withdrawal record being created: the request
+	 * table only ever holds declarations bound to a real, authorised order.
+	 */
+	public const EVENT_LOOKUP_UNMATCHED = 'lookup_unmatched';
+
+	/**
 	 * WordPress database handle.
 	 *
 	 * @var \wpdb
@@ -78,6 +85,31 @@ final class LogRepository {
 			'SELECT id, request_id, event, actor, payload, created_at_gmt FROM %i WHERE request_id = %d ORDER BY id ASC',
 			Schema::log_table(),
 			$request_id
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * The most recent events of one kind, newest first. Used by the read-only "unmatched lookups"
+	 * panel; the limit is clamped so the query stays bounded whatever the caller asks for.
+	 *
+	 * @param string $event One of the EVENT_* constants.
+	 * @param int    $limit Maximum rows to return.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function recent_by_event( string $event, int $limit = 20 ): array {
+		$limit = max( 1, min( 100, $limit ) );
+
+		$sql = (string) $this->wpdb->prepare(
+			'SELECT id, event, actor, payload, created_at_gmt FROM %i WHERE event = %s ORDER BY id DESC LIMIT %d',
+			Schema::log_table(),
+			$event,
+			$limit
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared

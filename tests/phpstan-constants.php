@@ -9,5 +9,7 @@
 
 declare( strict_types=1 );
 
-define( 'RECESSO_DIG_PLUGIN_FILE', '' );
-define( 'RECESSO_DIG_VERSION', '' );
+// Placeholder values only. They must be non-empty: an empty string would let PHPStan fold away the
+// emptiness guards that legitimately protect against the constants being absent at runtime.
+define( 'RECESSO_DIG_PLUGIN_FILE', 'recesso-digitale.php' );
+define( 'RECESSO_DIG_VERSION', '0.0.0' );

@@ -17,9 +17,17 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Settings {
 
-	public const OPT_WINDOW_DAYS         = 'recesso_dig_window_days';
-	public const OPT_START_TRIGGER       = 'recesso_dig_start_trigger';
-	public const OPT_DEFAULT_POLICY      = 'recesso_dig_default_policy';
+	public const OPT_WINDOW_DAYS    = 'recesso_dig_window_days';
+	public const OPT_START_TRIGGER  = 'recesso_dig_start_trigger';
+	public const OPT_DEFAULT_POLICY = 'recesso_dig_default_policy';
+
+	/**
+	 * Legacy allow/exclude id lists, superseded by the per-product and per-category "Withdrawal
+	 * status" dropdowns and therefore no longer offered on the settings screen. They are still read
+	 * — and still sit between the product status and the category status in the resolution chain —
+	 * so a site configured before the dropdowns existed, or one that sets them from code, keeps
+	 * behaving exactly as it did. Nothing writes them any more.
+	 */
 	public const OPT_EXCLUDED_PRODUCTS   = 'recesso_dig_excluded_products';
 	public const OPT_ALLOWED_PRODUCTS    = 'recesso_dig_allowed_products';
 	public const OPT_EXCLUDED_CATEGORIES = 'recesso_dig_excluded_categories';
@@ -28,11 +36,40 @@ final class Settings {
 	public const OPT_PRODUCT_NOTICE_ENABLED = 'recesso_dig_product_notice_enabled';
 	public const OPT_PRODUCT_NOTICE_TEXT    = 'recesso_dig_product_notice_text';
 
+	/**
+	 * Per-exception wording for the product-page exclusion notice. Each pair is optional: an empty
+	 * field falls back to the bundled default for that exception, which follows the visitor's language.
+	 */
+	public const OPT_NOTICE_DIGITAL_TITLE = 'recesso_dig_notice_digital_title';
+	public const OPT_NOTICE_DIGITAL_BODY  = 'recesso_dig_notice_digital_body';
+	public const OPT_NOTICE_DATED_TITLE   = 'recesso_dig_notice_dated_title';
+	public const OPT_NOTICE_DATED_BODY    = 'recesso_dig_notice_dated_body';
+	public const OPT_NOTICE_OTHER_TITLE   = 'recesso_dig_notice_other_title';
+	public const OPT_NOTICE_OTHER_BODY    = 'recesso_dig_notice_other_body';
+
+	/**
+	 * Sender identity and status-email wording.
+	 */
+	public const OPT_EMAIL_FROM_NAME      = 'recesso_dig_email_from_name';
+	public const OPT_EMAIL_FROM_ADDRESS   = 'recesso_dig_email_from_address';
+	public const OPT_EMAIL_ACCEPTED_TEXT  = 'recesso_dig_email_accepted_text';
+	public const OPT_EMAIL_REJECTED_TEXT  = 'recesso_dig_email_rejected_text';
+	public const OPT_EMAIL_COMPLETED_TEXT = 'recesso_dig_email_completed_text';
+
+	/**
+	 * Public withdrawal form: the optional intro paragraph and the optional consumer self-declaration.
+	 */
+	public const OPT_FORM_INTRO_ENABLED           = 'recesso_dig_form_intro_enabled';
+	public const OPT_FORM_INTRO_TEXT              = 'recesso_dig_form_intro_text';
+	public const OPT_CONSUMER_DECLARATION_ENABLED = 'recesso_dig_consumer_declaration_enabled';
+	public const OPT_CONSUMER_DECLARATION_TEXT    = 'recesso_dig_consumer_declaration_text';
+
 	public const OPT_CONSENT_DIGITAL_ENABLED  = 'recesso_dig_consent_digital_enabled';
 	public const OPT_CONSENT_DIGITAL_REQUIRED = 'recesso_dig_consent_digital_required';
 	public const OPT_CONSENT_DIGITAL_TEXT     = 'recesso_dig_consent_digital_text';
 	public const OPT_CONSENT_SERVICE_ENABLED  = 'recesso_dig_consent_service_enabled';
 	public const OPT_CONSENT_SERVICE_TEXT     = 'recesso_dig_consent_service_text';
+	public const OPT_CONSENTS_CONDITIONAL     = 'recesso_dig_consents_conditional';
 
 	public const OPT_TRADER_NAME    = 'recesso_dig_trader_name';
 	public const OPT_TRADER_ADDRESS = 'recesso_dig_trader_address';
@@ -43,8 +80,11 @@ final class Settings {
 
 	public const OPT_ADMIN_RECIPIENTS    = 'recesso_dig_admin_recipients';
 	public const OPT_FOOTER_LINK_ENABLED = 'recesso_dig_footer_link_enabled';
+	public const OPT_ACCOUNT_ENDPOINT    = 'recesso_dig_account_endpoint_enabled';
 	public const OPT_ENFORCEMENT_MODE    = 'recesso_dig_enforcement_mode';
 	public const OPT_GRACE_DAYS          = 'recesso_dig_grace_days';
+	public const OPT_ELIGIBLE_STATUSES   = 'recesso_dig_eligible_statuses';
+	public const OPT_MANAGE_ROLES        = 'recesso_dig_manage_roles';
 
 	public const ENFORCEMENT_ADVISORY = 'advisory';
 	public const ENFORCEMENT_STRICT   = 'strict';
@@ -85,6 +125,16 @@ final class Settings {
 	public const STATUS_ART14_4A_SERVICE     = 'art14_4a_service';
 	public const STATUS_ART16L_ACCOMMODATION = 'art16l_accommodation';
 	public const STATUS_ART16_OTHER          = 'art16_other';
+
+	/**
+	 * Every recognised per-product / per-category classification, legacy values included. A value
+	 * outside this list (including the empty string) means "inherit from the next level".
+	 *
+	 * @return string[]
+	 */
+	public static function known_statuses(): array {
+		return array_merge( self::excluding_statuses(), self::allowing_statuses() );
+	}
 
 	/**
 	 * Statuses that exclude the line from the right of withdrawal (art. 59 / art. 16 exceptions).
@@ -212,6 +262,134 @@ final class Settings {
 	}
 
 	/**
+	 * The exclusion-notice heading and body for a given art. 16 exception. Each merchant-set field
+	 * wins; an empty one falls back to the bundled wording, which follows the visitor's language.
+	 *
+	 * The generic pair configured under {@see self::OPT_PRODUCT_NOTICE_TEXT} by earlier versions is
+	 * still honoured as the body for the "other exception" case, so an existing configuration keeps
+	 * showing exactly the text the merchant wrote.
+	 *
+	 * @param string $status The product's resolved classification (a Settings::STATUS_* value).
+	 *
+	 * @return array{title: string, body: string}
+	 */
+	public function exclusion_notice( string $status ): array {
+		if ( self::STATUS_ART16M_DIGITAL === $status ) {
+			return array(
+				'title' => $this->text_or( self::OPT_NOTICE_DIGITAL_TITLE, __( 'Digital content — the right of withdrawal is lost on access', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+				'body'  => $this->text_or( self::OPT_NOTICE_DIGITAL_BODY, __( 'This is digital content under Article 16(m) of Directive 2011/83/EU. By starting to access, download or view it after purchase you expressly request its immediate supply and acknowledge that you thereby lose the right of withdrawal. {withdrawal_page_link}', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+			);
+		}
+
+		if ( self::STATUS_ART16L_ACCOMMODATION === $status ) {
+			return array(
+				'title' => $this->text_or( self::OPT_NOTICE_DATED_TITLE, __( 'Dated service — excluded from the right of withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+				'body'  => $this->text_or( self::OPT_NOTICE_DATED_BODY, __( 'This service is excluded from the right of withdrawal under Article 16(l) of Directive 2011/83/EU, which covers accommodation other than for residential purposes, transport of goods, vehicle rental, catering and leisure services when the contract sets a specific date or period of performance. Please check the booking conditions before purchasing. {withdrawal_page_link}', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+			);
+		}
+
+		// Any other art. 16 / art. 59 exception: perishable, made to measure, hygiene-sealed, sealed
+		// audio/video/software unsealed after delivery, and the rest.
+		$legacy = (string) get_option( self::OPT_PRODUCT_NOTICE_TEXT, '' );
+
+		return array(
+			'title' => $this->text_or( self::OPT_NOTICE_OTHER_TITLE, __( 'Excluded from the right of withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+			'body'  => $this->text_or(
+				self::OPT_NOTICE_OTHER_BODY,
+				'' !== trim( $legacy )
+					? $legacy
+					: __( 'This product is excluded from the right of withdrawal under one of the exceptions in Article 16 of Directive 2011/83/EU (perishable goods, made-to-measure or personalised items, hygiene-sealed goods, sealed audio, video or software media unsealed after delivery, and similar). Please check the conditions before purchasing. {withdrawal_page_link}', 'erred-eu-order-withdrawal-for-woocommerce' )
+			),
+		);
+	}
+
+	/**
+	 * The sender name for the plugin's own emails, or an empty string to use the WooCommerce default.
+	 */
+	public function email_from_name(): string {
+		return trim( (string) get_option( self::OPT_EMAIL_FROM_NAME, '' ) );
+	}
+
+	/**
+	 * The sender address for the plugin's own emails, or an empty string to use the WooCommerce
+	 * default. Only a valid address is ever returned, so a typo can never break delivery.
+	 */
+	public function email_from_address(): string {
+		$value = sanitize_email( (string) get_option( self::OPT_EMAIL_FROM_ADDRESS, '' ) );
+
+		return is_email( $value ) ? $value : '';
+	}
+
+	/**
+	 * The merchant's wording for a status-change email, or the bundled default when unset.
+	 *
+	 * @param string $status The request status the email announces.
+	 */
+	public function status_email_text( string $status ): string {
+		return match ( $status ) {
+			'accepted' => $this->text_or( self::OPT_EMAIL_ACCEPTED_TEXT, __( 'We have accepted your withdrawal request and will proceed with the refund within the legal deadline.', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+			'rejected' => $this->text_or( self::OPT_EMAIL_REJECTED_TEXT, __( 'We have reviewed your withdrawal request and are unable to accept it.', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+			default    => $this->text_or( self::OPT_EMAIL_COMPLETED_TEXT, __( 'Your withdrawal has been processed and the refund issued. The funds may take a few business days to reach your account.', 'erred-eu-order-withdrawal-for-woocommerce' ) ),
+		};
+	}
+
+	/**
+	 * Whether the intro paragraph is shown above the public withdrawal form. On by default: it tells
+	 * the consumer what submitting the form does, which is worth saying.
+	 */
+	public function form_intro_enabled(): bool {
+		return '0' !== (string) get_option( self::OPT_FORM_INTRO_ENABLED, '1' );
+	}
+
+	/**
+	 * The intro paragraph shown above the public withdrawal form.
+	 *
+	 * @param string $contract_reference The order/contract reference, interpolated into the default.
+	 */
+	public function form_intro_text( string $contract_reference ): string {
+		$custom = (string) get_option( self::OPT_FORM_INTRO_TEXT, '' );
+		if ( '' !== trim( $custom ) ) {
+			return $custom;
+		}
+
+		return sprintf(
+			/* translators: %s: order/contract reference. */
+			__( 'You are exercising your right of withdrawal for order %s. Please confirm your details below.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			$contract_reference
+		);
+	}
+
+	/**
+	 * Whether the consumer must tick a "I bought as a consumer" self-declaration on the form. Off by
+	 * default: it is a good-faith declaration, not a legal guarantee, and it adds a required field.
+	 */
+	public function consumer_declaration_enabled(): bool {
+		return '1' === (string) get_option( self::OPT_CONSUMER_DECLARATION_ENABLED, '0' );
+	}
+
+	/**
+	 * The wording of the consumer self-declaration checkbox.
+	 */
+	public function consumer_declaration_text(): string {
+		return $this->text_or(
+			self::OPT_CONSUMER_DECLARATION_TEXT,
+			__( 'I confirm that I made this purchase as a consumer, that is, as a natural person acting for purposes outside my trade, business, craft or profession.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * Read a text option, falling back to a bundled default when the merchant left it empty.
+	 *
+	 * @param string $option  Option name.
+	 * @param string $bundled Bundled default, already translated.
+	 */
+	private function text_or( string $option, string $bundled ): string {
+		$value = (string) get_option( $option, '' );
+
+		return '' !== trim( $value ) ? $value : $bundled;
+	}
+
+	/**
 	 * Whether the mandatory digital-content consent (art. 16(m)) is shown at checkout.
 	 */
 	public function consent_digital_enabled(): bool {
@@ -246,6 +424,16 @@ final class Settings {
 	 */
 	public function consent_service_enabled(): bool {
 		return '1' === (string) get_option( self::OPT_CONSENT_SERVICE_ENABLED, '0' );
+	}
+
+	/**
+	 * Whether each enabled consent is shown only when the cart actually contains a product classified
+	 * for it (art. 16(m) digital content / art. 14(4)(a) early-started service), instead of on every
+	 * checkout. Off by default so updating the plugin never changes what an existing checkout shows;
+	 * merchants opt in from the settings screen.
+	 */
+	public function consents_conditional(): bool {
+		return '1' === (string) get_option( self::OPT_CONSENTS_CONDITIONAL, '0' );
 	}
 
 	/**
@@ -335,6 +523,65 @@ final class Settings {
 	 */
 	public function footer_link_enabled(): bool {
 		return '1' === (string) get_option( self::OPT_FOOTER_LINK_ENABLED, '0' );
+	}
+
+	/**
+	 * Whether the "Right of withdrawal" tab is added to the WooCommerce My Account area. On by
+	 * default: the withdrawal function must be easily accessible for the whole period it can be
+	 * exercised, and the tab is the discoverable route for logged-in customers.
+	 */
+	public function account_endpoint_enabled(): bool {
+		return '0' !== (string) get_option( self::OPT_ACCOUNT_ENDPOINT, '1' );
+	}
+
+	/**
+	 * The WooCommerce order statuses (without the `wc-` prefix) from which a withdrawal may be
+	 * declared. Defaults to processing and completed — the states in which a distance contract has
+	 * actually been concluded and, usually, performed.
+	 *
+	 * @return string[]
+	 */
+	public function eligible_statuses(): array {
+		$stored = get_option( self::OPT_ELIGIBLE_STATUSES, null );
+		if ( ! is_array( $stored ) ) {
+			return array( 'processing', 'completed' );
+		}
+
+		$statuses = array();
+		foreach ( $stored as $status ) {
+			$status = sanitize_key( (string) $status );
+			if ( '' !== $status ) {
+				$statuses[] = $status;
+			}
+		}
+
+		// An explicitly emptied list is a valid choice: it silences the prompt without deactivating
+		// the plugin, so it is returned as-is rather than falling back to the defaults.
+		return array_values( array_unique( $statuses ) );
+	}
+
+	/**
+	 * The roles, besides the administrator, allowed to view and manage withdrawal requests.
+	 *
+	 * @return string[]
+	 */
+	public function manage_roles(): array {
+		$stored = get_option( self::OPT_MANAGE_ROLES, null );
+		if ( ! is_array( $stored ) ) {
+			// Not yet configured: keep the roles granted at activation, so updating never revokes
+			// access a shop manager already had.
+			return array( 'shop_manager' );
+		}
+
+		$roles = array();
+		foreach ( $stored as $role ) {
+			$role = sanitize_key( (string) $role );
+			if ( '' !== $role && 'administrator' !== $role ) {
+				$roles[] = $role;
+			}
+		}
+
+		return array_values( array_unique( $roles ) );
 	}
 
 	/**

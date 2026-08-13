@@ -137,16 +137,32 @@ final class RequestRepositoryTest extends TestCase {
 
 		$request = $this->repo->create_declaration( self::ORDER_ID, $this->declaration_data(), '2026-06-19 10:00:00' );
 
-		// While pending it must not appear in the admin list or its total.
+		// While pending it must not appear in the admin list or its total. The listing is searched by
+		// this fixture's own order id rather than paged through: the table is shared with the rest of
+		// the suite, and the fixture's back-dated timestamp would otherwise sort off the first page.
 		$this->assertSame( $baseline_count, $this->repo->count_for_admin( array() ) );
-		$ids = array_map( static fn( $r ) => $r->id, $this->repo->query_for_admin( array( 'per_page' => 100 ) ) );
-		$this->assertNotContains( $request->id, $ids );
+		$this->assertNotContains( $request->id, $this->listed_ids() );
 
 		// Once confirmed it becomes a real request and is listed.
 		$this->repo->confirm( $request->id, '2026-06-19 11:00:00' );
 		$this->assertSame( $baseline_count + 1, $this->repo->count_for_admin( array() ) );
-		$ids = array_map( static fn( $r ) => $r->id, $this->repo->query_for_admin( array( 'per_page' => 100 ) ) );
-		$this->assertContains( $request->id, $ids );
+		$this->assertContains( $request->id, $this->listed_ids() );
+	}
+
+	/**
+	 * The ids the admin listing returns for this fixture's order.
+	 *
+	 * @return int[]
+	 */
+	private function listed_ids(): array {
+		$rows = $this->repo->query_for_admin(
+			array(
+				'search'   => (string) self::ORDER_ID,
+				'per_page' => 100,
+			)
+		);
+
+		return array_map( static fn( $row ): int => $row->id, $rows );
 	}
 
 	public function test_discard_pending_for_order_removes_the_row_and_frees_the_reservation(): void {

@@ -11,6 +11,7 @@ namespace Recesso54bis\Email;
 
 use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
+use Recesso54bis\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -99,18 +100,21 @@ class WithdrawalStatusUpdateEmail extends \WC_Email {
 	}
 
 	/**
-	 * The human sentence describing a status.
+	 * The sentence describing a status. The merchant can replace the "accepted" and "completed"
+	 * wordings on the plugin's settings screen; an unset field keeps the bundled sentence, which is
+	 * translated with the rest of the plugin.
 	 *
 	 * @param string $status The status.
 	 */
 	private function status_message( string $status ): string {
+		$settings = new Settings();
+
 		switch ( $status ) {
 			case RequestStatus::ACCEPTED:
-				return __( 'We have accepted your withdrawal request.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				return $settings->status_email_text( 'accepted' );
 			case RequestStatus::REFUNDED:
-				return __( 'Your withdrawal has been refunded.', 'erred-eu-order-withdrawal-for-woocommerce' );
 			case RequestStatus::COMPLETED:
-				return __( 'Your withdrawal has been completed.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				return $settings->status_email_text( 'completed' );
 			default:
 				return __( 'Your withdrawal request has been updated.', 'erred-eu-order-withdrawal-for-woocommerce' );
 		}

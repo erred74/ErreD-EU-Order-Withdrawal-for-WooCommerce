@@ -25,7 +25,7 @@ final class RequestRepository {
 	/**
 	 * Columns selected for hydration. A literal string, safe to embed in a prepared statement.
 	 */
-	private const COLUMNS = 'id, order_id, status, active_claim, consumer_name, contract_reference, confirmation_email, requested_items, refund_iban, withdrawal_reason, submitted_at_gmt, confirmed_at_gmt, acknowledged_at_gmt, receipt_hash, receipt_path, created_at_gmt';
+	private const COLUMNS = 'id, order_id, status, active_claim, consumer_name, contract_reference, confirmation_email, requested_items, refund_iban, withdrawal_reason, consumer_declaration, submitted_at_gmt, confirmed_at_gmt, acknowledged_at_gmt, receipt_hash, receipt_path, created_at_gmt';
 
 	/**
 	 * Whitelisted ORDER BY columns for the admin list.
@@ -80,20 +80,21 @@ final class RequestRepository {
 		$encoded = wp_json_encode( array() === $items ? (object) array() : $items );
 
 		$row = array(
-			'order_id'           => $order_id,
-			'status'             => RequestStatus::PENDING,
-			'consumer_name'      => (string) ( $data['consumer_name'] ?? '' ),
-			'contract_reference' => (string) ( $data['contract_reference'] ?? '' ),
-			'confirmation_email' => (string) ( $data['confirmation_email'] ?? '' ),
-			'requested_items'    => false === $encoded ? '{}' : $encoded,
-			'refund_iban'        => (string) ( $data['refund_iban'] ?? '' ),
-			'withdrawal_reason'  => (string) ( $data['withdrawal_reason'] ?? '' ),
-			'submitted_at_gmt'   => $now_gmt,
-			'request_ip'         => $data['request_ip'] ?? null,
-			'created_at_gmt'     => $now_gmt,
+			'order_id'             => $order_id,
+			'status'               => RequestStatus::PENDING,
+			'consumer_name'        => (string) ( $data['consumer_name'] ?? '' ),
+			'contract_reference'   => (string) ( $data['contract_reference'] ?? '' ),
+			'confirmation_email'   => (string) ( $data['confirmation_email'] ?? '' ),
+			'requested_items'      => false === $encoded ? '{}' : $encoded,
+			'refund_iban'          => (string) ( $data['refund_iban'] ?? '' ),
+			'withdrawal_reason'    => (string) ( $data['withdrawal_reason'] ?? '' ),
+			'consumer_declaration' => (string) ( $data['consumer_declaration'] ?? '' ),
+			'submitted_at_gmt'     => $now_gmt,
+			'request_ip'           => $data['request_ip'] ?? null,
+			'created_at_gmt'       => $now_gmt,
 		);
 
-		$formats = array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' );
+		$formats = array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $this->wpdb->insert( Schema::requests_table(), $row, $formats );

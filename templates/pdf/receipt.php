@@ -86,6 +86,12 @@ $recesso_dig_td = 'text-align:left;padding:6px 4px;border-bottom:1px solid #ddd;
 				<td style="<?php echo esc_attr( $recesso_dig_td ); ?>"><?php echo esc_html( (string) $args['refund_iban'] ); ?></td>
 			</tr>
 		<?php endif; ?>
+		<?php if ( '' !== trim( (string) ( $args['consumer_declaration'] ?? '' ) ) ) : ?>
+			<tr>
+				<th style="<?php echo esc_attr( $recesso_dig_th ); ?>"><?php esc_html_e( 'Consumer declaration', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></th>
+				<td style="<?php echo esc_attr( $recesso_dig_td ); ?>"><?php echo esc_html( (string) $args['consumer_declaration'] ); ?></td>
+			</tr>
+		<?php endif; ?>
 		<tr>
 			<th style="<?php echo esc_attr( $recesso_dig_th ); ?>"><?php esc_html_e( 'Declaration submitted (GMT)', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></th>
 			<td style="<?php echo esc_attr( $recesso_dig_td ); ?>"><?php echo esc_html( (string) $args['submitted_at_gmt'] ); ?></td>

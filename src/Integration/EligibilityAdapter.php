@@ -140,7 +140,7 @@ final class EligibilityAdapter {
 		 */
 		$statuses = apply_filters(
 			'recesso_dig_withdrawable_statuses',
-			array( 'processing', 'completed' ),
+			$this->settings->eligible_statuses(),
 			$order
 		);
 
@@ -227,6 +227,37 @@ final class EligibilityAdapter {
 			'configured' => $configured,
 			'excluded'   => $excluded,
 		);
+	}
+
+	/**
+	 * Resolve the raw art. 59 / Directive classification configured for a product, following the same
+	 * specificity chain as {@see self::resolve_line()} but preserving *which* exception applies rather
+	 * than reducing it to an excluded flag. Used by the checkout consents, which must know whether the
+	 * cart holds digital content (art. 16(m)) or an early-started service (art. 14(4)(a)) specifically.
+	 *
+	 * The legacy id lists and the global default policy carry no classification, so an unclassified
+	 * product resolves to an empty string.
+	 *
+	 * @param int $product_id Product id.
+	 *
+	 * @return string One of the Settings::STATUS_* classifications, or '' when unclassified.
+	 */
+	public function product_status( int $product_id ): string {
+		$product_meta = get_post_meta( $product_id, Settings::META_PRODUCT_STATUS, true );
+		$product_meta = is_string( $product_meta ) ? $product_meta : '';
+		if ( in_array( $product_meta, Settings::known_statuses(), true ) ) {
+			return $product_meta;
+		}
+
+		foreach ( $this->category_ids( $product_id ) as $category_id ) {
+			$category_meta = get_term_meta( $category_id, Settings::META_TERM_STATUS, true );
+			$category_meta = is_string( $category_meta ) ? $category_meta : '';
+			if ( in_array( $category_meta, Settings::known_statuses(), true ) ) {
+				return $category_meta;
+			}
+		}
+
+		return '';
 	}
 
 	/**

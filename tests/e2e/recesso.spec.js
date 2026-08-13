@@ -372,6 +372,64 @@ test.describe( 'Guest withdrawal flow (server-rendered)', () => {
 			page.locator( 'input[name="consumer_name"]' )
 		).toBeVisible();
 	} );
+
+	test( 'the consumer self-declaration is required, accessible and recorded in the receipt', async ( {
+		page,
+	} ) => {
+		// The merchant asks for the "bought as a consumer" declaration and hides the intro paragraph.
+		wpEval(
+			`update_option( 'recesso_dig_consumer_declaration_enabled', '1' );
+			update_option( 'recesso_dig_form_intro_enabled', '0' );`
+		);
+
+		try {
+			const fresh = seedEligibleOrder();
+			await page.goto( fresh.tokenUrl );
+			await expect( page.locator( FLOW ) ).toBeVisible();
+
+			// The intro is gone and the declaration is present — and the form is still accessible.
+			await expect(
+				page.locator( '.wp-block-recesso-digitale-flow__intro' )
+			).toHaveCount( 0 );
+			const declaration = page.locator( '#recesso-dig-consumer' );
+			await expect( declaration ).toBeVisible();
+			await expectNoA11yViolations( page, FLOW );
+
+			await page.fill( 'input[name="consumer_name"]', fresh.name );
+			await page.fill( 'input[name="confirmation_email"]', fresh.email );
+			await page
+				.locator( '.wp-block-recesso-digitale-flow__item-check' )
+				.first()
+				.check();
+
+			// Leaving the declaration unticked must hold the consumer on step 1.
+			await page.getByRole( 'button', { name: /continue/i } ).click();
+			await expect(
+				page.locator( '.wp-block-recesso-digitale-flow__confirm' )
+			).toHaveCount( 0 );
+
+			await declaration.check();
+			await page.getByRole( 'button', { name: /continue/i } ).click();
+			await page
+				.locator( '.wp-block-recesso-digitale-flow__confirm' )
+				.click();
+			await expect( page.locator( FLOW ) ).toContainText( /confirmed/i );
+
+			// The exact wording agreed is stored as evidence, not a bare flag.
+			const row = firstJson(
+				wpEval( `global $wpdb;
+					$t = $wpdb->prefix . 'recesso_dig_requests';
+					$r = $wpdb->get_row( $wpdb->prepare( "SELECT consumer_declaration FROM {$t} WHERE order_id = %d ORDER BY id DESC LIMIT 1", ${ fresh.orderId } ), ARRAY_A );
+					echo wp_json_encode( $r );` )
+			);
+			expect( row.consumer_declaration ).toContain( 'consumer' );
+		} finally {
+			wpEval(
+				`delete_option( 'recesso_dig_consumer_declaration_enabled' );
+				delete_option( 'recesso_dig_form_intro_enabled' );`
+			);
+		}
+	} );
 } );
 
 test.describe( 'Admin requests app (React)', () => {

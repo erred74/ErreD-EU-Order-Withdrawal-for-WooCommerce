@@ -463,12 +463,13 @@ final class AdminWithdrawalsController extends Controller {
 			)
 			: '';
 
-		list( $items, $is_partial ) = $this->withdrawal_items( $request );
-		$data['items']              = $items;
-		$data['is_partial']         = $is_partial;
-		$data['refund_iban']        = $request->refund_iban;
-		$data['withdrawal_reason']  = $request->withdrawal_reason;
-		$data['admin_status']       = RequestStatus::to_admin( $request->status );
+		list( $items, $is_partial )   = $this->withdrawal_items( $request );
+		$data['items']                = $items;
+		$data['is_partial']           = $is_partial;
+		$data['refund_iban']          = $request->refund_iban;
+		$data['withdrawal_reason']    = $request->withdrawal_reason;
+		$data['consumer_declaration'] = $request->consumer_declaration;
+		$data['admin_status']         = RequestStatus::to_admin( $request->status );
 
 		// The receipt verification code (SHA-256 of the canonical payload) — the same code the consumer
 		// receives in the acknowledgement email — shown in the admin detail card for cross-checking.

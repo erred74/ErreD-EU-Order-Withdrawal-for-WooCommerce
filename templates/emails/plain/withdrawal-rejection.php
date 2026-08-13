@@ -7,6 +7,7 @@
  * @var string                                                       $order_date
  * @var bool                                                         $is_partial
  * @var string                                                       $reason
+ * @var string                                                       $intro
  * @var string                                                       $email_heading
  * @package Recesso54bis
  */
@@ -16,7 +17,7 @@ declare( strict_types=1 );
 defined( 'ABSPATH' ) || exit;
 
 echo esc_html( wp_strip_all_tags( $email_heading ) ) . "\n\n";
-echo esc_html__( 'We have reviewed your request to withdraw from the contract and we are unable to accept it.', 'erred-eu-order-withdrawal-for-woocommerce' ) . "\n\n";
+echo esc_html( $intro ) . "\n\n";
 
 require __DIR__ . '/../partials/request-summary-plain.php';
 

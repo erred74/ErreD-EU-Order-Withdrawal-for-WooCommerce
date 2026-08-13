@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Frontend;
 
+use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Support\Clock;
 use Recesso54bis\Support\Settings;
 
@@ -20,6 +21,10 @@ defined( 'ABSPATH' ) || exit;
  * services-started-early consent (art. 14(4)(a)). Each choice and the moment it was made are stored
  * as order meta and noted on the order, so the merchant has durable evidence. Reading $_POST in these
  * handlers is safe: WooCommerce verifies the checkout nonce before they run.
+ *
+ * A consent is shown when it is enabled and — if the merchant turned on the conditional mode — the
+ * cart actually contains a product classified for that exception. Render, validation and persistence
+ * all consult the same decision, so a consent is never required or recorded when it was not offered.
  */
 final class CheckoutConsents {
 
@@ -41,14 +46,23 @@ final class CheckoutConsents {
 	private Clock $clock;
 
 	/**
+	 * Art. 59 classification resolver (product/category withdrawal status).
+	 *
+	 * @var EligibilityAdapter
+	 */
+	private EligibilityAdapter $eligibility;
+
+	/**
 	 * Construct the provider.
 	 *
-	 * @param Settings $settings Settings reader.
-	 * @param Clock    $clock    Clock.
+	 * @param Settings           $settings    Settings reader.
+	 * @param Clock              $clock       Clock.
+	 * @param EligibilityAdapter $eligibility Classification resolver.
 	 */
-	public function __construct( Settings $settings, Clock $clock ) {
-		$this->settings = $settings;
-		$this->clock    = $clock;
+	public function __construct( Settings $settings, Clock $clock, EligibilityAdapter $eligibility ) {
+		$this->settings    = $settings;
+		$this->clock       = $clock;
+		$this->eligibility = $eligibility;
 	}
 
 	/**
@@ -65,15 +79,79 @@ final class CheckoutConsents {
 	}
 
 	/**
-	 * Render the enabled consent checkboxes before the place-order button.
+	 * Render the applicable consent checkboxes before the place-order button.
 	 */
 	public function render(): void {
-		if ( $this->settings->consent_digital_enabled() ) {
+		if ( $this->show_digital() ) {
 			$this->render_checkbox( self::FIELD_DIGITAL, $this->settings->consent_digital_text(), $this->settings->consent_digital_required() );
 		}
-		if ( $this->settings->consent_service_enabled() ) {
+		if ( $this->show_service() ) {
 			$this->render_checkbox( self::FIELD_SERVICE, $this->settings->consent_service_text(), false );
 		}
+	}
+
+	/**
+	 * Whether the digital-content consent (art. 16(m)) applies to the current cart.
+	 */
+	public function show_digital(): bool {
+		return $this->settings->consent_digital_enabled()
+			&& $this->applies_to_cart( Settings::STATUS_ART16M_DIGITAL );
+	}
+
+	/**
+	 * Whether the service-start consent (art. 14(4)(a)) applies to the current cart.
+	 */
+	public function show_service(): bool {
+		return $this->settings->consent_service_enabled()
+			&& $this->applies_to_cart( Settings::STATUS_ART14_4A_SERVICE );
+	}
+
+	/**
+	 * Whether a consent's classification is present in the cart. In the default (non-conditional) mode
+	 * an enabled consent always applies, preserving the behaviour of earlier versions.
+	 *
+	 * @param string $status The classification the consent belongs to.
+	 */
+	private function applies_to_cart( string $status ): bool {
+		if ( ! $this->settings->consents_conditional() ) {
+			return true;
+		}
+
+		return isset( $this->cart_statuses()[ $status ] );
+	}
+
+	/**
+	 * The set of art. 59 classifications present in the current cart. Deliberately not memoised: the
+	 * cart can change within a single request (a Store API add-item response is built after the cart
+	 * was modified), and the lookups it performs are served from the WordPress meta cache.
+	 *
+	 * Returns an empty set when the cart is unavailable (e.g. a context without a customer session),
+	 * which in conditional mode means no consent is offered — the visible, fail-closed choice.
+	 *
+	 * @return array<string, bool>
+	 */
+	private function cart_statuses(): array {
+		$statuses = array();
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart instanceof \WC_Cart ) {
+			return $statuses;
+		}
+
+		foreach ( WC()->cart->get_cart() as $item ) {
+			// The classification lives on the parent product (and its categories), so a variation
+			// line resolves through its parent id — the same id the eligibility engine uses.
+			$product_id = isset( $item['product_id'] ) ? (int) $item['product_id'] : 0;
+			if ( $product_id < 1 ) {
+				continue;
+			}
+
+			$status = $this->eligibility->product_status( $product_id );
+			if ( '' !== $status ) {
+				$statuses[ $status ] = true;
+			}
+		}
+
+		return $statuses;
 	}
 
 	/**
@@ -100,7 +178,7 @@ final class CheckoutConsents {
 	 * Block checkout when the digital-content consent is required but not given.
 	 */
 	public function validate(): void {
-		if ( ! $this->settings->consent_digital_enabled() || ! $this->settings->consent_digital_required() ) {
+		if ( ! $this->show_digital() || ! $this->settings->consent_digital_required() ) {
 			return;
 		}
 
@@ -119,12 +197,19 @@ final class CheckoutConsents {
 	public function save( \WC_Order $order, array $data = array() ): void {
 		unset( $data );
 
+		// This hook belongs to the classic checkout, which posts a form. During a REST request the
+		// order comes from the Store API (the Checkout block), where the consents are captured by
+		// {@see BlockCheckoutConsents} instead — reading $_POST here would record a false "declined".
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			return;
+		}
+
 		$now = $this->clock->now_gmt();
 
-		if ( $this->settings->consent_digital_enabled() ) {
+		if ( $this->show_digital() ) {
 			$this->record( $order, self::FIELD_DIGITAL, Settings::META_CONSENT_DIGITAL, Settings::META_CONSENT_DIGITAL_AT, $now, __( 'Digital-content consent (art. 16(m))', 'erred-eu-order-withdrawal-for-woocommerce' ) );
 		}
-		if ( $this->settings->consent_service_enabled() ) {
+		if ( $this->show_service() ) {
 			$this->record( $order, self::FIELD_SERVICE, Settings::META_CONSENT_SERVICE, Settings::META_CONSENT_SERVICE_AT, $now, __( 'Service-start consent (art. 14(4)(a))', 'erred-eu-order-withdrawal-for-woocommerce' ) );
 		}
 	}

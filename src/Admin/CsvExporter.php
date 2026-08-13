@@ -11,6 +11,7 @@ namespace Recesso54bis\Admin;
 
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Persistence\RequestRepository;
+use Recesso54bis\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -72,7 +73,7 @@ final class CsvExporter {
 	 * Stream the CSV.
 	 */
 	public function handle(): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+		if ( ! current_user_can( Capabilities::MANAGE_REQUESTS ) ) {
 			wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( self::ACTION );
@@ -87,7 +88,7 @@ final class CsvExporter {
 		header( 'Content-Disposition: attachment; filename="recesso-digitale-export.csv"' );
 
 		$csv = $this->row(
-			array( 'id', 'order_id', 'status', 'consumer_name', 'confirmation_email', 'contract_reference', 'submitted_at_gmt', 'confirmed_at_gmt', 'acknowledged_at_gmt', 'receipt_hash' )
+			array( 'id', 'order_id', 'status', 'consumer_name', 'confirmation_email', 'contract_reference', 'consumer_declaration', 'submitted_at_gmt', 'confirmed_at_gmt', 'acknowledged_at_gmt', 'receipt_hash' )
 		);
 
 		$page = 1;
@@ -126,6 +127,7 @@ final class CsvExporter {
 				$request->consumer_name,
 				$request->confirmation_email,
 				$request->contract_reference,
+				$request->consumer_declaration,
 				(string) $request->submitted_at_gmt,
 				(string) $request->confirmed_at_gmt,
 				(string) $request->acknowledged_at_gmt,

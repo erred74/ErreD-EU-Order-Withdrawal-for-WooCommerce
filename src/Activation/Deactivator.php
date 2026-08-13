@@ -13,8 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Runs on plugin deactivation. Performs no destructive data operations — capabilities, tables and
- * legal records persist until an explicit, opted-in uninstall. Scheduled jobs are unscheduled here
- * once the durable-medium step adds them (see PROGRESS.md, Step 6).
+ * legal records persist until an explicit, opted-in uninstall.
  */
 final class Deactivator {
 
@@ -22,6 +21,10 @@ final class Deactivator {
 	 * Deactivation entry point.
 	 */
 	public static function deactivate(): void {
-		// Intentionally a no-op in the M0 skeleton: nothing destructive on deactivation.
+		// The My Account endpoint's rewrite rule is gone with the plugin, so the cached rules must be
+		// rebuilt — otherwise the stale rule keeps matching a URL nothing answers any more. Nothing
+		// destructive: rewrite rules are a cache, not data.
+		delete_option( \Recesso54bis\Frontend\AccountEndpoint::FLUSH_FLAG );
+		flush_rewrite_rules( false );
 	}
 }

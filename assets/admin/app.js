@@ -296,6 +296,19 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 				</p>
 			) }
 
+			{ detail.consumer_declaration && (
+				<p>
+					<strong>
+						{ __(
+							'Consumer declaration',
+							'erred-eu-order-withdrawal-for-woocommerce'
+						) }
+						:
+					</strong>{ ' ' }
+					{ detail.consumer_declaration }
+				</p>
+			) }
+
 			{ detail.items && detail.items.length > 0 && (
 				<div>
 					<p>

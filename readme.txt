@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.5.10
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,7 +35,8 @@ service calls).
 
 **For consumers**
 
-* A clearly labelled, continuously available withdrawal function on the My Account orders screen.
+* A clearly labelled, continuously available withdrawal function on the My Account orders screen and
+  in a dedicated "Right of withdrawal" tab listing every order still eligible.
 * A two-step declaration and confirmation flow ("conferma recesso"), server-rendered so it works
   even with JavaScript disabled.
 * An acknowledgement on a durable medium (email plus a stored PDF receipt) whose timestamp fixes
@@ -48,8 +49,13 @@ service calls).
 * A React admin screen to review requests, filter by status, search by order, name or email, view
   the audit timeline, view/regenerate the durable receipt and mark requests refunded or rejected.
 * A menu badge counting the requests awaiting action.
-* A conservative, configurable eligibility engine (withdrawal window, start trigger, per-product
-  and per-category exclusions) that fails closed when configuration is missing.
+* A conservative, configurable eligibility engine (withdrawal window, start trigger, eligible order
+  statuses, per-product and per-category exclusions) that fails closed when configuration is missing.
+* Article 16 checkout consents — digital content (art. 16(m)) and early-started services
+  (art. 14(4)(a)) — in both the classic checkout and the WooCommerce Checkout block, shown either on
+  every checkout or only for the carts that actually call for them.
+* Role-based access to the requests screen, so the personal data each request holds is visible to
+  the people you choose rather than to everyone who can edit the shop.
 * Optional WooCommerce Subscriptions support: a confirmed withdrawal cancels the subscription
   (status transition only — subscription data is never deleted).
 * An append-only audit trail and tamper-evident receipts (SHA-256 of the receipt payload).
@@ -113,6 +119,21 @@ A withdrawal acknowledgement sent by email together with a stored PDF receipt, k
 location and downloadable only through a capability- or token-checked endpoint. The receipt records
 the content of the request and the exact date and time of transmission.
 
+= Do the checkout consents work with the Checkout block? =
+
+Yes. They are registered through WooCommerce's Additional Checkout Fields API, so WooCommerce renders,
+validates and stores them natively in the block checkout — no extra JavaScript is loaded. That API
+arrived in WooCommerce 8.9: on older versions the block checkout simply shows no consents, and the
+classic `[woocommerce_checkout]` shortcode keeps working on every supported version.
+
+= Can a consent appear only for the products that need it? =
+
+Yes. Enable "Show each consent only when the cart contains a product classified for it" under Checkout
+consents. Each consent then follows the "Withdrawal status" you set on the product or its category:
+the digital-content box appears only with art. 16(m) items in the cart, the service box only with
+art. 14(4)(a) items. The option is off by default, so updating the plugin never changes what your
+checkout shows.
+
 = Does it support WooCommerce Subscriptions? =
 
 Optionally. If WooCommerce Subscriptions is active, a confirmed withdrawal cancels the related
@@ -137,6 +158,58 @@ the plugin removes its tables, options and the flow page on uninstall.
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.6.0 =
+* Checkout consents now work in the **WooCommerce Checkout block**, not only the classic shortcode
+  checkout. They are registered through WooCommerce's Additional Checkout Fields API, so the
+  checkboxes are rendered, validated and stored by WooCommerce itself — accessible markup and
+  block-theme styling included. Requires WooCommerce 8.9 or newer for the block checkout; the
+  classic checkout is unchanged and works on every supported version.
+* New option: show each consent **only when the cart contains a product classified for it** (the
+  digital-content box with art. 16(m) items, the service box with art. 14(4)(a) items), using the
+  "Withdrawal status" already set on the product or category. Off by default, so nothing changes on
+  update; turn it on under Checkout consents.
+* New "Right of withdrawal" tab in My Account, listing the customer's currently eligible orders with
+  the «recedere dal contratto qui» control for each. Can be switched off under Withdrawal link
+  visibility.
+* New `[recesso_digitale_link]` shortcode (attributes: `text`, `class`) for footers, widgets and
+  menus, and `[recesso_digitale_avviso_esclusione]` for product templates built with a page builder
+  (Divi, Elementor, Bricks and similar) whose layouts do not fire the usual WooCommerce hook.
+* The settings screen is considerably more configurable, and every field now says whether it is
+  mandatory, recommended or optional:
+  * which **order statuses** offer the withdrawal function (a checkbox list of every registered
+    status, previously fixed to Processing and Completed);
+  * which **roles**, besides the administrator, may view and manage requests — access is granted and
+    revoked the moment you save, and is never offered to customer-facing roles;
+  * a **From name** and **From address** for the plugin's own emails only;
+  * the wording of the **accepted, rejected and completed** customer emails;
+  * the **intro paragraph** above the public form (text and on/off);
+  * an optional **"bought as a consumer" self-declaration** on the form, recorded verbatim in the
+    durable-medium receipt for B2B disputes;
+  * separate **title and body for each exclusion notice** — digital content (art. 16(m)), dated
+    services (art. 16(l)) and the other art. 16 exceptions — with a `{withdrawal_page_link}`
+    placeholder.
+* The requests screen now lists **recent unmatched lookups**: attempts to request a withdrawal link
+  whose order number and email matched no order, so a mistyped reference is visible instead of
+  vanishing silently. No withdrawal record is created for them, and the submitted address is stored
+  masked.
+* Fix: a decision taken through the request detail panel's "Set status" dropdown — the main path
+  since 0.5.0 — wrote no order note. Accepting, rejecting, completing and resetting a decision now
+  all appear in the order timeline.
+* Fix: the "default policy for unconfigured products" setting declared one default and applied
+  another. Both are now "Allow withdrawal", which is what running sites have always used.
+* Fix: the settings screen and the CSV export required `manage_woocommerce` while the requests list
+  required the plugin's own capability. All three now use the plugin capability, which the new roles
+  setting controls.
+* Fix: an opted-in "delete all data on uninstall" left two options behind.
+* Hardening: an in-place upgrade whose table can no longer take another column (InnoDB "row size too
+  large", possible after several upgrades) now rebuilds the table and completes, instead of leaving
+  a half-applied schema that breaks the requests screen until a manual re-activation.
+* Every merchant-editable text is now exposed to WPML and Polylang String Translation; the previous
+  configuration file covered only five of them.
+* Database: one new optional column (`consumer_declaration`), applied automatically. Receipts issued
+  before this release keep verifying against their stored hash — the receipt payload is versioned,
+  and a request without a self-declaration hashes exactly as it did before.
 
 = 0.5.10 =
 * Compatibility with WordPress 7.1 and WooCommerce 11. Verified against the WordPress 7.1 release
@@ -287,6 +360,11 @@ the plugin removes its tables, options and the flow page on uninstall.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.6.0 =
+Checkout consents now work in the Checkout block, My Account gains a "Right of withdrawal" tab, and
+the settings screen is far more configurable. Fixes missing order notes on decisions taken from the
+"Set status" dropdown. Adds one optional database column, applied automatically.
 
 = 0.5.10 =
 Compatibility release for WordPress 7.1 and WooCommerce 11, with the admin screen aligned to the

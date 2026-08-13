@@ -38,6 +38,7 @@ final class Activator {
 	public static function activate(): void {
 		Capabilities::add();
 		Migrations::run();
+		Upgrades::run();
 		self::ensure_secret();
 		self::seed_options();
 		FlowPage::ensure();

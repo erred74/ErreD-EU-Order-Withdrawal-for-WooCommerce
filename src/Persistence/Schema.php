@@ -93,6 +93,7 @@ final class Schema {
   requested_items longtext,
   refund_iban varchar(34) NOT NULL default '',
   withdrawal_reason text,
+  consumer_declaration text,
   submitted_at_gmt datetime default NULL,
   confirmed_at_gmt datetime default NULL,
   acknowledged_at_gmt datetime default NULL,

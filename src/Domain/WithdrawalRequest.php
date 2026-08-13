@@ -38,6 +38,9 @@ final class WithdrawalRequest {
 	 * @param string|null     $created_at_gmt      Row creation timestamp (GMT).
 	 * @param string          $refund_iban         Optional IBAN the consumer provided for the refund.
 	 * @param string          $withdrawal_reason   Optional reason the consumer gave for withdrawing.
+	 * @param string          $consumer_declaration The exact "bought as a consumer" wording the consumer
+	 *                                             agreed to, when the merchant asks for it. Empty when
+	 *                                             the declaration was not requested.
 	 */
 	public function __construct(
 		public readonly int $id,
@@ -54,7 +57,8 @@ final class WithdrawalRequest {
 		public readonly ?string $receipt_path,
 		public readonly ?string $created_at_gmt,
 		public readonly string $refund_iban = '',
-		public readonly string $withdrawal_reason = ''
+		public readonly string $withdrawal_reason = '',
+		public readonly string $consumer_declaration = ''
 	) {}
 
 	/**
@@ -96,7 +100,8 @@ final class WithdrawalRequest {
 			self::nullable_string( $row['receipt_path'] ?? null ),
 			self::nullable_string( $row['created_at_gmt'] ?? null ),
 			(string) ( $row['refund_iban'] ?? '' ),
-			(string) ( $row['withdrawal_reason'] ?? '' )
+			(string) ( $row['withdrawal_reason'] ?? '' ),
+			(string) ( $row['consumer_declaration'] ?? '' )
 		);
 	}
 

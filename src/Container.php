@@ -201,7 +201,8 @@ final class Container {
 				$this->permission_gate(),
 				$this->eligibility_adapter(),
 				$this->flow_urls(),
-				$this->rate_limiter()
+				$this->rate_limiter(),
+				$this->log_repository()
 			)
 		);
 	}

@@ -7,6 +7,7 @@
  * @var string                                                       $order_date
  * @var bool                                                         $is_partial
  * @var string                                                       $reason
+ * @var string                                                       $intro
  * @var string                                                       $email_heading
  * @var \WC_Email                                                    $email
  * @package Recesso54bis
@@ -21,7 +22,7 @@ do_action( 'woocommerce_email_header', $email_heading, $email );
 ?>
 
 <p>
-	<?php esc_html_e( 'We have reviewed your request to withdraw from the contract and we are unable to accept it.', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+	<?php echo esc_html( $intro ); ?>
 </p>
 
 <?php require __DIR__ . '/partials/request-summary.php'; ?>

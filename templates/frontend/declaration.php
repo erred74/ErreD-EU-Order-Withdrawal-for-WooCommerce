@@ -4,7 +4,7 @@
  *
  * Override: copy to `recesso-digitale/declaration.php` in your theme.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string}>, error: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string}>, error: string, intro: string, declaration_text: string} $args
  * @package Recesso54bis
  */
 
@@ -21,15 +21,11 @@ defined( 'ABSPATH' ) || exit;
 		</div>
 	<?php endif; ?>
 
-	<p class="wp-block-recesso-digitale-flow__intro">
-		<?php
-		printf(
-			/* translators: %s: order/contract reference. */
-			esc_html__( 'You are exercising your right of withdrawal for order %s. Please confirm your details below.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-			'<strong>' . esc_html( $args['contract_reference'] ) . '</strong>'
-		);
-		?>
-	</p>
+	<?php if ( '' !== $args['intro'] ) : ?>
+		<p class="wp-block-recesso-digitale-flow__intro">
+			<?php echo esc_html( $args['intro'] ); ?>
+		</p>
+	<?php endif; ?>
 
 	<form class="wp-block-recesso-digitale-flow__form" method="post" action="<?php echo esc_url( $args['action_url'] ); ?>">
 		<?php wp_nonce_field( $args['nonce_action'], $args['nonce_name'] ); ?>
@@ -153,6 +149,23 @@ defined( 'ABSPATH' ) || exit;
 					<?php endforeach; ?>
 				</ul>
 			</fieldset>
+		<?php endif; ?>
+
+		<?php if ( '' !== $args['declaration_text'] ) : ?>
+			<?php // The right of withdrawal protects consumers, not business buyers. The merchant can ask for this good-faith declaration; it is recorded in the durable-medium receipt. ?>
+			<p class="wp-block-recesso-digitale-flow__field wp-block-recesso-digitale-flow__field--check">
+				<input
+					type="checkbox"
+					id="recesso-dig-consumer"
+					name="consumer_declaration"
+					value="1"
+					required
+					aria-describedby="recesso-dig-consumer-hint"
+				/>
+				<label for="recesso-dig-consumer" id="recesso-dig-consumer-hint">
+					<?php echo esc_html( $args['declaration_text'] ); ?>
+				</label>
+			</p>
 		<?php endif; ?>
 
 		<p class="wp-block-recesso-digitale-flow__actions">
