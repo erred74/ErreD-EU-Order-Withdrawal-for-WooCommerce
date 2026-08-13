@@ -67,7 +67,10 @@ that the new column actually landed.
 
 ## 2. What ships
 
-`bin/build-dist.sh` stages the plugin from `.distignore`. What ends up in the zip:
+`bin/build-dist.sh` carries its **own** rsync exclude list; `.distignore` mirrors it for tooling that
+reads that file. Excluding something means editing both — the script is what actually builds the zip.
+
+What ends up in it:
 
 - `recesso-digitale.php`, `uninstall.php`, `readme.txt`, `wpml-config.xml`
 - `src/`, `templates/`, `languages/`

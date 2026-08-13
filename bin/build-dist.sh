@@ -46,6 +46,7 @@ rsync -a \
 	--exclude='vendor' \
 	--exclude='tests' \
 	--exclude='artifacts' \
+	--exclude='docs' \
 	--exclude='.wordpress-org' \
 	--exclude='playwright.config.js' \
 	--exclude='bin' \
