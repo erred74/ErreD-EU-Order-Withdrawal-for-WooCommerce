@@ -1,12 +1,12 @@
 === ErreD EU Order Withdrawal for WooCommerce ===
 Contributors: draison, recessodigitale
 Tags: woocommerce, withdrawal, recesso, cancellation, consumer
-Requires at least: 6.7
-Tested up to: 7.0
+Requires at least: 6.9
+Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
-WC tested up to: 10.9
-Stable tag: 0.5.9
+WC tested up to: 11.0
+Stable tag: 0.5.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -138,6 +138,27 @@ the plugin removes its tables, options and the flow page on uninstall.
 
 == Changelog ==
 
+= 0.5.10 =
+* Compatibility with WordPress 7.1 and WooCommerce 11. Verified against the WordPress 7.1 release
+  candidate with WooCommerce 11.0.1: full integration and end-to-end suites, including the
+  accessibility checks, pass unchanged.
+* Admin: the requests screen now opts in explicitly to the 40px control size that WordPress 7.1
+  makes the default, so the status filter, the search field and the action buttons keep their
+  intended alignment on every supported WordPress version instead of changing height silently.
+* Security: the bundled Dompdf library, used to render the durable-medium receipt, is updated from
+  3.1.5 to 3.1.6. That release fixes six reported issues, including a local file read and a
+  file-existence disclosure through SVG images embedded as data URIs, and two denial-of-service
+  paths through oversized image bitmaps. This plugin never enabled remote resource loading and its
+  receipt template contains no images, SVG or custom fonts, so exposure was limited; the library is
+  updated regardless.
+* Admin: the requests bundle is now loaded with the deferred script strategy.
+* The minimum supported WordPress version is now 6.9, matching the minimum required by the
+  WooCommerce releases this plugin is built against. Nothing in the plugin itself required the
+  change: WooCommerce 11 already refuses to run below WordPress 6.9, so the previous floor of 6.7
+  could not be satisfied in practice.
+* No database migration and no changes to the withdrawal flow, the durable-medium receipt or the
+  legal timestamps.
+
 = 0.5.9 =
 * Fix: the order-lookup form never actually sent the withdrawal-link email. WooCommerce does not
   autoload its WC_Email base class, so on the front-end request the send bailed out before the email
@@ -266,6 +287,11 @@ the plugin removes its tables, options and the flow page on uninstall.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.5.10 =
+Compatibility release for WordPress 7.1 and WooCommerce 11, with the admin screen aligned to the
+new 40px control size. Also updates the bundled Dompdf library to 3.1.6, which carries security
+fixes. Recommended for all sites. No data migration required.
 
 = 0.5.4 =
 Admin menu entries now default to English for non-Italian sites; Italian labels are unchanged via

@@ -164,7 +164,10 @@ final class Menu {
 			plugins_url( 'build/admin/index.js', RECESSO_DIG_PLUGIN_FILE ),
 			$asset['dependencies'],
 			$asset['version'],
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 		wp_set_script_translations(
 			'recesso-dig-admin',

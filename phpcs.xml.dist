@@ -17,7 +17,7 @@
 	<arg name="parallel" value="8"/>
 
 	<config name="testVersion" value="8.2-"/>
-	<config name="minimum_wp_version" value="6.7"/>
+	<config name="minimum_wp_version" value="6.9"/>
 
 	<rule ref="WordPress">
 		<!-- PSR-4 file naming differs from WP's class-file convention; we autoload via Composer. -->

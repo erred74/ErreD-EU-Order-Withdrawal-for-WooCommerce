@@ -327,6 +327,7 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 			{ detail.receipt_url ? (
 				<p>
 					<Button
+						__next40pxDefaultSize
 						variant="secondary"
 						href={ detail.receipt_url }
 						target="_blank"
@@ -365,6 +366,7 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 				value={ adminStatus }
 				options={ SET_STATUS_OPTIONS }
 				onChange={ setAdminStatus }
+				__next40pxDefaultSize
 				__nextHasNoMarginBottom
 			/>
 
@@ -389,6 +391,7 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 			>
 				<FlexItem>
 					<Button
+						__next40pxDefaultSize
 						variant="secondary"
 						disabled={ busy }
 						onClick={ () => onProcess( detail.id, 'regenerate' ) }
@@ -401,6 +404,7 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 				</FlexItem>
 				<FlexItem>
 					<Button
+						__next40pxDefaultSize
 						variant="primary"
 						disabled={ saveDisabled }
 						onClick={ () =>
@@ -546,6 +550,7 @@ export default function App() {
 						value={ status }
 						options={ STATUS_OPTIONS }
 						onChange={ ( value ) => setFilter( value ) }
+						__next40pxDefaultSize
 						__nextHasNoMarginBottom
 					/>
 				</FlexItem>
@@ -560,11 +565,13 @@ export default function App() {
 							setSearchInput( value );
 							debouncedSetSearch( value );
 						} }
+						__next40pxDefaultSize
 						__nextHasNoMarginBottom
 					/>
 				</FlexItem>
 				<FlexItem>
 					<Button
+						__next40pxDefaultSize
 						variant="secondary"
 						onClick={ () => loadList( status, page, search ) }
 					>
@@ -577,6 +584,7 @@ export default function App() {
 				{ exportUrl && (
 					<FlexItem>
 						<Button
+							__next40pxDefaultSize
 							variant="secondary"
 							href={ addQueryArgs( exportUrl, {
 								status,
@@ -683,6 +691,7 @@ export default function App() {
 			<Flex justify="flex-end" gap={ 2 } style={ { marginTop: '1rem' } }>
 				<FlexItem>
 					<Button
+						__next40pxDefaultSize
 						variant="secondary"
 						disabled={ page <= 1 }
 						onClick={ () => setPage( page - 1 ) }
@@ -704,6 +713,7 @@ export default function App() {
 				</FlexItem>
 				<FlexItem>
 					<Button
+						__next40pxDefaultSize
 						variant="secondary"
 						disabled={ page >= totalPages }
 						onClick={ () => setPage( page + 1 ) }

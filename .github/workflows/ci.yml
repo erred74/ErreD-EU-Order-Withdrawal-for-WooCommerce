@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main, master, develop ]
   pull_request:
+  schedule:
+    # Nightly, so an unreleased WordPress changing under us is caught within a day.
+    - cron: '17 3 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -40,9 +43,39 @@ jobs:
       - name: Unit tests (no WordPress bootstrap)
         run: composer run test
 
-  integration-e2e:
-    name: Integration + E2E (wp-env)
+  # Resolves which WordPress versions the integration job covers. A job-level `if` cannot see the
+  # `matrix` context, so the event-based gating has to happen here and be fed back in via fromJSON.
+  wp-matrix:
+    name: Resolve WordPress matrix
     runs-on: ubuntu-latest
+    outputs:
+      legs: ${{ steps.pick.outputs.legs }}
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          STABLE='{"label":"stable","core":"https://wordpress.org/wordpress-7.0.4.zip","e2e":true,"soft":false}'
+          NEXT='{"label":"next","core":"https://wordpress.org/wordpress-7.1-RC3.zip","e2e":true,"soft":true}'
+          FLOOR='{"label":"floor","core":"https://wordpress.org/wordpress-6.9.7.zip","e2e":false,"soft":false}'
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "legs={\"include\":[$STABLE]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "legs={\"include\":[$STABLE,$NEXT,$FLOOR]}" >> "$GITHUB_OUTPUT"
+          fi
+
+  integration-e2e:
+    # Labels rather than versions keep the required-check names stable across version bumps.
+    name: Integration + E2E (${{ matrix.label }})
+    needs: wp-matrix
+    runs-on: ubuntu-latest
+    # An unreleased WordPress must never red-build the repo; the leg still reports its own status.
+    continue-on-error: ${{ matrix.soft }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON( needs.wp-matrix.outputs.legs ) }}
+    env:
+      # Job level, so env:start, `wp-env run` and Playwright's webServer all agree on the version.
+      WP_ENV_CORE: ${{ matrix.core }}
     steps:
       # Map into a fixed directory name so wp-env mounts the plugin at
       # wp-content/plugins/wc-reso-ordini, matching the hard-coded --env-cwd used by the
@@ -82,27 +115,40 @@ jobs:
         working-directory: wc-reso-ordini
         run: npm run env:start
 
+      # Cheap insurance: a silently ignored WP_ENV_CORE would otherwise give a green matrix that
+      # tested the same WordPress three times.
+      - name: Record the WordPress and WooCommerce versions under test
+        working-directory: wc-reso-ordini
+        run: |
+          npx wp-env run tests-cli wp core version
+          npx wp-env run tests-cli wp plugin get woocommerce --field=version
+
       - name: Integration tests (PHPUnit in wp-env)
         working-directory: wc-reso-ordini
         run: >-
           npx wp-env run tests-cli --env-cwd=wp-content/plugins/wc-reso-ordini
           php -d memory_limit=512M ./vendor/bin/phpunit -c phpunit-integration.xml.dist
 
+      # The floor leg is a pure "have we outgrown our declared minimum?" PHP question, so it skips
+      # the browser stack entirely.
       - name: Install Playwright Chromium
+        if: matrix.e2e
         working-directory: wc-reso-ordini
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests (Playwright + axe)
+        if: matrix.e2e
         working-directory: wc-reso-ordini
         env:
           CI: 'true'
         run: npm run test:e2e
 
       - name: Upload Playwright artifacts on failure
-        if: failure()
+        # upload-artifact@v4 hard-fails on duplicate names, so the leg label must be part of it.
+        if: failure() && matrix.e2e
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: playwright-artifacts-${{ matrix.label }}
           path: wc-reso-ordini/artifacts/
           if-no-files-found: ignore
           retention-days: 7
