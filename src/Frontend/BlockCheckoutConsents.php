@@ -100,23 +100,27 @@ final class BlockCheckoutConsents {
 	 * Register the enabled consents as additional checkout fields.
 	 */
 	public function register_fields(): void {
+		// Both surfaces ask the same object whether a consent blocks the order, so the classic checkout
+		// and the Checkout block can never disagree about it — including once a merchant setting or the
+		// `recesso_dig_consent_required` filter has had its say.
 		if ( $this->settings->consent_digital_enabled() ) {
 			$this->register_field(
 				self::FIELD_DIGITAL,
 				$this->settings->consent_digital_text(),
 				'digital_consent',
-				$this->settings->consent_digital_required()
+				$this->consents->is_required( CheckoutConsents::CONSENT_DIGITAL )
 			);
 		}
 
 		if ( $this->settings->consent_service_enabled() ) {
-			// The art. 14(4)(a) consent is never a condition of placing the order: it only entitles the
-			// merchant to a proportionate payment, so declining it must not block checkout.
+			// The art. 14(4)(a) consent does not block the order by default: it only entitles the
+			// merchant to a proportionate payment. A merchant whose service always begins inside the
+			// withdrawal window can require it (see CheckoutConsents::is_required()).
 			$this->register_field(
 				self::FIELD_SERVICE,
 				$this->settings->consent_service_text(),
 				'service_consent',
-				false
+				$this->consents->is_required( CheckoutConsents::CONSENT_SERVICE )
 			);
 		}
 	}

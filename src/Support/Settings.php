@@ -68,6 +68,7 @@ final class Settings {
 	public const OPT_CONSENT_DIGITAL_REQUIRED = 'recesso_dig_consent_digital_required';
 	public const OPT_CONSENT_DIGITAL_TEXT     = 'recesso_dig_consent_digital_text';
 	public const OPT_CONSENT_SERVICE_ENABLED  = 'recesso_dig_consent_service_enabled';
+	public const OPT_CONSENT_SERVICE_REQUIRED = 'recesso_dig_consent_service_required';
 	public const OPT_CONSENT_SERVICE_TEXT     = 'recesso_dig_consent_service_text';
 	public const OPT_CONSENTS_CONDITIONAL     = 'recesso_dig_consents_conditional';
 
@@ -424,6 +425,22 @@ final class Settings {
 	 */
 	public function consent_service_enabled(): bool {
 		return '1' === (string) get_option( self::OPT_CONSENT_SERVICE_ENABLED, '0' );
+	}
+
+	/**
+	 * Whether the services consent (art. 14(4)(a)) must be ticked to place the order.
+	 *
+	 * Off by default, and deliberately so: asking for the service to start inside the withdrawal
+	 * period is the consumer's request to make, and it only entitles the merchant to a proportionate
+	 * payment if they later withdraw. Shops whose service always begins inside that window — live
+	 * sessions, bookings for the next few days — can turn it on, because for them an order placed
+	 * without that request is one they cannot fulfil.
+	 *
+	 * TODO(legal): confirm the framing above with a legal advisor before this is recommended rather
+	 * than merely offered.
+	 */
+	public function consent_service_required(): bool {
+		return '1' === (string) get_option( self::OPT_CONSENT_SERVICE_REQUIRED, '0' );
 	}
 
 	/**

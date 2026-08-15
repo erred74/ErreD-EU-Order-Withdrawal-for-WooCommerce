@@ -67,7 +67,13 @@ final class Plugin {
 		( new \Recesso54bis\Frontend\Shortcode( $flow ) )->register();
 		( new \Recesso54bis\Frontend\Block( $flow ) )->register();
 		( new \Recesso54bis\Frontend\Hooks( $container->eligibility_adapter(), $container->flow_urls(), $container->settings() ) )->register();
-		( new \Recesso54bis\Frontend\AccountEndpoint( $container->eligibility_adapter(), $container->flow_urls(), $container->settings() ) )->register();
+		( new \Recesso54bis\Frontend\AccountEndpoint(
+			$container->eligibility_adapter(),
+			$container->flow_urls(),
+			$container->settings(),
+			$container->request_repository(),
+			$container->log_repository()
+		) )->register();
 		( new \Recesso54bis\Frontend\ProductNotice( $container->eligibility_adapter(), $container->settings() ) )->register();
 		// Checkout consents: the classic (shortcode) checkout and the Checkout block share one
 		// applicability resolver, so both surfaces show exactly the same consents for a given cart.
@@ -97,6 +103,7 @@ final class Plugin {
 			( new \Recesso54bis\Admin\WithdrawalStatusFields() )->register();
 			( new \Recesso54bis\Admin\CsvExporter( $container->request_repository() ) )->register();
 			( new \Recesso54bis\Admin\ActivationNotice() )->register();
+			( new \Recesso54bis\Admin\FlowPageNotice() )->register();
 			( new \Recesso54bis\Admin\OrderColumn( $container->request_repository() ) )->register();
 		}
 	}

@@ -4,7 +4,7 @@ Work not yet done, why it matters, and what it touches. Ordered by release. Rule
 `claude.local.md`; this file records *intent*, not state — a completed item is deleted from here and
 described in the `readme.txt` changelog instead.
 
-Last reviewed: 2026-08-13, after 0.6.0.
+Last reviewed: 2026-08-15, after 0.7.0.
 
 ---
 
@@ -15,14 +15,21 @@ Last reviewed: 2026-08-13, after 0.6.0.
 our closest competitor on wordpress.org. We are ahead on architecture — signed HMAC guest tokens,
 append-only custom tables with an audit log, a real PDF durable receipt, partial per-line withdrawal
 with an atomic claims ledger, WCAG 2.2 AA, and now Checkout-block consents, which they list as
-roadmap. They remain ahead on **admin ergonomics** and on **breadth of installation** (they run
-without WooCommerce).
+roadmap. They remain ahead on **breadth of installation** (they run without WooCommerce).
+
+0.7.0 answered their next release: customer-facing request tracking, a mandatory-able art. 14(4)(a)
+consent, consent filters, and the accessibility and repeat-visit fixes. Two of their announcements
+turned out to name defects of ours that were worse than what they had fixed — a deleted withdrawal
+page silently redirecting every link to the shop home, and the account tab hiding an order the moment
+a request claimed it. Both are fixed. Their "sample template paragraph" fix never applied to us.
+
+We remain behind on **admin ergonomics**, which is what most of this file is now about.
 
 Everything below came out of that comparison unless marked otherwise.
 
 ---
 
-## 0.7.0 — admin ergonomics and evidence
+## 0.8.0 — admin ergonomics and evidence
 
 The theme: a merchant handling more than a handful of withdrawals a month currently does too much
 one request at a time, and the evidence trail stops short of what a dispute needs.
@@ -67,16 +74,9 @@ this as a 2.1.1 fix; we have the same bug.
 Touches `src/Integration/EligibilityAdapter.php`, `src/Admin/WithdrawalStatusFields.php`.
 Per-translation overrides must still win, for genuinely language-specific exceptions.
 
-### Document the public hooks in `readme.txt`
-We expose filters (`recesso_dig_is_eligible`, `recesso_dig_withdrawable_statuses`,
-`recesso_dig_entry_token_ttl`) and actions (`recesso_dig_request_created`,
-`recesso_dig_request_confirmed`, `recesso_dig_request_processed`,
-`recesso_dig_after_declaration_form`, `recesso_dig_generate_receipt`) with no public documentation.
-The competitor advertises "11 filters, 4 actions" as a selling point; ours are simply invisible.
-
 ---
 
-## 0.8.0 and later — features they have announced but not shipped
+## 0.9.0 and later — features they have announced but not shipped
 
 Cheap to build, and each one is a line we can claim first.
 
@@ -102,6 +102,17 @@ token-signed and fails closed by design (`claude.local.md` §6.7), and the value
 read-only **unmatched lookups panel** instead: the merchant sees the mistyped reference, no legal
 record is created, and no order can be enumerated. Do not "upgrade" this into real records without an
 explicit, documented decision.
+
+### The account tab shows the latest request per order, from the last 25 orders
+`AccountEndpoint::rows()` walks the customer's 25 most recent orders and reads
+`RequestRepository::latest_for_order()` for each. That deliberately avoids a `customer_id` column, a
+migration and a backfill, and it keeps the page bounded — but it means an order withdrawn from twice
+shows only the later request, and an order older than the customer's 25 most recent is not listed.
+
+Both are acceptable while a withdrawal window is measured in days. If a full per-customer history is
+ever wanted, it needs a nullable `customer_id` column on the requests table, an index, a batched
+backfill through Action Scheduler, and a repository method keyed on it — not a wider `wc_get_orders()`
+limit, which would make the page cost grow with order history.
 
 ### Consents are conditional only when asked
 The conditional mode added in 0.6.0 is **off by default**, so an existing checkout never changes on
@@ -147,6 +158,12 @@ repositioning, not a feature. Raise it with the maintainer; do not start it from
   assume they are alone in the tables: assert on deltas or search for the fixture's own order id,
   never on absolute counts or first-page position. One such flake was fixed in 0.6.0
   (`RequestRepositoryTest::test_pending_requests_are_excluded_from_the_admin_listing`).
+- **`EligibilityAdapter` memoises per order for the life of the request**, which is correct in
+  production — a page load evaluates each order once — and a trap in tests. A test that creates a
+  withdrawal and then asks the *same* container whether the order is still eligible gets the answer
+  computed before the claim existed, so it passes whatever the code does. Build a fresh `Container`
+  for the "second page load", as `AccountEndpointTest::render()` and `AbandonedDeclarationTest` do.
+  This is exactly the kind of silent pass that §19's "watch it fail first" rule exists to catch.
 
 ---
 
@@ -159,7 +176,7 @@ composer run lint          # PHPCS, 0 errors
 composer run analyze       # PHPStan level 8, 0 errors
 composer run test          # unit
 npx wp-env run tests-cli --env-cwd=wp-content/plugins/wc-reso-ordini \
-  vendor/bin/phpunit -c phpunit-integration.xml.dist
+  -- php vendor/bin/phpunit -c phpunit-integration.xml.dist
 npm run lint:js && npm run build && npm run test:e2e
 bash bin/build-i18n.sh     # .pot + it_IT must end at 0 untranslated
 bash bin/build-dist.sh

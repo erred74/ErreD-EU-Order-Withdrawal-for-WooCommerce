@@ -79,6 +79,7 @@ $recesso_dig_options = array(
 	'recesso_dig_consent_digital_required',
 	'recesso_dig_consent_digital_text',
 	'recesso_dig_consent_service_enabled',
+	'recesso_dig_consent_service_required',
 	'recesso_dig_consent_service_text',
 	'recesso_dig_trader_name',
 	'recesso_dig_trader_address',

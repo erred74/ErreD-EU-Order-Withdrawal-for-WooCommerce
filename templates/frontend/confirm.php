@@ -4,7 +4,7 @@
  *
  * Override: copy to `recesso-digitale/confirm.php` in your theme.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, request_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, items: array<int, array{line_id: int, name: string, quantity: int, thumbnail_html?: string}>, confirm_label: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, request_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, items: array<int, array{line_id: int, name: string, quantity: int, thumbnail_html?: string}>, confirm_label: string, back_url?: string} $args
  * @package Recesso54bis
  */
 
@@ -65,6 +65,12 @@ defined( 'ABSPATH' ) || exit;
 			<button type="submit" class="button wp-block-recesso-digitale-flow__confirm">
 				<?php echo esc_html( $args['confirm_label'] ); ?>
 			</button>
+
+			<?php if ( '' !== (string) ( $args['back_url'] ?? '' ) ) : ?>
+				<a class="wp-block-recesso-digitale-flow__edit" href="<?php echo esc_url( (string) $args['back_url'] ); ?>">
+					<?php esc_html_e( 'Edit your details', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+				</a>
+			<?php endif; ?>
 		</p>
 	</form>
 </div>

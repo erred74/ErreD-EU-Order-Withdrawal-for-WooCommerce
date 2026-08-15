@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace Recesso54bis\Integration;
 
 use Recesso54bis\Domain\Eligibility\Reason;
+use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Persistence\LogRepository;
 use Recesso54bis\Persistence\RequestRepository;
@@ -85,7 +86,17 @@ final class WithdrawalService {
 	 * @throws NotEligibleException When the order is not eligible or no requested line is eligible.
 	 */
 	public function create_declaration( \WC_Order $order, array $data, ?string $ip_packed ): WithdrawalRequest {
-		$eligibility = $this->eligibility->for_order( $order );
+		// An unconfirmed declaration for this order is the consumer's own abandoned or amended draft. It
+		// reserves units, so evaluating eligibility with its claim still in place would refuse the very
+		// consumer who is replacing it: on a single-unit order, closing the page before confirming used
+		// to lock the withdrawal function shut for good. Evaluate as if the draft were already gone —
+		// it is discarded a few lines below, once there is something to replace it with.
+		$draft = $this->pending_draft( $order );
+
+		$eligibility = $draft instanceof WithdrawalRequest
+			? $this->eligibility->for_order_ignoring_claim( $order, $draft )
+			: $this->eligibility->for_order( $order );
+
 		if ( ! $eligibility->is_eligible ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- reason is a controlled enum string, never rendered as output.
 			throw new NotEligibleException( $eligibility->reason );
@@ -101,9 +112,9 @@ final class WithdrawalService {
 			throw new NotEligibleException( Reason::NO_ELIGIBLE_ITEMS );
 		}
 
-		// A consumer who abandoned a previous attempt (closed the page before confirming) can start
-		// over: drop any unconfirmed (pending) request for this order so the new declaration is not
-		// blocked by the abandoned one's reservation. Confirmed requests are left untouched.
+		// Release the abandoned/amended draft's reservation now that the replacement is about to be
+		// written. Doing it here rather than before validation means a submission that fails leaves the
+		// consumer's earlier draft intact. Confirmed requests are never touched.
 		$this->requests->discard_pending_for_order( $order->get_id() );
 
 		$request = $this->requests->create_declaration(
@@ -174,6 +185,22 @@ final class WithdrawalService {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * The order's unconfirmed declaration, if it has one.
+	 *
+	 * Only a pending request qualifies. Once confirmed, a request is a legal record whose reservation
+	 * stands until the merchant decides it.
+	 *
+	 * @param \WC_Order $order The order.
+	 */
+	private function pending_draft( \WC_Order $order ): ?WithdrawalRequest {
+		$latest = $this->requests->latest_for_order( $order->get_id() );
+
+		return $latest instanceof WithdrawalRequest && RequestStatus::PENDING === $latest->status
+			? $latest
+			: null;
 	}
 
 	/**

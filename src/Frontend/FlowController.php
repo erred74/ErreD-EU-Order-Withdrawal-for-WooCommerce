@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Frontend;
 
+use Recesso54bis\Domain\Eligibility\Reason;
+use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Email\WithdrawalLinkEmail;
 use Recesso54bis\Integration\EligibilityAdapter;
@@ -34,6 +36,24 @@ defined( 'ABSPATH' ) || exit;
  * admin-post.php guarded by a nonce plus capability/token authorisation, validated and sanitised.
  */
 final class FlowController {
+
+	/**
+	 * Codes for the standalone message screen.
+	 *
+	 * The screen used to take its text straight from the query string. Escaped, so never an injection
+	 * — but it let anyone hand out a link that displayed wording of their choosing inside the store's
+	 * own withdrawal page, which on a page about money and legal deadlines is a ready-made phishing
+	 * surface. Only these codes travel in the URL now, and anything unrecognised renders nothing.
+	 */
+	private const MSG_DUPLICATE    = 'duplicate';
+	private const MSG_STORE_FAILED = 'store_failed';
+	private const MSG_LINK_EXPIRED = 'link_expired';
+
+	/**
+	 * Prefix marking a message code that carries an eligibility reason (validated against
+	 * {@see Reason::all()} before it is resolved to a label).
+	 */
+	private const MSG_REASON_PREFIX = 'reason_';
 
 	/**
 	 * Coordination service.
@@ -196,9 +216,18 @@ final class FlowController {
 			case FlowUrls::STEP_DONE:
 				return $this->render_done();
 			case 'message':
-				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display of a redirect message.
-				$msg = isset( $_GET['recesso_dig_msg'] ) ? sanitize_text_field( wp_unslash( $_GET['recesso_dig_msg'] ) ) : '';
-				return '' === $msg ? '' : $this->message( $msg, 'info' );
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display of a redirect message code.
+				$code = isset( $_GET['recesso_dig_msg'] ) ? sanitize_key( wp_unslash( $_GET['recesso_dig_msg'] ) ) : '';
+				$text = $this->message_for_code( $code );
+				if ( '' === $text ) {
+					return '';
+				}
+				if ( self::MSG_LINK_EXPIRED === $code ) {
+					// A dead link is only actionable alongside the means to get a live one, so the lookup
+					// form comes with the explanation rather than leaving the consumer at a dead end.
+					return $this->message( $text, 'error' ) . $this->render_lookup();
+				}
+				return $this->message( $text, 'info' );
 			default:
 				// No signed link on the URL: offer the order-lookup form, which emails a signed link to
 				// the order's own address (never rendering the flow inline), so orders are not enumerable.
@@ -305,8 +334,18 @@ final class FlowController {
 		}
 
 		$eligibility = $this->eligibility->for_order( $order );
+
+		// The consumer who came back from the review step to amend their declaration: it is their own
+		// unconfirmed request holding the claim, so without this they would be told a request is
+		// already in progress and refused the chance to correct a form they never sent. Nothing is
+		// released here — submitting the amended declaration discards the pending one atomically.
+		$draft = $this->editable_draft( $order );
+		if ( ! $eligibility->is_eligible && $draft instanceof WithdrawalRequest ) {
+			$eligibility = $this->eligibility->for_order_ignoring_claim( $order, $draft );
+		}
+
 		if ( ! $eligibility->is_eligible ) {
-			return $this->message( EligibilityController::reason_label( $eligibility->reason ), 'info' );
+			return $this->ineligible_message( $order, $eligibility->reason );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display of a prior validation error flag.
@@ -324,13 +363,60 @@ final class FlowController {
 				'token'              => $token,
 				'flow_url'           => $this->current_page_url(),
 				'contract_reference' => $order->get_order_number(),
-				'consumer_name'      => trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() ),
-				'confirmation_email' => $order->get_billing_email(),
-				'lines'              => $this->line_choices( $order, $eligibility->available_quantities ),
+				// Editing an unsent declaration shows what the consumer actually typed, not the order's
+				// billing details, which is what they were correcting in the first place.
+				'consumer_name'      => $draft instanceof WithdrawalRequest && '' !== $draft->consumer_name
+					? $draft->consumer_name
+					: trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() ),
+				'confirmation_email' => $draft instanceof WithdrawalRequest && '' !== $draft->confirmation_email
+					? $draft->confirmation_email
+					: $order->get_billing_email(),
+				'lines'              => $this->line_choices(
+					$order,
+					$eligibility->available_quantities,
+					$draft instanceof WithdrawalRequest ? $draft->requested_items : array()
+				),
 				'intro'              => $settings->form_intro_enabled() ? $settings->form_intro_text( $order->get_order_number() ) : '',
 				'declaration_text'   => $settings->consumer_declaration_enabled() ? $settings->consumer_declaration_text() : '',
 				'error'              => '' === $error ? '' : $this->declaration_error_message( $settings ),
 			)
+		);
+	}
+
+	/**
+	 * The screen shown when an order cannot be withdrawn from.
+	 *
+	 * "A withdrawal request is already in progress" was the generic answer for the commonest case of
+	 * all — the consumer who came back to the form after already sending one. On its own it reads like
+	 * a refusal, so it is worth saying plainly that their request arrived, when it arrived, and where
+	 * they can watch it.
+	 *
+	 * @param \WC_Order $order  The order.
+	 * @param string    $reason A {@see Reason} constant.
+	 */
+	private function ineligible_message( \WC_Order $order, string $reason ): string {
+		if ( Reason::DUPLICATE_OPEN !== $reason ) {
+			return $this->message( EligibilityController::reason_label( $reason ), 'info' );
+		}
+
+		$existing = $this->requests->latest_for_order( $order->get_id() );
+		$sent_on  = $existing instanceof WithdrawalRequest
+			? $this->local_datetime( (string) $existing->confirmed_at_gmt )
+			: '';
+
+		$text = '' !== $sent_on
+			? sprintf(
+				/* translators: %s: date and time the earlier request was sent. */
+				__( 'You already sent a withdrawal request for this order on %s. We have it — there is no need to send another.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				$sent_on
+			)
+			: __( 'A withdrawal request for this order is already in progress. We have it — there is no need to send another.', 'erred-eu-order-withdrawal-for-woocommerce' );
+
+		return $this->message(
+			$text,
+			'info',
+			$this->account_url(),
+			__( 'Follow this request in your account', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 	}
 
@@ -356,10 +442,11 @@ final class FlowController {
 	 *
 	 * @param \WC_Order       $order     The order.
 	 * @param array<int, int> $available Map line_id => units still available to withdraw.
+	 * @param array<int, int> $selected  Map line_id => quantity to pre-select (when amending a draft).
 	 *
-	 * @return array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string}>
+	 * @return array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected: bool, selected_qty: int}>
 	 */
-	private function line_choices( \WC_Order $order, array $available ): array {
+	private function line_choices( \WC_Order $order, array $available, array $selected = array() ): array {
 		$choices = array();
 		foreach ( $order->get_items() as $item_id => $item ) {
 			if ( ! $item instanceof \WC_Order_Item_Product ) {
@@ -370,16 +457,37 @@ final class FlowController {
 				continue;
 			}
 
+			$units = (int) $available[ $line_id ];
+			$want  = (int) ( $selected[ $line_id ] ?? 0 );
+
 			$choices[] = array(
-				'id'        => $line_id,
-				'label'     => $item->get_name(),
-				'quantity'  => (int) $item->get_quantity(),
-				'available' => (int) $available[ $line_id ],
-				'thumbnail' => RequestedItemsResolver::thumbnail( $item ),
+				'id'           => $line_id,
+				'label'        => $item->get_name(),
+				'quantity'     => (int) $item->get_quantity(),
+				'available'    => $units,
+				'thumbnail'    => RequestedItemsResolver::thumbnail( $item ),
+				'selected'     => $want > 0,
+				'selected_qty' => $want > 0 ? min( $want, $units ) : $units,
 			);
 		}
 
 		return $choices;
+	}
+
+	/**
+	 * The consumer's own unconfirmed declaration for this order, if there is one.
+	 *
+	 * Only a pending request qualifies: once confirmed it is a legal record and nothing about it may
+	 * be rewritten. The caller has already been authorised for the order, so this is their own draft.
+	 *
+	 * @param \WC_Order $order The order.
+	 */
+	private function editable_draft( \WC_Order $order ): ?WithdrawalRequest {
+		$latest = $this->requests->latest_for_order( $order->get_id() );
+
+		return $latest instanceof WithdrawalRequest && RequestStatus::PENDING === $latest->status
+			? $latest
+			: null;
 	}
 
 	/**
@@ -410,8 +518,12 @@ final class FlowController {
 			return $this->message( __( 'This withdrawal link is not valid or has expired.', 'erred-eu-order-withdrawal-for-woocommerce' ), 'error' );
 		}
 
+		// Arriving at step two on a request that is already confirmed means the consumer came back —
+		// browser back button, a bookmark, a second click on the emailed link. Rendering the plain
+		// success screen told them the withdrawal had just been recorded, so a second visit was
+		// indistinguishable from the first and invited them to wonder whether it had gone through twice.
 		if ( $request->is_confirmed() ) {
-			return $this->render_done();
+			return $this->render_done( true );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only; submission is nonce-protected.
@@ -431,14 +543,28 @@ final class FlowController {
 				'confirmation_email' => $request->confirmation_email,
 				'items'              => $this->request_items( $request ),
 				'confirm_label'      => __( 'Confirm withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				// Back to step one. Nothing needs undoing first: re-submitting the declaration discards
+				// the pending, unconfirmed request (see WithdrawalService::create_declaration()). If the
+				// link has since gone stale or the request was confirmed in another tab, step one says so
+				// rather than silently re-rendering.
+				'back_url'           => $this->step_url(
+					FlowUrls::STEP_DECLARE,
+					array(
+						FlowUrls::QV_ORDER => $request->order_id,
+						FlowUrls::QV_TOKEN => $token,
+					)
+				),
 			)
 		);
 	}
 
 	/**
 	 * Render the final "done" screen.
+	 *
+	 * @param bool $already_confirmed Whether this is a return visit to a request confirmed earlier,
+	 *                                rather than the screen shown right after confirming.
 	 */
-	private function render_done(): string {
+	private function render_done( bool $already_confirmed = false ): string {
 		$request = $this->authorised_request_from_query();
 		if ( ! $request instanceof WithdrawalRequest ) {
 			return $this->message( __( 'This withdrawal link is not valid or has expired.', 'erred-eu-order-withdrawal-for-woocommerce' ), 'error' );
@@ -450,7 +576,47 @@ final class FlowController {
 				'contract_reference' => $request->contract_reference,
 				'confirmation_email' => $request->confirmation_email,
 				'items'              => $this->request_items( $request ),
+				'already_confirmed'  => $already_confirmed,
+				'confirmed_on'       => $this->local_datetime( (string) $request->confirmed_at_gmt ),
+				'account_url'        => $this->account_url(),
 			)
+		);
+	}
+
+	/**
+	 * The My Account withdrawal tab, when it is switched on and there is a customer to show it to.
+	 */
+	private function account_url(): string {
+		if ( ! ( new Settings() )->account_endpoint_enabled() || ! is_user_logged_in() ) {
+			return '';
+		}
+
+		if ( ! function_exists( 'wc_get_account_endpoint_url' ) ) {
+			return '';
+		}
+
+		return (string) wc_get_account_endpoint_url( AccountEndpoint::ENDPOINT );
+	}
+
+	/**
+	 * Render a stored GMT datetime in the site's timezone and format.
+	 *
+	 * @param string $gmt Datetime in GMT ('' when absent).
+	 */
+	private function local_datetime( string $gmt ): string {
+		$gmt = trim( $gmt );
+		if ( '' === $gmt ) {
+			return '';
+		}
+
+		$timestamp = strtotime( $gmt . ' UTC' );
+		if ( false === $timestamp ) {
+			return '';
+		}
+
+		return (string) wp_date(
+			(string) get_option( 'date_format' ) . ' ' . (string) get_option( 'time_format' ),
+			$timestamp
 		);
 	}
 
@@ -469,7 +635,8 @@ final class FlowController {
 		$token    = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
 
 		if ( ! $this->gate->can_act_on_order( $order_id, $token, time() ) ) {
-			wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
+			$this->deny_stale_submission();
+			return;
 		}
 
 		$consumer_name = isset( $_POST['consumer_name'] ) ? sanitize_text_field( wp_unslash( $_POST['consumer_name'] ) ) : '';
@@ -531,7 +698,8 @@ final class FlowController {
 
 		$order = wc_get_order( $order_id );
 		if ( ! $order instanceof \WC_Order ) {
-			wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
+			$this->deny_stale_submission();
+			return;
 		}
 
 		try {
@@ -549,17 +717,17 @@ final class FlowController {
 				ClientIp::packed()
 			);
 		} catch ( DuplicateOpenRequestException $e ) {
-			$this->redirect( $this->message_url( __( 'A withdrawal request is already in progress for this order.', 'erred-eu-order-withdrawal-for-woocommerce' ) ) );
+			$this->redirect( $this->message_url( self::MSG_DUPLICATE ) );
 			return;
 		} catch ( NotEligibleException $e ) {
-			$this->redirect( $this->message_url( EligibilityController::reason_label( $e->reason() ) ) );
+			$this->redirect( $this->message_url( $this->reason_code( $e->reason() ) ) );
 			return;
 		} catch ( \Throwable $e ) {
 			// A legally-required function must never white-screen: degrade to a friendly message and
 			// keep the consumer on a usable page (e.g. a transient persistence failure or a pending
 			// schema migration). The failure is not silently lost — nothing was recorded, so the
 			// consumer can retry.
-			$this->redirect( $this->message_url( __( 'We could not record your withdrawal right now. Please try again in a few moments.', 'erred-eu-order-withdrawal-for-woocommerce' ) ) );
+			$this->redirect( $this->message_url( self::MSG_STORE_FAILED ) );
 			return;
 		}
 
@@ -585,7 +753,8 @@ final class FlowController {
 
 		$request = $this->requests->find_by_id( $request_id );
 		if ( ! $request instanceof WithdrawalRequest || ! $this->gate->can_act_on_order( $request->order_id, $token, time() ) ) {
-			wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
+			$this->deny_stale_submission();
+			return;
 		}
 
 		$this->service->confirm( $request_id, 'consumer' );
@@ -613,7 +782,7 @@ final class FlowController {
 		check_admin_referer( Nonces::LOOKUP, '_recesso_dig_nonce' );
 
 		$flow_url = isset( $_POST['flow_url'] ) ? esc_url_raw( wp_unslash( $_POST['flow_url'] ) ) : '';
-		$flow_url = wp_validate_redirect( $flow_url, FlowPage::url() );
+		$flow_url = wp_validate_redirect( $flow_url, self::flow_url_or_home() );
 
 		// Honeypot: a hidden field only automated bots complete. If filled, show the uniform result.
 		if ( isset( $_POST['recesso_dig_hp'] ) && '' !== sanitize_text_field( wp_unslash( $_POST['recesso_dig_hp'] ) ) ) {
@@ -772,16 +941,70 @@ final class FlowController {
 	/**
 	 * Build a flow URL that shows a generic message.
 	 *
-	 * @param string $message Message to display.
+	 * @param string $code One of the MSG_* codes, or a reason code from {@see self::reason_code()}.
 	 */
-	private function message_url( string $message ): string {
+	private function message_url( string $code ): string {
 		return add_query_arg(
 			array(
 				FlowUrls::QV_STEP => 'message',
-				'recesso_dig_msg' => rawurlencode( $message ),
+				'recesso_dig_msg' => rawurlencode( $code ),
 			),
 			$this->current_base_url()
 		);
+	}
+
+	/**
+	 * Resolve a message code to its text. Unknown codes resolve to '' and render nothing, so only
+	 * wording this plugin authored can ever appear on the message screen.
+	 *
+	 * @param string $code Code from the URL.
+	 */
+	private function message_for_code( string $code ): string {
+		switch ( $code ) {
+			case self::MSG_DUPLICATE:
+				return __( 'A withdrawal request is already in progress for this order.', 'erred-eu-order-withdrawal-for-woocommerce' );
+
+			case self::MSG_STORE_FAILED:
+				return __( 'We could not record your withdrawal right now. Please try again in a few moments.', 'erred-eu-order-withdrawal-for-woocommerce' );
+
+			case self::MSG_LINK_EXPIRED:
+				return __( 'This withdrawal link is no longer valid — it may have expired, or it may already have been used. You can request a new one below.', 'erred-eu-order-withdrawal-for-woocommerce' );
+		}
+
+		if ( str_starts_with( $code, self::MSG_REASON_PREFIX ) ) {
+			$reason = substr( $code, strlen( self::MSG_REASON_PREFIX ) );
+
+			// Only a reason the domain actually defines is resolved: the URL selects from a fixed list,
+			// it never supplies wording.
+			return in_array( $reason, Reason::all(), true ) ? EligibilityController::reason_label( $reason ) : '';
+		}
+
+		return '';
+	}
+
+	/**
+	 * The message code for an eligibility reason.
+	 *
+	 * @param string $reason A {@see Reason} constant.
+	 */
+	private function reason_code( string $reason ): string {
+		return self::MSG_REASON_PREFIX . $reason;
+	}
+
+	/**
+	 * End a POST that could not be authorised by sending the consumer to the message screen instead of
+	 * a bare wp_die.
+	 *
+	 * A stale form — left open past the token's lifetime, or submitted twice — used to produce an
+	 * unstyled 403 outside the theme with no way back, for what is usually a legitimate consumer
+	 * acting slowly on a legally mandated function. They now land on the withdrawal page with an
+	 * explanation and the lookup form, which issues a fresh link to the order's own address.
+	 *
+	 * The wording deliberately does not distinguish an expired link from a forged one: telling them
+	 * apart would confirm to an attacker that a signature was genuine.
+	 */
+	private function deny_stale_submission(): void {
+		$this->redirect( $this->message_url( self::MSG_LINK_EXPIRED ) );
 	}
 
 	/**
@@ -813,7 +1036,7 @@ final class FlowController {
 			}
 		}
 
-		return FlowPage::url();
+		return self::flow_url_or_home();
 	}
 
 	/**
@@ -828,7 +1051,21 @@ final class FlowController {
 			}
 		}
 
-		return FlowPage::url();
+		return self::flow_url_or_home();
+	}
+
+	/**
+	 * The flow page URL, falling back to the site home.
+	 *
+	 * Only for the redirect targets and form bases in this class, where the request has to land
+	 * *somewhere* and an empty string would be a broken redirect. Never use it to decide whether to
+	 * offer a withdrawal control: that decision reads {@see FlowPage::url()} directly, so a missing
+	 * page suppresses the link instead of pointing it at the shop front page.
+	 */
+	private static function flow_url_or_home(): string {
+		$url = FlowPage::url();
+
+		return '' !== $url ? $url : home_url( '/' );
 	}
 
 	/**
@@ -844,15 +1081,19 @@ final class FlowController {
 	/**
 	 * Render a generic message screen.
 	 *
-	 * @param string $message Message text.
-	 * @param string $type    One of info|error|success.
+	 * @param string $message   Message text.
+	 * @param string $type      One of info|error|success.
+	 * @param string $link_url  Optional follow-up link.
+	 * @param string $link_text Label for that link (both must be present for it to render).
 	 */
-	private function message( string $message, string $type ): string {
+	private function message( string $message, string $type, string $link_url = '', string $link_text = '' ): string {
 		return Templates::render(
 			'message',
 			array(
-				'message' => $message,
-				'type'    => $type,
+				'message'   => $message,
+				'type'      => $type,
+				'link_url'  => $link_url,
+				'link_text' => $link_text,
 			)
 		);
 	}

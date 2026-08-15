@@ -244,6 +244,58 @@ test.describe( 'Guest withdrawal flow (server-rendered)', () => {
 		expect( row.receipt_hash ).toBeTruthy();
 	} );
 
+	test( '«Edit your details» returns to step one, reachable by keyboard', async ( {
+		page,
+	} ) => {
+		const edited = seedEligibleOrder();
+
+		await page.goto( edited.tokenUrl );
+		await page.fill( 'input[name="consumer_name"]', 'Prima Versione' );
+		await page.fill( 'input[name="confirmation_email"]', edited.email );
+		await page
+			.locator( '.wp-block-recesso-digitale-flow__item-check' )
+			.first()
+			.check();
+		await page.getByRole( 'button', { name: /continue/i } ).click();
+
+		// The review step shows what was entered, and offers the way back.
+		await expect( page.locator( FLOW ) ).toContainText( 'Prima Versione' );
+		const editLink = page.getByRole( 'link', {
+			name: /edit your details/i,
+		} );
+		await expect( editLink ).toBeVisible();
+		await expectNoA11yViolations( page, FLOW );
+
+		// Reached with the keyboard alone, not just the mouse.
+		await editLink.focus();
+		await expect( editLink ).toBeFocused();
+		await page.keyboard.press( 'Enter' );
+
+		// Back on step one, where a corrected declaration replaces the unconfirmed one.
+		await expect(
+			page.getByRole( 'button', { name: /continue/i } )
+		).toBeVisible();
+		await page.fill( 'input[name="consumer_name"]', 'Seconda Versione' );
+		await page.fill( 'input[name="confirmation_email"]', edited.email );
+		await page
+			.locator( '.wp-block-recesso-digitale-flow__item-check' )
+			.first()
+			.check();
+		await page.getByRole( 'button', { name: /continue/i } ).click();
+
+		await expect( page.locator( FLOW ) ).toContainText(
+			'Seconda Versione'
+		);
+
+		// Exactly one request for the order: editing replaced the pending declaration.
+		const count = firstJson(
+			wpEval( `global $wpdb;
+				$t = $wpdb->prefix . 'recesso_dig_requests';
+				echo wp_json_encode( array( 'n' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$t} WHERE order_id = %d", ${ edited.orderId } ) ) ) );` )
+		);
+		expect( count.n ).toBe( 1 );
+	} );
+
 	test( 'a consumer can withdraw a chosen quantity of a line (partial by quantity)', async ( {
 		page,
 	} ) => {

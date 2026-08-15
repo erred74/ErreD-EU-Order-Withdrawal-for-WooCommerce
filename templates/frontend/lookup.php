@@ -60,7 +60,11 @@ $recesso_dig_notice_type = isset( $args['notice_type'] ) && in_array( $args['not
 				aria-required="true"
 				autocomplete="off"
 				inputmode="numeric"
+				aria-describedby="recesso-dig-lookup-order-hint"
 			/>
+			<span id="recesso-dig-lookup-order-hint" class="wp-block-recesso-digitale-flow__hint">
+				<?php esc_html_e( 'You will find it in your order confirmation email.', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+			</span>
 		</p>
 
 		<p class="wp-block-recesso-digitale-flow__field">
@@ -73,7 +77,11 @@ $recesso_dig_notice_type = isset( $args['notice_type'] ) && in_array( $args['not
 				required
 				aria-required="true"
 				autocomplete="email"
+				aria-describedby="recesso-dig-lookup-email-hint"
 			/>
+			<span id="recesso-dig-lookup-email-hint" class="wp-block-recesso-digitale-flow__hint">
+				<?php esc_html_e( 'The link is sent to this address only, so it must be the one on the order.', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+			</span>
 		</p>
 
 		<p class="wp-block-recesso-digitale-flow__actions">

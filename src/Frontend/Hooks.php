@@ -78,10 +78,15 @@ final class Hooks {
 			return;
 		}
 
+		$url = $this->declaration_link( $order, true );
+		if ( '' === $url ) {
+			return;
+		}
+
 		$html = Templates::render(
 			'button',
 			array(
-				'url'   => $this->declaration_link( $order, true ),
+				'url'   => $url,
 				'label' => $this->label(),
 			)
 		);
@@ -109,7 +114,11 @@ final class Hooks {
 			return;
 		}
 
-		$url   = $this->declaration_link( $order, true );
+		$url = $this->declaration_link( $order, true );
+		if ( '' === $url ) {
+			return;
+		}
+
 		$intro = $this->withdrawal_intro();
 
 		if ( $plain_text ) {
@@ -179,13 +188,23 @@ final class Hooks {
 	 * surfaces (emails, order-received page); without one for the logged-in owner (ownership
 	 * authorises the flow).
 	 *
+	 * Returns an empty string when no usable withdrawal page is configured. The callers then render
+	 * nothing at all: a control pointing at a page that does not exist is worse than its absence, and
+	 * the merchant is told about it through the admin notice rather than through a broken customer
+	 * journey.
+	 *
 	 * @param \WC_Order $order      The order.
 	 * @param bool      $with_token Whether to sign the link with an expiring order token.
 	 */
 	private function declaration_link( \WC_Order $order, bool $with_token = false ): string {
+		$flow_url = FlowPage::url();
+		if ( '' === $flow_url ) {
+			return '';
+		}
+
 		$expiry = $with_token ? $this->token_expiry() : null;
 
-		return $this->urls->declaration_url( FlowPage::url(), $order->get_id(), $expiry );
+		return $this->urls->declaration_url( $flow_url, $order->get_id(), $expiry );
 	}
 
 	/**

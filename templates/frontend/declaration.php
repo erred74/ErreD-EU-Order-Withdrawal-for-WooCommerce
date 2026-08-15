@@ -4,7 +4,7 @@
  *
  * Override: copy to `recesso-digitale/declaration.php` in your theme.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string}>, error: string, intro: string, declaration_text: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected?: bool, selected_qty?: int}>, error: string, intro: string, declaration_text: string} $args
  * @package Recesso54bis
  */
 
@@ -16,7 +16,11 @@ defined( 'ABSPATH' ) || exit;
 	<h2 class="wp-block-recesso-digitale-flow__title"><?php esc_html_e( 'Withdrawal declaration', 'erred-eu-order-withdrawal-for-woocommerce' ); ?></h2>
 
 	<?php if ( '' !== $args['error'] ) : ?>
-		<div class="wp-block-recesso-digitale-flow__error" role="alert">
+		<?php
+		// Focusable so the enhancement script can move focus here on re-render: role="alert" alone is
+		// announced unreliably when the message is already in the markup at page load.
+		?>
+		<div class="wp-block-recesso-digitale-flow__error" id="recesso-dig-error" role="alert" tabindex="-1">
 			<?php echo esc_html( $args['error'] ); ?>
 		</div>
 	<?php endif; ?>
@@ -27,7 +31,12 @@ defined( 'ABSPATH' ) || exit;
 		</p>
 	<?php endif; ?>
 
-	<form class="wp-block-recesso-digitale-flow__form" method="post" action="<?php echo esc_url( $args['action_url'] ); ?>">
+	<form
+		class="wp-block-recesso-digitale-flow__form"
+		method="post"
+		action="<?php echo esc_url( $args['action_url'] ); ?>"
+		<?php echo '' !== $args['error'] ? 'aria-describedby="recesso-dig-error"' : ''; ?>
+	>
 		<?php wp_nonce_field( $args['nonce_action'], $args['nonce_name'] ); ?>
 		<input type="hidden" name="action" value="recesso_dig_declare" />
 		<input type="hidden" name="order_id" value="<?php echo esc_attr( (string) $args['order_id'] ); ?>" />
@@ -99,6 +108,10 @@ defined( 'ABSPATH' ) || exit;
 						$recesso_dig_qty_id    = 'recesso-dig-qty-' . $recesso_dig_line_id;
 						$recesso_dig_available = (int) $recesso_dig_line['available'];
 						$recesso_dig_has_qty   = $recesso_dig_available > 1;
+						// Set when the consumer is amending a declaration they have not confirmed, so the
+						// form comes back with their earlier choices rather than blank.
+						$recesso_dig_checked = ! empty( $recesso_dig_line['selected'] );
+						$recesso_dig_qty_val = (int) ( $recesso_dig_line['selected_qty'] ?? $recesso_dig_available );
 						?>
 						<li class="wp-block-recesso-digitale-flow__item">
 							<input
@@ -107,6 +120,7 @@ defined( 'ABSPATH' ) || exit;
 								class="wp-block-recesso-digitale-flow__item-check"
 								name="requested_lines[]"
 								value="<?php echo esc_attr( (string) $recesso_dig_line_id ); ?>"
+								<?php checked( $recesso_dig_checked ); ?>
 								<?php echo $recesso_dig_has_qty ? 'aria-controls="' . esc_attr( $recesso_dig_qty_id ) . '"' : ''; ?>
 							/>
 							<label for="<?php echo esc_attr( $recesso_dig_check_id ); ?>" class="wp-block-recesso-digitale-flow__item-label">
@@ -140,7 +154,7 @@ defined( 'ABSPATH' ) || exit;
 										min="1"
 										max="<?php echo esc_attr( (string) $recesso_dig_available ); ?>"
 										step="1"
-										value="<?php echo esc_attr( (string) $recesso_dig_available ); ?>"
+										value="<?php echo esc_attr( (string) $recesso_dig_qty_val ); ?>"
 										inputmode="numeric"
 									/>
 								</span>
@@ -154,15 +168,20 @@ defined( 'ABSPATH' ) || exit;
 		<?php if ( '' !== $args['declaration_text'] ) : ?>
 			<?php // The right of withdrawal protects consumers, not business buyers. The merchant can ask for this good-faith declaration; it is recorded in the durable-medium receipt. ?>
 			<p class="wp-block-recesso-digitale-flow__field wp-block-recesso-digitale-flow__field--check">
+				<?php
+				// The label is the accessible name; it must not also be pointed at by aria-describedby,
+				// which made screen readers read the whole declaration twice — once as the name, once as
+				// a description that added nothing.
+				?>
 				<input
 					type="checkbox"
 					id="recesso-dig-consumer"
 					name="consumer_declaration"
 					value="1"
 					required
-					aria-describedby="recesso-dig-consumer-hint"
+					aria-required="true"
 				/>
-				<label for="recesso-dig-consumer" id="recesso-dig-consumer-hint">
+				<label for="recesso-dig-consumer">
 					<?php echo esc_html( $args['declaration_text'] ); ?>
 				</label>
 			</p>

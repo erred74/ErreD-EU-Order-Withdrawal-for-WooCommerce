@@ -129,7 +129,7 @@ final class SettingsPage {
 				'default'           => '',
 			)
 		);
-		foreach ( array( Settings::OPT_CONSENT_DIGITAL_ENABLED, Settings::OPT_CONSENT_DIGITAL_REQUIRED, Settings::OPT_CONSENT_SERVICE_ENABLED, Settings::OPT_CONSENTS_CONDITIONAL ) as $recesso_dig_bool_opt ) {
+		foreach ( array( Settings::OPT_CONSENT_DIGITAL_ENABLED, Settings::OPT_CONSENT_DIGITAL_REQUIRED, Settings::OPT_CONSENT_SERVICE_ENABLED, Settings::OPT_CONSENT_SERVICE_REQUIRED, Settings::OPT_CONSENTS_CONDITIONAL ) as $recesso_dig_bool_opt ) {
 			register_setting(
 				self::GROUP,
 				$recesso_dig_bool_opt,
@@ -388,6 +388,7 @@ final class SettingsPage {
 		add_settings_field( Settings::OPT_CONSENT_DIGITAL_REQUIRED, __( 'Require digital-content consent', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_consent_digital_required' ), self::MENU_SLUG, self::SECTION_CONSENT );
 		add_settings_field( Settings::OPT_CONSENT_DIGITAL_TEXT, __( 'Digital-content consent text', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_consent_digital_text' ), self::MENU_SLUG, self::SECTION_CONSENT );
 		add_settings_field( Settings::OPT_CONSENT_SERVICE_ENABLED, __( 'Service-start consent (Art. 14(4)(a))', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_consent_service_enabled' ), self::MENU_SLUG, self::SECTION_CONSENT );
+		add_settings_field( Settings::OPT_CONSENT_SERVICE_REQUIRED, __( 'Require service-start consent', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_consent_service_required' ), self::MENU_SLUG, self::SECTION_CONSENT );
 		add_settings_field( Settings::OPT_CONSENT_SERVICE_TEXT, __( 'Service-start consent text', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_consent_service_text' ), self::MENU_SLUG, self::SECTION_CONSENT );
 
 		add_settings_section(
@@ -568,19 +569,23 @@ final class SettingsPage {
 	 * withdrawal page?" without leaving this screen.
 	 */
 	private function render_header(): void {
-		$url = FlowPage::url();
+		$health = FlowPage::health();
 
+		if ( FlowPage::HEALTH_OK !== $health ) {
+			printf(
+				'<div class="notice notice-%s inline"><p>%s</p></div>',
+				FlowPageNotice::is_blocking( $health ) ? 'error' : 'warning',
+				esc_html( FlowPageNotice::message( $health ) )
+			);
+		}
+
+		$url = FlowPage::url();
 		if ( '' !== $url ) {
 			printf(
 				'<p>%s <a href="%s">%s</a></p>',
 				esc_html__( 'Public withdrawal form:', 'erred-eu-order-withdrawal-for-woocommerce' ),
 				esc_url( $url ),
 				esc_html( $url )
-			);
-		} else {
-			printf(
-				'<div class="notice notice-warning inline"><p>%s</p></div>',
-				esc_html__( 'No withdrawal page is selected yet. Pick one under General below — the withdrawal function is not reachable until you do.', 'erred-eu-order-withdrawal-for-woocommerce' )
 			);
 		}
 	}
@@ -1062,6 +1067,17 @@ final class SettingsPage {
 		$this->hint(
 			self::TAG_OPTIONAL,
 			__( 'Useful for ongoing services (maintenance plans, consultancy, subscriptions). With this consent recorded you may charge a proportionate amount for the work already done if the consumer withdraws within the window; without it, an early withdrawal means a full refund regardless of the work delivered.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * Field: require the service-start consent to place the order.
+	 */
+	public function field_consent_service_required(): void {
+		$this->checkbox_option( Settings::OPT_CONSENT_SERVICE_REQUIRED, __( 'The order cannot be placed until this consent is given.', 'erred-eu-order-withdrawal-for-woocommerce' ) );
+		$this->hint(
+			self::TAG_OPTIONAL,
+			__( 'Leave this off unless your service always begins inside the withdrawal window — a live session, a booking for the next few days — where an order without the request is one you cannot fulfil. Asking for early performance is the consumer\'s choice to make, and requiring it takes that choice away, so it is off by default.', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 	}
 

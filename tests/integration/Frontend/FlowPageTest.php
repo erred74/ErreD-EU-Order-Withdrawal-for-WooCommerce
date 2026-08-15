@@ -90,4 +90,90 @@ final class FlowPageTest extends TestCase {
 		$this->assertSame( $id, FlowPage::ensure(), 'The merchant-selected page is reused.' );
 		$this->assertSame( '', (string) get_post_meta( $id, FlowPage::CREATED_META, true ), 'A merchant-selected page must not receive the created-by-plugin marker.' );
 	}
+
+	/*
+	 * Regression: url() used to fall back to home_url('/'). A merchant who trashed or unpublished the
+	 * page then had every withdrawal link — order emails, My Account, the footer — silently point at
+	 * the shop front page, dropping the customer there with a valid signed token, no form and no
+	 * explanation. It must now return '' so callers suppress the link, and health() must name the
+	 * problem so the merchant is told rather than left to discover it from a customer complaint.
+	 */
+
+	public function test_the_url_is_empty_when_no_page_is_configured(): void {
+		delete_option( FlowPage::OPTION );
+
+		$this->assertSame( '', FlowPage::url(), 'With no page configured there is nothing to link to.' );
+		$this->assertSame( FlowPage::HEALTH_NOT_SET, FlowPage::health() );
+	}
+
+	public function test_the_url_is_empty_when_the_page_was_deleted(): void {
+		$id = $this->make_page( FlowPage::DEFAULT_CONTENT );
+		update_option( FlowPage::OPTION, $id );
+		$this->assertNotSame( '', FlowPage::url(), 'Sanity: a published page with the shortcode resolves.' );
+
+		wp_delete_post( $id, true );
+		$this->pages = array();
+
+		$this->assertSame( '', FlowPage::url(), 'A deleted page must not resolve to the site home.' );
+		$this->assertSame( FlowPage::HEALTH_MISSING, FlowPage::health() );
+	}
+
+	public function test_the_url_is_empty_when_the_page_is_a_draft(): void {
+		$id = $this->make_page( FlowPage::DEFAULT_CONTENT );
+		update_option( FlowPage::OPTION, $id );
+
+		wp_update_post(
+			array(
+				'ID'          => $id,
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertSame( '', FlowPage::url(), 'A draft is not reachable by a customer, so no link may be offered.' );
+		$this->assertSame( FlowPage::HEALTH_NOT_PUBLISHED, FlowPage::health() );
+	}
+
+	public function test_the_url_is_empty_when_the_page_is_in_the_trash(): void {
+		$id = $this->make_page( FlowPage::DEFAULT_CONTENT );
+		update_option( FlowPage::OPTION, $id );
+
+		wp_trash_post( $id );
+
+		$this->assertSame( '', FlowPage::url(), 'A trashed page resolves to a permalink that 404s; suppress the link instead.' );
+		$this->assertSame( FlowPage::HEALTH_NOT_PUBLISHED, FlowPage::health() );
+	}
+
+	public function test_a_published_page_without_the_form_still_resolves_but_is_reported(): void {
+		// Advisory only, and deliberately so: page builders keep their content in post meta and a
+		// synced pattern hides the block, so plenty of working pages fail this check. Warn, never
+		// withdraw the link.
+		$id = $this->make_page( '<p>Nothing to see here.</p>' );
+		update_option( FlowPage::OPTION, $id );
+
+		$this->assertNotSame( '', FlowPage::url(), 'A published page keeps its link: the form check is a heuristic.' );
+		$this->assertSame( FlowPage::HEALTH_NO_FORM, FlowPage::health() );
+	}
+
+	public function test_the_block_counts_as_hosting_the_form(): void {
+		$id = $this->make_page( '<!-- wp:' . FlowPage::BLOCK . ' /-->' );
+		update_option( FlowPage::OPTION, $id );
+
+		$this->assertSame( FlowPage::HEALTH_OK, FlowPage::health(), 'The block hosts the flow just as the shortcode does.' );
+	}
+
+	public function test_the_shortcode_counts_as_hosting_the_form(): void {
+		$id = $this->make_page( '<p>Returns policy.</p>[' . FlowPage::SHORTCODE . ']' );
+		update_option( FlowPage::OPTION, $id );
+
+		$this->assertSame( FlowPage::HEALTH_OK, FlowPage::health() );
+	}
+
+	public function test_the_plugins_other_shortcodes_do_not_pass_for_the_flow(): void {
+		// The model form and the exclusion notice share the prefix but do not host the flow, so a page
+		// carrying only one of them must still be reported as missing the form.
+		$id = $this->make_page( '[' . FlowPage::SHORTCODE . '_modulo]' );
+		update_option( FlowPage::OPTION, $id );
+
+		$this->assertSame( FlowPage::HEALTH_NO_FORM, FlowPage::health() );
+	}
 }

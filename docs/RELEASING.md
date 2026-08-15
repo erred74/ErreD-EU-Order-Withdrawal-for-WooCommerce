@@ -38,11 +38,19 @@ grep -n '"version"' package.json
 version. **The upgrade notice must be under 300 characters** — Plugin Check warns above that, and the
 notice is what users see in their update screen.
 
-Build the distribution and check it:
+Refresh the compiled assets and the translations, then build the distribution. `build-dist.sh` copies
+`build/` and `languages/` as it finds them, so **both must be current when it runs** — it does not
+rebuild either, and a zip carrying yesterday's bundle looks perfectly healthy:
 
 ```sh
+npm run build                   # compile assets to build/
+bash bin/build-i18n.sh          # .pot + it_IT — must end at 0 untranslated
 bash bin/build-dist.sh          # → dist/erred-eu-order-withdrawal-for-woocommerce.zip
 ```
+
+The first two are independent of each other: `build-i18n.sh` scans `assets/`, not `build/`, and names
+its JSON files after the md5 of the built bundle's *path string*, not its contents. Either order works
+— what matters is that both have run before the zip is built.
 
 Then run Plugin Check **against the built zip**, never the working directory — the dev folder is named
 `wc-reso-ordini`, which produces text-domain and trademarked-slug errors that do not exist in the
@@ -92,7 +100,7 @@ for exactly this. Do not add them back to `.distignore`.
 You need a wordpress.org account with commit access to this plugin. SVN will prompt for it.
 
 ```sh
-VERSION=0.6.0
+VERSION=0.7.0
 SLUG=erred-eu-order-withdrawal-for-woocommerce
 SVN=https://plugins.svn.wordpress.org/$SLUG
 
@@ -123,6 +131,29 @@ svn copy $SVN/trunk $SVN/tags/$VERSION -m "Tag $VERSION"
 
 wp.org picks the release up within a few minutes. It serves whatever `Stable tag:` in **trunk's**
 `readme.txt` names, so the tag directory and the stable tag must agree.
+
+### The gap between the two commands
+
+Between `svn commit` and `svn copy` there is a window where trunk announces a `Stable tag:` whose tag
+directory does not exist yet. **Run the two back to back**, and do not start the sequence if you might
+be interrupted.
+
+If you are interrupted there — trunk committed, tag missing — you have two ways out, and the choice is
+whether the release is ready:
+
+- **Finish it:** run the `svn copy` and you are done.
+- **Back out:** set `Stable tag:` in trunk's `readme.txt` back to the previous released version and
+  commit trunk alone. wp.org immediately serves that older version again. The new code stays in trunk,
+  harmlessly, until you are ready to tag it.
+
+Check which state you are in before doing either — the plugin's public API answers directly:
+
+```sh
+curl -s "https://api.wordpress.org/plugins/info/1.0/$SLUG.json" | grep -o '"version":"[^"]*"' | head -1
+svn ls $SVN/tags
+```
+
+This is not hypothetical: it happened during 0.6.1, and the fix was the rollback commit above.
 
 ---
 

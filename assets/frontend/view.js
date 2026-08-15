@@ -21,6 +21,7 @@ const CHECK = '.wp-block-recesso-digitale-flow__item-check';
 const QTY_WRAP = '.wp-block-recesso-digitale-flow__item-qty';
 const QTY_INPUT = '.wp-block-recesso-digitale-flow__qty-input';
 const ENHANCED = 'recessoDigEnhanced';
+const ERROR = '.wp-block-recesso-digitale-flow__error';
 const MODEL_FORM = '.wp-block-recesso-digitale-model-form';
 const PRINT_BUTTON = '.wp-block-recesso-digitale-model-form__print-button';
 
@@ -169,13 +170,38 @@ async function onSubmit( event ) {
 function afterSwap( container ) {
 	enhance( container );
 
-	const heading =
+	// A validation error is what the reader needs first: sending them to the step heading instead
+	// would announce "Withdrawal declaration" and leave them to discover on their own that the
+	// submission was refused.
+	const target =
+		container.querySelector( ERROR ) ||
 		container.querySelector( '.wp-block-recesso-digitale-flow__title' ) ||
 		container;
-	heading.setAttribute( 'tabindex', '-1' );
-	heading.focus();
+	target.setAttribute( 'tabindex', '-1' );
+	target.focus();
 
-	const text = ( heading.textContent || '' ).trim();
+	const text = ( target.textContent || '' ).trim();
+	if ( text ) {
+		speak( text );
+	}
+}
+
+/**
+ * Move focus to the validation error after a full page reload (the no-JS submit path, where the
+ * server re-renders the form with `recesso_dig_error` on the URL). role="alert" is announced
+ * unreliably when the message is already present at load, so focus does the work.
+ *
+ * @param {Element} container The flow container.
+ */
+function focusInitialError( container ) {
+	const error = container.querySelector( ERROR );
+	if ( ! error ) {
+		return;
+	}
+
+	error.focus();
+
+	const text = ( error.textContent || '' ).trim();
 	if ( text ) {
 		speak( text );
 	}
@@ -216,6 +242,7 @@ domReady( () => {
 	const root = document.querySelector( FLOW );
 	if ( root ) {
 		enhance( root );
+		focusInitialError( root );
 	}
 
 	enhanceModelForms();

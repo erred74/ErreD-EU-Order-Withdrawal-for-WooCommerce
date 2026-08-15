@@ -38,7 +38,7 @@ final class Shortcode {
 	 * Register the shortcode.
 	 */
 	public function register(): void {
-		add_shortcode( 'recesso_digitale', array( $this, 'render' ) );
+		add_shortcode( FlowPage::SHORTCODE, array( $this, 'render' ) );
 	}
 
 	/**

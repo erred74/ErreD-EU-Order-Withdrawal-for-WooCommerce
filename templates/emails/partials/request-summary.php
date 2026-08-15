@@ -9,6 +9,7 @@
  * @var array<int, array{line_id: int, name: string, quantity: int}> $items
  * @var string                                                       $order_date
  * @var bool                                                         $is_partial
+ * @var string                                                       $account_url
  * @package Recesso54bis
  */
 
@@ -79,5 +80,13 @@ if ( '' !== trim( (string) $request->withdrawal_reason ) ) {
 	<p style="margin-top:16px;">
 		<?php esc_html_e( 'Receipt verification code (keep this email as proof of submission):', 'erred-eu-order-withdrawal-for-woocommerce' ); ?><br />
 		<strong style="font-family:monospace; word-break:break-all;"><?php echo esc_html( $request->receipt_hash ); ?></strong>
+	</p>
+<?php endif; ?>
+
+<?php if ( '' !== (string) ( $account_url ?? '' ) ) : ?>
+	<p style="margin-top:16px;">
+		<a href="<?php echo esc_url( (string) $account_url ); ?>">
+			<?php esc_html_e( 'Follow this request in your account', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
+		</a>
 	</p>
 <?php endif; ?>

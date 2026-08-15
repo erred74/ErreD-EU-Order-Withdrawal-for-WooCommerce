@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.6.1
+Stable tag: 0.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -134,6 +134,29 @@ the digital-content box appears only with art. 16(m) items in the cart, the serv
 art. 14(4)(a) items. The option is off by default, so updating the plugin never changes what your
 checkout shows.
 
+Either consent can also be made a condition of placing the order, and both are off by default. For the
+Article 14(4)(a) service-start consent that default is deliberate: asking for the service to begin
+inside the withdrawal period is the customer's request to make, and it only entitles you to a
+proportionate payment if they later withdraw. Require it only where your service always begins inside
+that window — a live session, a booking for the next few days — so an order without the request is one
+you cannot fulfil.
+
+= Can customers see the requests they have sent? =
+
+Yes. The My Account "Right of withdrawal" tab lists them with the date they were sent, the order, the
+scope, the current status, any note you wrote when deciding, the receipt verification code and a link
+to the receipt PDF that keeps working for as long as the account does. Orders they can still withdraw
+from are listed in the same table. The tab is on by default and can be turned off under Withdrawal
+link visibility. Guest-checkout customers have no account, so their route stays the signed link in
+their emails.
+
+= My withdrawal links stopped working. What happened? =
+
+Most likely the page hosting the withdrawal form was deleted, moved to the trash or unpublished. When
+that happens the plugin stops showing withdrawal links rather than pointing them somewhere useless,
+and tells you so on the settings screen and in an admin notice. Select or restore the page under
+General and the links come back.
+
 = Does it support WooCommerce Subscriptions? =
 
 Optionally. If WooCommerce Subscriptions is active, a confirmed withdrawal cancels the related
@@ -149,6 +172,38 @@ No. It functions fully offline and loads no third-party scripts, fonts or assets
 Nothing is removed unless you opt in via the "Delete all data on uninstall" setting. When enabled,
 the plugin removes its tables, options and the flow page on uninstall.
 
+== Hooks for developers ==
+
+All hooks are prefixed `recesso_dig_`. Names and signatures are stable within a major version.
+
+Filters:
+
+* `recesso_dig_is_eligible` — `( EligibilityResult $result, WC_Order $order )`. The last word on
+  whether an order can be withdrawn from. Use it to refine the decision for your catalogue.
+* `recesso_dig_withdrawable_statuses` — `( string[] $statuses )`. Which order statuses a withdrawal
+  may be started from, after the setting has been applied.
+* `recesso_dig_entry_token_ttl` — `( int $seconds )`. Lifetime of the signed link emailed to
+  guest-checkout customers. Default 60 days, floor of one day.
+* `recesso_dig_consent_applies` — `( bool $applies, string $consent )` where `$consent` is `digital`
+  or `service`. Decides per cart whether a consent is asked for. Both checkouts read this same
+  decision, so the classic checkout and the Checkout block cannot disagree.
+* `recesso_dig_consent_required` — `( bool $required, string $consent )`. Makes a consent blocking or
+  optional. Must not depend on the cart: the Checkout block registers its fields once per request,
+  before any cart is known.
+* `recesso_dig_consent_render_hook` — `( string $hook )`. Moves the consent checkboxes to another
+  checkout hook; return an empty string to suppress the render and place them yourself. Classic
+  checkout only — in the Checkout block, WooCommerce decides placement.
+* `recesso_dig_consent_render_priority` — `( int $priority, string $hook )`. Classic checkout only.
+
+Actions:
+
+* `recesso_dig_request_created` — `( WithdrawalRequest $request )`. After step one is stored, before
+  the consumer has confirmed. Not yet a legal record.
+* `recesso_dig_request_confirmed` — `( WithdrawalRequest $request )`. After step two. This is the
+  moment of communication; `confirmed_at_gmt` is set and never changes.
+* `recesso_dig_request_processed` — `( int $request_id, string $action )`. After a merchant decision.
+* `recesso_dig_after_declaration_form` — fires inside the flow container, below the declaration form.
+
 == Screenshots ==
 
 1. Step one: the withdrawal declaration ("recedere dal contratto qui"), pre-filled from the order.
@@ -159,7 +214,72 @@ the plugin removes its tables, options and the flow page on uninstall.
 
 == Changelog ==
 
+= 0.7.0 =
+Customers can now follow their withdrawal requests from their account, and a withdrawal page that has
+been deleted or unpublished no longer fails silently.
+
+* **New:** the My Account "Right of withdrawal" tab lists the requests the customer has sent — when it
+  was sent, the order, the scope, the current status, the note you wrote when you decided it, and the
+  receipt verification code — alongside the orders they can still withdraw from. Previously the tab
+  listed eligible orders only, so sending a request made the order disappear from it and left the
+  customer reading "None of your orders is currently eligible for withdrawal". The acknowledgement and
+  status emails link to the same screen.
+* **New:** the receipt PDF is reachable from that tab for as long as the account exists. The link in
+  the acknowledgement email is signed with a token that expires after 60 days, and until now that was
+  the only route to it — a durable medium the consumer can no longer open is not durable.
+* **New:** the My Account orders list shows the withdrawal control on an eligible order, and the
+  request's status on an order already withdrawn from. It showed neither before.
+* **New:** the Article 14(4)(a) service-start consent can be made mandatory (Withdrawals → Settings →
+  Checkout consents). Off by default, because asking for the service to start inside the withdrawal
+  period is the customer's choice to make; useful where the service always begins inside that window,
+  such as live sessions or bookings.
+* **New:** four developer filters for the checkout consents — `recesso_dig_consent_render_hook` and
+  `recesso_dig_consent_render_priority` move the checkboxes on the classic checkout (an empty hook
+  suppresses the render), `recesso_dig_consent_applies` decides per cart whether each consent is
+  asked for, and `recesso_dig_consent_required` makes either one blocking or optional. All hooks are
+  now documented under "Hooks for developers" below.
+* **New:** an "Edit your details" link on the confirmation step, back to the form. Re-submitting
+  replaces the unconfirmed request rather than adding a second one.
+* **Fix:** a withdrawal page that was deleted, trashed or unpublished sent every withdrawal link to
+  the shop front page instead — customers arrived with a valid link, no form and no explanation. Links
+  are now suppressed rather than misdirected, and the settings screen and an admin notice say what is
+  wrong with the page. The settings screen also stops describing your home page as the withdrawal form
+  when no page is selected.
+* **Fix:** an expired or already-used link submitted from a stale form produced an unstyled "You are
+  not authorized to perform this action" page outside your theme, with no way back. It now explains
+  what happened on the withdrawal page and offers the form that sends a fresh link.
+* **Fix:** returning to the confirmation step for a request already sent re-showed the success screen
+  as though the withdrawal had just been recorded. It now says the request is already on record and
+  when it was sent. Reaching the form again for an order already withdrawn from says the same, instead
+  of a bare "a request is already in progress".
+* **Fix:** the message screen printed whatever text the address bar carried. It was correctly escaped,
+  so it was never a scripting hole, but it did let a crafted link display wording of someone else's
+  choosing inside your withdrawal page. Only messages this plugin defines can be shown now.
+* **Fix:** accessibility of the public form — the consumer declaration told screen readers to announce
+  its own label twice, the order-lookup fields had no description attached, and a validation error was
+  not moved to on re-render.
+* Two links in the requests screen were built with a helper that HTML-escapes the URL it returns. That
+  is correct when printing a link into a page, and wrong for a URL handed to the admin app as data and
+  set straight onto a button: the browser then sent `amp;request` instead of `request`, so the server
+  never saw the parameters and refused. Both are fixed and covered by tests that fail against the old
+  form.
+* **Fix:** **Export CSV** failed with "The link you followed has expired". The export nonce never
+  reached the server. Present since 0.3.0.
+* **Fix:** opening a durable-medium **receipt** from the request detail panel failed with "You are not
+  authorized to perform this action". Present since 0.5.1, and it affected every receipt opened from
+  that panel, whatever the age of the withdrawal. The Download link in the no-JavaScript requests
+  table was never affected by either bug.
+* A receipt link that cannot be matched to a withdrawal record no longer reports an authorisation
+  failure. Merchants are told the record could not be read and pointed at the requests screen, where
+  a pending database upgrade finishes; everyone else still gets the same generic refusal, so the
+  endpoint cannot be used to discover which requests exist.
+* A merchant following an old receipt link — from an acknowledgement email, or a bookmark, whose
+  signed token has since expired — is now taken to that request in the admin instead of a permissions
+  error. The file itself still requires a freshly signed link.
+
 = 0.6.1 =
+Superseded by 0.7.0, which contains these fixes. Never released separately.
+
 Two links in the requests screen were built with a helper that HTML-escapes the URL it returns. That
 is correct when printing a link into a page, and wrong for a URL handed to the admin app as data and
 set straight onto a button: the browser then sent `amp;request` instead of `request`, so the server
@@ -382,6 +502,11 @@ hands it to JavaScript.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.7.0 =
+Customers can follow their withdrawal requests, and the receipt PDF, from My Account. Fixes a
+withdrawal page that was deleted or unpublished silently sending every withdrawal link to your home
+page. Recommended for all sites. No data migration required.
 
 = 0.6.1 =
 Fixes two broken links in the requests screen: Export CSV reporting an expired link, and the

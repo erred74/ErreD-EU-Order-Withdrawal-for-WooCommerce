@@ -94,6 +94,54 @@ final class LogRepository {
 	}
 
 	/**
+	 * The merchant's most recent decision note for each of the given requests.
+	 *
+	 * The note the merchant types when rejecting a request is deliberately not a column on the request
+	 * row: the requests table holds legal facts and is append-only, so a decision — which can be taken
+	 * more than once — belongs in the log as a new event. This reads the latest one back for display,
+	 * in a single query rather than one per request.
+	 *
+	 * @param array<int, int> $request_ids Request ids (bounded by the caller).
+	 *
+	 * @return array<int, string> Note keyed by request id; requests without a note are absent.
+	 */
+	public function latest_status_notes( array $request_ids ): array {
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $request_ids ) ) ) );
+		if ( array() === $ids ) {
+			return array();
+		}
+
+		// Built from array_fill of a literal placeholder, so the interpolated fragment is '%d,%d,…'
+		// and every value still goes through prepare().
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- the placeholder count is generated to match the id list, which the sniff cannot count statically.
+		$sql = (string) $this->wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a generated list of %d placeholders, never data.
+			"SELECT request_id, payload FROM %i WHERE event = %s AND request_id IN ( {$placeholders} ) ORDER BY id ASC",
+			array_merge( array( Schema::log_table(), self::EVENT_STATUS_CHANGE ), $ids )
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$notes = array();
+		foreach ( $rows as $row ) {
+			$payload = json_decode( (string) ( $row['payload'] ?? '' ), true );
+			$reason  = is_array( $payload ) ? trim( (string) ( $payload['reason'] ?? '' ) ) : '';
+
+			// Ordered oldest-first, so a later decision overwrites an earlier one. A decision taken
+			// without a note clears the previous note rather than leaving a stale explanation on screen.
+			$notes[ (int) $row['request_id'] ] = $reason;
+		}
+
+		return array_filter( $notes, static fn( string $note ): bool => '' !== $note );
+	}
+
+	/**
 	 * The most recent events of one kind, newest first. Used by the read-only "unmatched lookups"
 	 * panel; the limit is clamped so the query stays bounded whatever the caller asks for.
 	 *

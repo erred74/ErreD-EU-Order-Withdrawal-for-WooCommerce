@@ -32,6 +32,13 @@ final class CheckoutConsents {
 	private const FIELD_SERVICE = 'recesso_dig_consent_service';
 
 	/**
+	 * The two consents, as passed to the public filters. Short, stable keys rather than field names or
+	 * classification constants, so an integrator's code does not break if either is renamed.
+	 */
+	public const CONSENT_DIGITAL = 'digital';
+	public const CONSENT_SERVICE = 'service';
+
+	/**
 	 * Settings reader.
 	 *
 	 * @var Settings
@@ -73,7 +80,29 @@ final class CheckoutConsents {
 			return;
 		}
 
-		add_action( 'woocommerce_review_order_before_submit', array( $this, 'render' ) );
+		/**
+		 * Filter the classic-checkout hook the consent checkboxes render on.
+		 *
+		 * Applies to the classic (shortcode) checkout only — the Checkout block places its fields
+		 * through the Additional Checkout Fields API, which decides their position itself. Return an
+		 * empty string to suppress the render entirely and place the checkboxes yourself.
+		 *
+		 * @param string $hook Hook name (default `woocommerce_review_order_before_submit`).
+		 */
+		$hook = (string) apply_filters( 'recesso_dig_consent_render_hook', 'woocommerce_review_order_before_submit' );
+
+		if ( '' !== $hook ) {
+			/**
+			 * Filter the priority the consent checkboxes render at (classic checkout only).
+			 *
+			 * @param int    $priority Hook priority (default 10).
+			 * @param string $hook     The hook being attached to.
+			 */
+			$priority = (int) apply_filters( 'recesso_dig_consent_render_priority', 10, $hook );
+
+			add_action( $hook, array( $this, 'render' ), $priority );
+		}
+
 		add_action( 'woocommerce_checkout_process', array( $this, 'validate' ) );
 		add_action( 'woocommerce_checkout_create_order', array( $this, 'save' ), 10, 2 );
 	}
@@ -83,11 +112,43 @@ final class CheckoutConsents {
 	 */
 	public function render(): void {
 		if ( $this->show_digital() ) {
-			$this->render_checkbox( self::FIELD_DIGITAL, $this->settings->consent_digital_text(), $this->settings->consent_digital_required() );
+			$this->render_checkbox( self::FIELD_DIGITAL, $this->settings->consent_digital_text(), $this->is_required( self::CONSENT_DIGITAL ) );
 		}
 		if ( $this->show_service() ) {
-			$this->render_checkbox( self::FIELD_SERVICE, $this->settings->consent_service_text(), false );
+			$this->render_checkbox( self::FIELD_SERVICE, $this->settings->consent_service_text(), $this->is_required( self::CONSENT_SERVICE ) );
 		}
+	}
+
+	/**
+	 * Whether a consent must be ticked before the order can be placed.
+	 *
+	 * The art. 14(4)(a) consent used to be unconditionally optional, on the reasoning that it only
+	 * entitles the merchant to a proportionate payment and so cannot be a condition of buying. That
+	 * remains the default. It is now a merchant setting because for a shop whose service always begins
+	 * inside the withdrawal window — a live session, a booking for tomorrow — an order placed without
+	 * that request is one the shop cannot actually fulfil.
+	 *
+	 * TODO(legal): requiring it removes the consumer's choice about early performance. Confirm with a
+	 * legal advisor before recommending it to merchants; it stays off by default until then.
+	 *
+	 * @param string $consent One of the CONSENT_* keys.
+	 */
+	public function is_required( string $consent ): bool {
+		$required = self::CONSENT_SERVICE === $consent
+			? $this->settings->consent_service_required()
+			: $this->settings->consent_digital_required();
+
+		/**
+		 * Filter whether a checkout consent is required to place the order.
+		 *
+		 * Must not depend on cart contents: the Checkout block registers its fields once per request,
+		 * before any cart is known, so a cart-dependent answer would apply inconsistently across the
+		 * two checkouts. Use `recesso_dig_consent_applies` to vary by cart.
+		 *
+		 * @param bool   $required Whether the consent is required.
+		 * @param string $consent  One of `digital` | `service`.
+		 */
+		return (bool) apply_filters( 'recesso_dig_consent_required', $required, $consent );
 	}
 
 	/**
@@ -113,11 +174,24 @@ final class CheckoutConsents {
 	 * @param string $status The classification the consent belongs to.
 	 */
 	private function applies_to_cart( string $status ): bool {
-		if ( ! $this->settings->consents_conditional() ) {
-			return true;
-		}
+		$applies = $this->settings->consents_conditional()
+			? isset( $this->cart_statuses()[ $status ] )
+			: true;
 
-		return isset( $this->cart_statuses()[ $status ] );
+		/**
+		 * Filter whether a checkout consent applies to the current cart.
+		 *
+		 * The single decision point for both checkouts: the Checkout block reads it through the Store
+		 * API cart data that drives its `hidden` rule, so classic and block behave identically.
+		 *
+		 * @param bool   $applies Whether the consent is offered for this cart.
+		 * @param string $consent One of `digital` | `service`.
+		 */
+		return (bool) apply_filters(
+			'recesso_dig_consent_applies',
+			$applies,
+			Settings::STATUS_ART14_4A_SERVICE === $status ? self::CONSENT_SERVICE : self::CONSENT_DIGITAL
+		);
 	}
 
 	/**
@@ -175,15 +249,26 @@ final class CheckoutConsents {
 	}
 
 	/**
-	 * Block checkout when the digital-content consent is required but not given.
+	 * Block checkout when a consent that is required has not been given.
 	 */
 	public function validate(): void {
-		if ( ! $this->show_digital() || ! $this->settings->consent_digital_required() ) {
-			return;
+		if ( $this->show_digital() && $this->is_required( self::CONSENT_DIGITAL ) ) {
+			$this->require_field( self::FIELD_DIGITAL );
 		}
 
+		if ( $this->show_service() && $this->is_required( self::CONSENT_SERVICE ) ) {
+			$this->require_field( self::FIELD_SERVICE );
+		}
+	}
+
+	/**
+	 * Add a checkout error when a required consent checkbox was not ticked.
+	 *
+	 * @param string $field The consent field name.
+	 */
+	private function require_field( string $field ): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the checkout nonce before woocommerce_checkout_process.
-		if ( ! isset( $_POST[ self::FIELD_DIGITAL ] ) ) {
+		if ( ! isset( $_POST[ $field ] ) ) {
 			wc_add_notice( __( 'Please confirm the required consent to place your order.', 'erred-eu-order-withdrawal-for-woocommerce' ), 'error' );
 		}
 	}

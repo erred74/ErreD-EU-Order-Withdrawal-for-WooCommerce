@@ -13,6 +13,7 @@ use Recesso54bis\Domain\Eligibility\EligibilityEngine;
 use Recesso54bis\Domain\Eligibility\EligibilityInput;
 use Recesso54bis\Domain\Eligibility\EligibilityLine;
 use Recesso54bis\Domain\Eligibility\EligibilityResult;
+use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Support\Clock;
 use Recesso54bis\Support\Settings;
@@ -109,15 +110,51 @@ final class EligibilityAdapter {
 	}
 
 	/**
+	 * Evaluate eligibility as if one request's claim had already been released.
+	 *
+	 * For the consumer who goes back from the review step to amend a declaration they have not
+	 * confirmed: their own pending request is precisely what makes the order look ineligible, so
+	 * without this the "edit" link would answer "a withdrawal request is already in progress" — the
+	 * consumer being told they cannot correct their own unsent form.
+	 *
+	 * Read-only and presentation-only: nothing is released here. The claim is genuinely given up when
+	 * the amended declaration is submitted, where {@see \Recesso54bis\Integration\WithdrawalService::create_declaration()}
+	 * discards the pending request and re-reserves atomically. Abandoning the edit leaves the original
+	 * request, and its claim, exactly as they were.
+	 *
+	 * Deliberately not memoised: it answers a different question from {@see self::for_order()} and must
+	 * never be served to a caller asking whether the order is plainly withdrawable.
+	 *
+	 * @param \WC_Order         $order  The order.
+	 * @param WithdrawalRequest $ignore The request whose reservation to disregard.
+	 */
+	public function for_order_ignoring_claim( \WC_Order $order, WithdrawalRequest $ignore ): EligibilityResult {
+		$claims = $this->requests->claimed_quantities( $order->get_id() );
+
+		foreach ( $ignore->requested_items as $line_id => $quantity ) {
+			$line_id = (int) $line_id;
+			if ( isset( $claims[ $line_id ] ) ) {
+				$claims[ $line_id ] = max( 0, $claims[ $line_id ] - (int) $quantity );
+			}
+		}
+
+		$result = $this->engine->evaluate( $this->build_input( $order, $claims ) );
+
+		/** This filter is documented in src/Integration/EligibilityAdapter.php */
+		return apply_filters( 'recesso_dig_is_eligible', $result, $order );
+	}
+
+	/**
 	 * Assemble the WordPress-free engine input from a WooCommerce order.
 	 *
-	 * @param \WC_Order $order The order.
+	 * @param \WC_Order            $order  The order.
+	 * @param array<int, int>|null $claims Claim map override (defaults to the live ledger).
 	 */
-	private function build_input( \WC_Order $order ): EligibilityInput {
+	private function build_input( \WC_Order $order, ?array $claims = null ): EligibilityInput {
 		return new EligibilityInput(
 			$this->clock->now(),
 			$this->is_order_withdrawable( $order ),
-			$this->requests->claimed_quantities( $order->get_id() ),
+			$claims ?? $this->requests->claimed_quantities( $order->get_id() ),
 			$this->settings->window_days(),
 			$this->window_start( $order ),
 			$this->build_lines( $order ),
