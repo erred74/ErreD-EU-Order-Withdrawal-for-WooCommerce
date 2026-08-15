@@ -160,12 +160,19 @@ the plugin removes its tables, options and the flow page on uninstall.
 == Changelog ==
 
 = 0.6.1 =
-* Fix: opening a durable-medium receipt from the request detail panel failed with "You are not
-  authorized to perform this action". The link was built with a helper that HTML-escapes the URL it
-  returns — correct when printing into a page, wrong for a value handed to the admin app as data —
-  so the browser sent `amp;request` instead of `request`, the endpoint saw no request id and refused.
-  Present since 0.5.1, and it affected every receipt opened from that panel, not only older ones. The
-  Download link in the no-JavaScript requests table was never affected.
+Two links in the requests screen were built with a helper that HTML-escapes the URL it returns. That
+is correct when printing a link into a page, and wrong for a URL handed to the admin app as data and
+set straight onto a button: the browser then sent `amp;request` instead of `request`, so the server
+never saw the parameters and refused. Both are fixed, and both are now covered by tests that fail
+against the old form. These are the only two places where the plugin builds a URL server-side and
+hands it to JavaScript.
+
+* Fix: **Export CSV** failed with "The link you followed has expired". The export nonce never reached
+  the server. Present since 0.3.0.
+* Fix: opening a durable-medium **receipt** from the request detail panel failed with "You are not
+  authorized to perform this action". Present since 0.5.1, and it affected every receipt opened from
+  that panel, whatever the age of the withdrawal. The Download link in the no-JavaScript requests
+  table was never affected by either bug.
 * A receipt link that cannot be matched to a withdrawal record no longer reports an authorisation
   failure. Merchants are told the record could not be read and pointed at the requests screen, where
   a pending database upgrade finishes; everyone else still gets the same generic refusal, so the
@@ -377,9 +384,9 @@ the plugin removes its tables, options and the flow page on uninstall.
 == Upgrade Notice ==
 
 = 0.6.1 =
-Fixes the durable-medium receipt failing to open from the request detail panel with "You are not
-authorized to perform this action". Affected every receipt opened there, on 0.5.1 and later.
-Recommended for all sites. No data migration required.
+Fixes two broken links in the requests screen: Export CSV reporting an expired link, and the
+durable-medium receipt refusing to open from the request detail panel. Both affected every use, not
+just occasional ones. Recommended for all sites. No data migration required.
 
 = 0.6.0 =
 Checkout consents now work in the Checkout block, My Account gains a "Right of withdrawal" tab, and

@@ -52,20 +52,23 @@ final class CsvExporter {
 	/**
 	 * The capability-gated, nonced export URL for a given filter.
 	 *
+	 * Returned unescaped, because this is a URL and not markup: it is handed to the admin app as JSON
+	 * and set straight onto an anchor. wp_nonce_url() would HTML-escape the separators, the browser
+	 * would send "amp;_wpnonce" instead of "_wpnonce", and the export would refuse the request as a
+	 * stale link. Any caller printing this into a page is responsible for escaping it there.
+	 *
 	 * @param string $status Status filter.
 	 * @param string $search Search filter.
 	 */
 	public static function url( string $status = '', string $search = '' ): string {
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action' => self::ACTION,
-					'status' => $status,
-					'search' => $search,
-				),
-				admin_url( 'admin-post.php' )
+		return add_query_arg(
+			array(
+				'action'   => self::ACTION,
+				'status'   => $status,
+				'search'   => $search,
+				'_wpnonce' => wp_create_nonce( self::ACTION ),
 			),
-			self::ACTION
+			admin_url( 'admin-post.php' )
 		);
 	}
 
