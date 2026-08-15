@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.6.0
+Stable tag: 0.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,6 +158,21 @@ the plugin removes its tables, options and the flow page on uninstall.
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.6.1 =
+* Fix: opening a durable-medium receipt from the request detail panel failed with "You are not
+  authorized to perform this action". The link was built with a helper that HTML-escapes the URL it
+  returns — correct when printing into a page, wrong for a value handed to the admin app as data —
+  so the browser sent `amp;request` instead of `request`, the endpoint saw no request id and refused.
+  Present since 0.5.1, and it affected every receipt opened from that panel, not only older ones. The
+  Download link in the no-JavaScript requests table was never affected.
+* A receipt link that cannot be matched to a withdrawal record no longer reports an authorisation
+  failure. Merchants are told the record could not be read and pointed at the requests screen, where
+  a pending database upgrade finishes; everyone else still gets the same generic refusal, so the
+  endpoint cannot be used to discover which requests exist.
+* A merchant following an old receipt link — from an acknowledgement email, or a bookmark, whose
+  signed token has since expired — is now taken to that request in the admin instead of a permissions
+  error. The file itself still requires a freshly signed link.
 
 = 0.6.0 =
 * Checkout consents now work in the **WooCommerce Checkout block**, not only the classic shortcode
@@ -360,6 +375,11 @@ the plugin removes its tables, options and the flow page on uninstall.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.6.1 =
+Fixes the durable-medium receipt failing to open from the request detail panel with "You are not
+authorized to perform this action". Affected every receipt opened there, on 0.5.1 and later.
+Recommended for all sites. No data migration required.
 
 = 0.6.0 =
 Checkout consents now work in the Checkout block, My Account gains a "Right of withdrawal" tab, and

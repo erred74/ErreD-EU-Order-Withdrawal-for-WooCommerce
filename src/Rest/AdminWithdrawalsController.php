@@ -448,18 +448,20 @@ final class AdminWithdrawalsController extends Controller {
 	private function present_admin( WithdrawalRequest $request ): array {
 		$data = $this->present_request( $request );
 
+		// Built with add_query_arg rather than wp_nonce_url: that helper HTML-escapes the URL it
+		// returns, which is right when printing into markup but wrong here. This value is delivered
+		// as JSON and set straight onto an anchor's href by the React app, so an escaped separator
+		// reaches the browser literally — it would request "amp;request" instead of "request", the
+		// endpoint would see no request id, and the download would fail as if unauthorised.
 		$data['receipt_url'] = $request->has_receipt()
-			? wp_nonce_url(
-				add_query_arg(
-					array(
-						'action'      => 'recesso_dig_receipt',
-						'request'     => $request->id,
-						'disposition' => 'inline',
-					),
-					admin_url( 'admin-post.php' )
+			? add_query_arg(
+				array(
+					'action'               => 'recesso_dig_receipt',
+					'request'              => $request->id,
+					'disposition'          => 'inline',
+					'_recesso_dig_receipt' => wp_create_nonce( 'recesso_dig_receipt' ),
 				),
-				'recesso_dig_receipt',
-				'_recesso_dig_receipt'
+				admin_url( 'admin-post.php' )
 			)
 			: '';
 

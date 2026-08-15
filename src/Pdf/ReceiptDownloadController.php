@@ -69,15 +69,29 @@ final class ReceiptDownloadController {
 
 		$request = $this->requests->find_by_id( $request_id );
 
-		// Authorise via EITHER a valid signed order token (consumer/owner link) OR an admin with a
-		// valid receipt nonce. The admin link now carries this nonce (see RequestsListTable and the
-		// admin REST controller).
-		$token_auth = $request instanceof WithdrawalRequest
-			&& $this->gate->can_act_on_order( $request->order_id, $token, time() );
-		$admin_auth = $this->gate->can_manage() && (bool) wp_verify_nonce( $nonce, 'recesso_dig_receipt' );
-		$allowed    = $request instanceof WithdrawalRequest && ( $token_auth || $admin_auth );
+		if ( ! $request instanceof WithdrawalRequest ) {
+			// No such row. Reporting this as an authorisation failure sent merchants hunting through
+			// capabilities for what is really a missing (or unreadable) record — most often a schema
+			// migration that has not completed, which makes every lookup come back empty.
+			$this->deny_not_found();
+		}
 
-		if ( ! $allowed || ! $request instanceof WithdrawalRequest ) {
+		// Authorise via EITHER a valid signed order token (consumer/owner link) OR an admin with a
+		// valid receipt nonce. The admin link carries that nonce (see RequestsListTable and the admin
+		// REST controller); the consumer's emailed link carries a token that expires with the
+		// withdrawal window.
+		$token_auth = $this->gate->can_act_on_order( $request->order_id, $token, time() );
+		$admin_auth = $this->gate->can_manage() && (bool) wp_verify_nonce( $nonce, 'recesso_dig_receipt' );
+
+		if ( ! $token_auth && ! $admin_auth ) {
+			// A merchant following an old link — from the acknowledgement email, or a bookmark — arrives
+			// with a token that has since expired and no receipt nonce. They are entitled to the file:
+			// send them to the request in the admin, where the link is freshly signed, rather than
+			// dead-ending them on a permissions error. The file itself still requires the nonce.
+			if ( $this->gate->can_manage() ) {
+				$this->redirect_to_admin_request( $request->id );
+			}
+
 			wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
 		}
 
@@ -93,6 +107,44 @@ final class ReceiptDownloadController {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- streaming a validated, access-controlled binary file to the browser.
 		readfile( $path );
+		exit;
+	}
+
+	/**
+	 * End the request for a receipt whose withdrawal record could not be read.
+	 *
+	 * A merchant is told what actually happened and what to do about it; everyone else gets the same
+	 * generic refusal as a failed authorisation, so the endpoint still cannot be used to discover
+	 * which request ids exist.
+	 */
+	private function deny_not_found(): never {
+		if ( $this->gate->can_manage() ) {
+			wp_die(
+				esc_html__( 'This withdrawal record could not be read. If the plugin was updated recently, open WooCommerce → Order Withdrawal once to let the database upgrade finish, then try again.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				'',
+				array( 'response' => 404 )
+			);
+		}
+
+		wp_die( esc_html__( 'You are not authorized to perform this action.', 'erred-eu-order-withdrawal-for-woocommerce' ), '', array( 'response' => 403 ) );
+	}
+
+	/**
+	 * Send a merchant who followed a stale receipt link to that request in the admin, where the
+	 * download link is generated afresh.
+	 *
+	 * @param int $request_id Request id.
+	 */
+	private function redirect_to_admin_request( int $request_id ): never {
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'recesso-digitale',
+					'request' => $request_id,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 

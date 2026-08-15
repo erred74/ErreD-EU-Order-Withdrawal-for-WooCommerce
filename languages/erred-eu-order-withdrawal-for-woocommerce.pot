@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: ErreD EU Order Withdrawal for WooCommerce 0.5.10\n"
+"Project-Id-Version: ErreD EU Order Withdrawal for WooCommerce 0.6.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/erred-eu-order-withdrawal-for-woocommerce\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-13T19:19:47+00:00\n"
+"POT-Creation-Date: 2026-08-15T07:25:07+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: erred-eu-order-withdrawal-for-woocommerce\n"
@@ -58,7 +58,8 @@ msgstr ""
 #: src/Frontend/FlowController.php:472
 #: src/Frontend/FlowController.php:534
 #: src/Frontend/FlowController.php:588
-#: src/Pdf/ReceiptDownloadController.php:81
+#: src/Pdf/ReceiptDownloadController.php:95
+#: src/Pdf/ReceiptDownloadController.php:129
 #: src/Rest/Controller.php:103
 msgid "You are not authorized to perform this action."
 msgstr ""
@@ -1005,8 +1006,12 @@ msgstr ""
 msgid "Subscription cancelled following a confirmed withdrawal (recesso, art. 54-bis)."
 msgstr ""
 
-#: src/Pdf/ReceiptDownloadController.php:86
+#: src/Pdf/ReceiptDownloadController.php:100
 msgid "The receipt is not available."
+msgstr ""
+
+#: src/Pdf/ReceiptDownloadController.php:123
+msgid "This withdrawal record could not be read. If the plugin was updated recently, open WooCommerce → Order Withdrawal once to let the database upgrade finish, then try again."
 msgstr ""
 
 #: src/Plugin.php:120

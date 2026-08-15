@@ -66,4 +66,78 @@ final class ReceiptDownloadControllerTest extends TestCase {
 	public function test_empty_path_is_rejected(): void {
 		$this->assertFalse( $this->is_within_private_dir( '' ) );
 	}
+
+	public function test_an_unreadable_record_is_reported_as_missing_not_as_a_permissions_problem(): void {
+		// Regression: a request row that cannot be read — most often because a schema migration has
+		// not completed, so every SELECT fails — was reported as "You are not authorized", sending
+		// merchants to hunt through capabilities for a database problem.
+		wp_set_current_user( $this->admin_id() );
+
+		$_GET['request'] = 99999999;
+
+		$message = $this->capture_wp_die();
+
+		$this->assertStringNotContainsStringIgnoringCase( 'not authorized', $message );
+		$this->assertStringContainsStringIgnoringCase( 'could not be read', $message );
+	}
+
+	public function test_a_visitor_is_still_told_nothing_about_a_missing_record(): void {
+		// The helpful wording is for merchants only: to anyone else the endpoint must stay uniform,
+		// or it becomes a way to discover which request ids exist.
+		wp_set_current_user( 0 );
+
+		$_GET['request'] = 99999999;
+
+		$this->assertStringContainsStringIgnoringCase( 'not authorized', $this->capture_wp_die() );
+	}
+
+	/**
+	 * Run the download handler and return the message it died with.
+	 */
+	private function capture_wp_die(): string {
+		$controller = new ReceiptDownloadController( new RequestRepository(), new PermissionGate( new OrderToken() ) );
+
+		$handler = static function (): callable {
+			return static function ( $message ): void {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- test harness: the message is captured and asserted on, never rendered.
+				throw new \RuntimeException( is_string( $message ) ? $message : 'non-string wp_die message' );
+			};
+		};
+		add_filter( 'wp_die_handler', $handler );
+
+		try {
+			$controller->handle();
+			return '';
+		} catch ( \RuntimeException $e ) {
+			return $e->getMessage();
+		} finally {
+			remove_filter( 'wp_die_handler', $handler );
+			unset( $_GET['request'] );
+		}
+	}
+
+	/**
+	 * An administrator user id, created once for the suite.
+	 */
+	private function admin_id(): int {
+		$existing = get_users(
+			array(
+				'role'   => 'administrator',
+				'number' => 1,
+				'fields' => 'ID',
+			)
+		);
+
+		if ( array() !== $existing ) {
+			return (int) $existing[0];
+		}
+
+		return (int) wp_insert_user(
+			array(
+				'user_login' => 'recesso_receipt_admin',
+				'user_pass'  => wp_generate_password( 24 ),
+				'role'       => 'administrator',
+			)
+		);
+	}
 }
