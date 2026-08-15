@@ -38,6 +38,42 @@ grep -n '"version"' package.json
 version. **The upgrade notice must be under 300 characters** — Plugin Check warns above that, and the
 notice is what users see in their update screen.
 
+### Never hard-wrap prose in `readme.txt`
+
+**One line per paragraph and per bullet, however long it runs.** wp.org turns every newline in the
+source into a `<br>` on the plugin page, so a bullet wrapped at 100 characters arrives broken
+mid-sentence — "…the requests the customer has sent — when it / was sent, the order, …" — with the
+ragged right edge landing wherever the editor's margin happened to be. It looks like a rendering
+fault on our side, and it is: the source asked for those breaks.
+
+Verified on the live page, not assumed: `<br>` appears in the **Description**, the **FAQ** and the
+**Changelog** alike, so the rule covers every prose section of the file. It does *not* apply to the
+header block at the top, to section headings, or to fenced code — those are line-based by design.
+
+This is the one place in the repo where the 100-column habit is wrong. Every other file — PHP, JS,
+Markdown, this document — stays wrapped.
+
+The changelog history predating 0.7.0 is wrapped throughout and will keep rendering that way. Leave
+it: a shipped changelog entry is a record, and rewriting old ones to tidy the page is churn that
+makes the SVN diff of a release harder to read. Write new entries unwrapped; if you are already
+editing an old entry for another reason, unwrap that entry while you are in it.
+
+Catch it before publishing. This lists every line that continues the one above it — that is, every
+break wp.org will render:
+
+```sh
+awk '/^== Description ==/{p=1} p && NF && length(prev) && prev !~ /^[=0-9]/ \
+  && $0 !~ /^([*=]|[0-9]+\.)/ {print NR": "$0} {prev=$0}' readme.txt | wc -l
+```
+
+It counts the wrapped history too, so it does not print nothing — **as of 0.7.0 the baseline is
+253**. Run it before and after editing `readme.txt`: the count must not go up. If it does, you
+wrapped something new. (It ignores bullets, numbered lists and headings, so a list of one-line items
+does not register.)
+
+An editor set to reflow Markdown on save will undo all of this silently. Check the file, not your
+intent, before building the zip.
+
 Refresh the compiled assets and the translations, then build the distribution. `build-dist.sh` copies
 `build/` and `languages/` as it finds them, so **both must be current when it runs** — it does not
 rebuild either, and a zip carrying yesterday's bundle looks perfectly healthy:
