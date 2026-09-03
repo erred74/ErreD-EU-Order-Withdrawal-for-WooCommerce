@@ -50,6 +50,13 @@ final class Menu {
 	private string $list_hook = '';
 
 	/**
+	 * The settings page hook suffix (for targeted asset enqueue).
+	 *
+	 * @var string
+	 */
+	private string $settings_hook = '';
+
+	/**
 	 * Construct the menu provider.
 	 *
 	 * @param RequestRepository $requests Request repository.
@@ -88,7 +95,7 @@ final class Menu {
 			array( $this, 'render_list' )
 		);
 
-		add_submenu_page(
+		$this->settings_hook = (string) add_submenu_page(
 			'woocommerce',
 			__( 'Order Withdrawal — Settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			__( 'Order Withdrawal: settings', 'erred-eu-order-withdrawal-for-woocommerce' ),
@@ -144,11 +151,26 @@ final class Menu {
 	}
 
 	/**
-	 * Enqueue the React admin bundle on the list page only.
+	 * Enqueue the React admin bundle on the list page, and the colour picker on the settings page.
+	 * Nothing is loaded on any other admin screen.
 	 *
 	 * @param string $hook Current admin page hook suffix.
 	 */
 	public function enqueue_assets( string $hook ): void {
+		if ( '' !== $this->settings_hook && $hook === $this->settings_hook ) {
+			// The core colour picker, on this one screen. It is the only control that offers the empty
+			// state the accent setting needs — "empty means the bundled colour" — and it degrades to a
+			// plain text field, whose value goes through the same hex validator, when scripts fail.
+			wp_enqueue_style( 'wp-color-picker' );
+			wp_enqueue_script( 'wp-color-picker' );
+			wp_add_inline_script(
+				'wp-color-picker',
+				'jQuery( function ( $ ) { $( ".recesso-dig-color-field" ).wpColorPicker(); } );'
+			);
+
+			return;
+		}
+
 		if ( $hook !== $this->list_hook || '' === $this->list_hook ) {
 			return;
 		}

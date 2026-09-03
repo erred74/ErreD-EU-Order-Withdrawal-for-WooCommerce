@@ -104,11 +104,18 @@ $recesso_dig_options = array(
 	'recesso_dig_consents_conditional',
 	'recesso_dig_notice_digital_title',
 	'recesso_dig_notice_digital_body',
-	'recesso_dig_notice_service_title',
-	'recesso_dig_notice_service_body',
+	'recesso_dig_notice_dated_title',
+	'recesso_dig_notice_dated_body',
 	'recesso_dig_notice_other_title',
 	'recesso_dig_notice_other_body',
 	'recesso_dig_account_endpoint_enabled',
+	'recesso_dig_lookup_title',
+	'recesso_dig_lookup_intro',
+	'recesso_dig_lookup_email_hint',
+	'recesso_dig_lookup_submit',
+	'recesso_dig_button_accent',
+	'recesso_dig_button_style',
+	'recesso_dig_plugin_version',
 );
 
 foreach ( $recesso_dig_options as $recesso_dig_option ) {

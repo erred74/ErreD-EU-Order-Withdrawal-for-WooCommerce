@@ -29,6 +29,15 @@
 		<key name="recesso_dig_form_intro_text" />
 		<key name="recesso_dig_consumer_declaration_text" />
 
+		<!--
+			Order lookup screen. The button colour and style are not listed: a hex colour has no
+			language, and the style is one of two fixed values.
+		-->
+		<key name="recesso_dig_lookup_title" />
+		<key name="recesso_dig_lookup_intro" />
+		<key name="recesso_dig_lookup_email_hint" />
+		<key name="recesso_dig_lookup_submit" />
+
 		<!-- Status-change emails and their sender name. -->
 		<key name="recesso_dig_email_from_name" />
 		<key name="recesso_dig_email_accepted_text" />

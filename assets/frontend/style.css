@@ -18,13 +18,25 @@
 
 /* Give the flow's submit/confirm controls a clear, self-contained button
    look: the flow lives on a plain page where the theme/WooCommerce `.button`
-   styles are not guaranteed to load, else the control renders as bare text. */
-.wp-block-recesso-digitale-flow__submit,
-.wp-block-recesso-digitale-flow__confirm {
+   styles are not guaranteed to load, else the control renders as bare text.
+
+   A merchant who would rather inherit the theme's button style sets that
+   under Order Withdrawal: settings, and the flow is then wrapped in
+   `.recesso-dig-theme-buttons`, which switches these rules off. The negation
+   is wrapped in `:where()` so it contributes no specificity: these selectors
+   stay at (0,1,0), exactly as they were, and keep losing to the same theme
+   rules they lost to before. A plain descendant scope would raise them to
+   (0,2,0) and quietly restyle sites that changed nothing.
+
+   `--recesso-dig-accent-text` is emitted only when the merchant sets an
+   accent of their own; the `#fff` fallback is what keeps the label readable
+   on the bundled red, and on a stale build. */
+.wp-block-recesso-digitale-flow__submit:not(:where(.recesso-dig-theme-buttons *)),
+.wp-block-recesso-digitale-flow__confirm:not(:where(.recesso-dig-theme-buttons *)) {
 	background-color: var(--recesso-dig-accent);
 	border: 0;
 	border-radius: 4px;
-	color: #fff;
+	color: var(--recesso-dig-accent-text, #fff);
 	cursor: pointer;
 	display: inline-block;
 	font-size: 1em;
@@ -35,12 +47,12 @@
 	transition: background-color 0.15s ease-in-out;
 }
 
-.wp-block-recesso-digitale-flow__submit:hover,
-.wp-block-recesso-digitale-flow__confirm:hover,
-.wp-block-recesso-digitale-flow__submit:focus,
-.wp-block-recesso-digitale-flow__confirm:focus {
+.wp-block-recesso-digitale-flow__submit:hover:not(:where(.recesso-dig-theme-buttons *)),
+.wp-block-recesso-digitale-flow__confirm:hover:not(:where(.recesso-dig-theme-buttons *)),
+.wp-block-recesso-digitale-flow__submit:focus:not(:where(.recesso-dig-theme-buttons *)),
+.wp-block-recesso-digitale-flow__confirm:focus:not(:where(.recesso-dig-theme-buttons *)) {
 	background-color: var(--recesso-dig-accent-hover);
-	color: #fff;
+	color: var(--recesso-dig-accent-text, #fff);
 }
 
 .wp-block-recesso-digitale-flow__submit:focus-visible,

@@ -49,8 +49,46 @@ final class FlowControllerTest extends TestCase {
 			$order->delete( true );
 		}
 		delete_option( Settings::OPT_DEFAULT_POLICY );
+		foreach ( self::LOOKUP_TEXT_OPTIONS as $option ) {
+			delete_option( $option );
+		}
+		delete_option( Settings::OPT_BUTTON_ACCENT );
+		delete_option( Settings::OPT_BUTTON_STYLE );
 		$_GET = array();
 		parent::tearDown();
+	}
+
+	/**
+	 * The four merchant-configurable texts on the lookup screen.
+	 */
+	private const LOOKUP_TEXT_OPTIONS = array(
+		Settings::OPT_LOOKUP_TITLE,
+		Settings::OPT_LOOKUP_INTRO,
+		Settings::OPT_LOOKUP_EMAIL_HINT,
+		Settings::OPT_LOOKUP_SUBMIT,
+	);
+
+	/**
+	 * Register a stand-in for the block's viewStyle handle and start from a clean queue, so the
+	 * inline-style assertions exercise the real enqueue path even when build/ is absent.
+	 */
+	private function reset_styles(): string {
+		$handle = generate_block_asset_handle( 'recesso-digitale/withdrawal-button', 'viewStyle' );
+		if ( ! wp_style_is( $handle, 'registered' ) ) {
+			wp_register_style( $handle, false, array(), '1.0' );
+		}
+		wp_styles()->add_data( $handle, 'after', array() );
+
+		return $handle;
+	}
+
+	/**
+	 * The inline CSS attached to the flow's stylesheet, as one string.
+	 */
+	private function inline_style_for( string $handle ): string {
+		$data = wp_styles()->get_data( $handle, 'after' );
+
+		return is_array( $data ) ? implode( '', $data ) : '';
 	}
 
 	private function make_order(): \WC_Order {
@@ -146,6 +184,114 @@ final class FlowControllerTest extends TestCase {
 
 		$this->assertStringContainsString( 'sent a withdrawal link', $html );
 		$this->assertStringContainsString( 'name="order_number"', $html );
+	}
+
+	public function test_lookup_screen_uses_the_merchant_wording_when_set(): void {
+		update_option( Settings::OPT_LOOKUP_TITLE, 'Annullare un ordine' );
+		update_option( Settings::OPT_LOOKUP_INTRO, 'Scrivici il numero dell ordine e ti richiamiamo.' );
+		update_option( Settings::OPT_LOOKUP_EMAIL_HINT, 'Solo la mail usata per l ordine.' );
+		update_option( Settings::OPT_LOOKUP_SUBMIT, 'Procedi' );
+		$_GET = array();
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'Annullare un ordine', $html );
+		$this->assertStringContainsString( 'Scrivici il numero dell ordine e ti richiamiamo.', $html );
+		$this->assertStringContainsString( 'Solo la mail usata per l ordine.', $html );
+		$this->assertStringContainsString( 'Procedi', $html );
+
+		$this->assertStringNotContainsString( 'Exercise your right of withdrawal', $html );
+		$this->assertStringNotContainsString( 'We will send a secure withdrawal link', $html );
+		$this->assertStringNotContainsString( 'The link is sent to this address only', $html );
+		$this->assertStringNotContainsString( 'Send me the withdrawal link', $html );
+	}
+
+	/**
+	 * Whitespace, not an empty string: a merchant who clears a field by selecting its contents and
+	 * hitting space must still get the bundled sentence, not a blank heading.
+	 *
+	 * Two guards deliver this — `Settings::text_or()` and the template's own fallback — and they are
+	 * deliberately redundant, because each must stand on its own: the template is overridable and may
+	 * be rendered with raw args, and the getter has callers besides the template. So this test pins
+	 * the promise, not either guard: it only fails when both are gone.
+	 */
+	public function test_lookup_screen_falls_back_to_the_bundled_wording_when_the_options_are_empty(): void {
+		foreach ( self::LOOKUP_TEXT_OPTIONS as $option ) {
+			update_option( $option, '   ' );
+		}
+		$_GET = array();
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'Exercise your right of withdrawal', $html );
+		$this->assertStringContainsString( 'We will send a secure withdrawal link', $html );
+		$this->assertStringContainsString( 'The link is sent to this address only', $html );
+		$this->assertStringContainsString( 'Send me the withdrawal link', $html );
+	}
+
+	public function test_merchant_wording_is_escaped_on_the_lookup_screen(): void {
+		update_option( Settings::OPT_LOOKUP_TITLE, '<script>alert(1)</script>' );
+		$_GET = array();
+
+		$html = $this->flow->render();
+
+		$this->assertStringNotContainsString( '<script>alert(1)</script>', $html );
+		$this->assertStringContainsString( '&lt;script&gt;', $html );
+	}
+
+	public function test_flow_is_wrapped_for_theme_button_style_only_when_chosen(): void {
+		$_GET = array();
+
+		$this->assertStringNotContainsString( 'recesso-dig-theme-buttons', $this->flow->render() );
+
+		update_option( Settings::OPT_BUTTON_STYLE, Settings::BUTTON_STYLE_PLUGIN );
+		$this->assertStringNotContainsString( 'recesso-dig-theme-buttons', $this->flow->render() );
+
+		update_option( Settings::OPT_BUTTON_STYLE, Settings::BUTTON_STYLE_THEME );
+		$html = $this->flow->render();
+		$this->assertStringContainsString( '<div class="recesso-dig-theme-buttons">', $html );
+		// The wrapper must be an ancestor of the flow, or the stylesheet's negation never matches.
+		$this->assertLessThan(
+			(int) strpos( $html, 'wp-block-recesso-digitale-flow' ),
+			(int) strpos( $html, 'recesso-dig-theme-buttons' )
+		);
+	}
+
+	/**
+	 * The accent is merchant input that ends up inside a stylesheet. Nothing but a validated hex
+	 * colour may be emitted — including when the stored value never went through the settings
+	 * screen's sanitiser, which is why the read side validates again.
+	 */
+	public function test_button_accent_emits_only_whitelisted_hex(): void {
+		$_GET = array();
+
+		// An unconfigured site adds no inline CSS at all: the stylesheet already carries the default.
+		$handle = $this->reset_styles();
+		$this->flow->render();
+		$this->assertSame( '', $this->inline_style_for( $handle ) );
+
+		// A configured accent emits exactly three custom properties, and nothing else.
+		update_option( Settings::OPT_BUTTON_ACCENT, '#7b2cbf' );
+		$handle = $this->reset_styles();
+		$this->flow->render();
+		$this->assertMatchesRegularExpression(
+			'/^\.wp-block-recesso-digitale-flow\{--recesso-dig-accent:#7b2cbf;--recesso-dig-accent-hover:#[0-9a-f]{6};--recesso-dig-accent-text:#[0-9a-f]{6};\}$/',
+			$this->inline_style_for( $handle )
+		);
+
+		// Written straight to the options table, bypassing the sanitiser: a hand edit, a bad
+		// migration, or another plugin. The read side must still refuse it.
+		update_option( Settings::OPT_BUTTON_ACCENT, '#c8102e;}body{display:none}' );
+		$handle = $this->reset_styles();
+		$this->flow->render();
+		$this->assertSame( '', $this->inline_style_for( $handle ) );
+
+		// In theme mode the plugin colours nothing, whatever accent is stored.
+		update_option( Settings::OPT_BUTTON_ACCENT, '#7b2cbf' );
+		update_option( Settings::OPT_BUTTON_STYLE, Settings::BUTTON_STYLE_THEME );
+		$handle = $this->reset_styles();
+		$this->flow->render();
+		$this->assertSame( '', $this->inline_style_for( $handle ) );
 	}
 
 	public function test_declaration_denies_invalid_token(): void {

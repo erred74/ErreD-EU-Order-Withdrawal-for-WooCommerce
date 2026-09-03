@@ -4,7 +4,7 @@ Work not yet done, why it matters, and what it touches. Ordered by release. Rule
 `claude.local.md`; this file records *intent*, not state — a completed item is deleted from here and
 described in the `readme.txt` changelog instead.
 
-Last reviewed: 2026-08-15, after 0.7.0.
+Last reviewed: 2026-09-03, after 0.8.0.
 
 ---
 
@@ -29,7 +29,7 @@ Everything below came out of that comparison unless marked otherwise.
 
 ---
 
-## 0.8.0 — admin ergonomics and evidence
+## 0.9.0 — admin ergonomics and evidence
 
 The theme: a merchant handling more than a handful of withdrawals a month currently does too much
 one request at a time, and the evidence trail stops short of what a dispute needs.
@@ -76,7 +76,7 @@ Per-translation overrides must still win, for genuinely language-specific except
 
 ---
 
-## 0.9.0 and later — features they have announced but not shipped
+## Later — features they have announced but not shipped
 
 Cheap to build, and each one is a line we can claim first.
 
@@ -93,6 +93,27 @@ Cheap to build, and each one is a line we can claim first.
 ## Known limitations, deliberate
 
 Not bugs. Recorded so they are not "discovered" again and quietly reversed.
+
+### The settings screen loads `wp-color-picker`, and therefore jQuery
+`claude.local.md` §5 says "no jQuery". The button-colour field added in 0.8.0 uses core's
+`wp-color-picker` (Iris), which depends on it. This is a deliberate, scoped exception: it is the only
+control that offers the empty state the setting needs — `<input type="color">` coerces an empty value
+to `#000000` and would destroy "empty means the bundled colour" on the first save — it is the picker
+merchants already know from the Customizer, and it is accessible without us having to make it so. It
+loads on the plugin's settings screen alone (`Menu::enqueue_assets()` gates on the settings hook
+suffix), so no front-end page gains a byte of jQuery. Do not "fix" this by hand-rolling a vanilla
+picker; if the exception ever has to go, the rule-clean replacement is `<input type="color">` plus an
+explicit "use the bundled colour" checkbox — two controls for one setting.
+
+### The button styling is switched off by a wrapper class, not by a template argument
+`FlowController::render()` wraps the flow in `.recesso-dig-theme-buttons` when the merchant chooses to
+inherit the theme's button style, and `assets/frontend/style.css` negates its own button rules with
+`:not(:where(.recesso-dig-theme-buttons *))`. Both halves are deliberate. The wrapper lives outside the
+templates because every flow template is theme-overridable, and a merchant who cares about button
+styling is exactly the one likely to have an override — routing the toggle through `$args` would make
+the setting silently do nothing for them. The `:where()` keeps the negation at zero specificity, so the
+selectors stay at `(0,1,0)` and keep losing to the same theme rules they lost to before; a plain
+descendant scope would raise them to `(0,2,0)` and restyle sites that changed nothing.
 
 ### No unverified withdrawal records
 The competitor's headline 2.1.0 feature registers requests that match no order, flagged "Unverified".

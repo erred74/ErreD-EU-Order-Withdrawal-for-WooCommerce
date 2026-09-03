@@ -64,6 +64,32 @@ final class Settings {
 	public const OPT_CONSUMER_DECLARATION_ENABLED = 'recesso_dig_consumer_declaration_enabled';
 	public const OPT_CONSUMER_DECLARATION_TEXT    = 'recesso_dig_consumer_declaration_text';
 
+	/**
+	 * Wording of the order-lookup screen — the first thing a consumer sees when they reach the
+	 * withdrawal page without a signed link. Each field is optional: an empty one falls back to the
+	 * bundled sentence, which follows the visitor's language.
+	 */
+	public const OPT_LOOKUP_TITLE      = 'recesso_dig_lookup_title';
+	public const OPT_LOOKUP_INTRO      = 'recesso_dig_lookup_intro';
+	public const OPT_LOOKUP_EMAIL_HINT = 'recesso_dig_lookup_email_hint';
+	public const OPT_LOOKUP_SUBMIT     = 'recesso_dig_lookup_submit';
+
+	/**
+	 * Appearance of the flow's own buttons. The accent is validated as a hex colour on save and again
+	 * on read ({@see \Recesso54bis\Support\Color::hex()}), because it ends up inside a stylesheet.
+	 */
+	public const OPT_BUTTON_ACCENT = 'recesso_dig_button_accent';
+	public const OPT_BUTTON_STYLE  = 'recesso_dig_button_style';
+
+	public const BUTTON_STYLE_PLUGIN = 'plugin';
+	public const BUTTON_STYLE_THEME  = 'theme';
+
+	/**
+	 * The bundled accent. Must stay identical to `--recesso-dig-accent` in
+	 * `assets/frontend/style.css`: when the two agree, an unconfigured site needs no inline CSS at all.
+	 */
+	public const DEFAULT_ACCENT = '#c8102e';
+
 	public const OPT_CONSENT_DIGITAL_ENABLED  = 'recesso_dig_consent_digital_enabled';
 	public const OPT_CONSENT_DIGITAL_REQUIRED = 'recesso_dig_consent_digital_required';
 	public const OPT_CONSENT_DIGITAL_TEXT     = 'recesso_dig_consent_digital_text';
@@ -376,6 +402,79 @@ final class Settings {
 			self::OPT_CONSUMER_DECLARATION_TEXT,
 			__( 'I confirm that I made this purchase as a consumer, that is, as a natural person acting for purposes outside my trade, business, craft or profession.', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
+	}
+
+	/**
+	 * The heading of the order-lookup screen.
+	 *
+	 * The bundled defaults of the four lookup getters are repeated verbatim in
+	 * `templates/frontend/lookup.php`, which must stay self-contained because a theme may override it.
+	 * gettext folds the duplicates into a single catalogue entry, so keep the wording byte-identical.
+	 */
+	public function lookup_title(): string {
+		return $this->text_or(
+			self::OPT_LOOKUP_TITLE,
+			__( 'Exercise your right of withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * The intro paragraph of the order-lookup screen.
+	 */
+	public function lookup_intro(): string {
+		return $this->text_or(
+			self::OPT_LOOKUP_INTRO,
+			__( 'Enter your order number and the email address you used for the order. We will send a secure withdrawal link to that email address.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * The hint shown under the email field of the order-lookup screen.
+	 */
+	public function lookup_email_hint(): string {
+		return $this->text_or(
+			self::OPT_LOOKUP_EMAIL_HINT,
+			__( 'The link is sent to this address only, so it must be the one on the order.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * The label of the order-lookup screen's submit button.
+	 */
+	public function lookup_submit_label(): string {
+		return $this->text_or(
+			self::OPT_LOOKUP_SUBMIT,
+			__( 'Send me the withdrawal link', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * The accent colour of the flow's buttons, re-validated on read: a value written straight to the
+	 * options table, bypassing the settings screen's sanitiser, must never reach the stylesheet.
+	 */
+	public function button_accent(): string {
+		$accent = Color::hex( (string) get_option( self::OPT_BUTTON_ACCENT, '' ) );
+
+		return '' !== $accent ? $accent : self::DEFAULT_ACCENT;
+	}
+
+	/**
+	 * Whether the flow's buttons carry the plugin's own styling or inherit the theme's. An
+	 * unrecognised stored value falls back to the plugin's own styling, which is what the settings
+	 * screen documents as the default — and the only one guaranteed to render a visible control on a
+	 * plain page where the theme's `.button` rules may not load.
+	 */
+	public function button_style(): string {
+		$style = (string) get_option( self::OPT_BUTTON_STYLE, self::BUTTON_STYLE_PLUGIN );
+
+		return self::BUTTON_STYLE_THEME === $style ? self::BUTTON_STYLE_THEME : self::BUTTON_STYLE_PLUGIN;
+	}
+
+	/**
+	 * Whether the flow's buttons are left to the theme.
+	 */
+	public function button_uses_theme_style(): bool {
+		return self::BUTTON_STYLE_THEME === $this->button_style();
 	}
 
 	/**

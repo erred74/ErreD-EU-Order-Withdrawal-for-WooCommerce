@@ -23,6 +23,7 @@ use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Rest\EligibilityController;
 use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
+use Recesso54bis\Support\Color;
 use Recesso54bis\Support\Nonces;
 use Recesso54bis\Support\RateLimiter;
 use Recesso54bis\Support\Settings;
@@ -190,15 +191,25 @@ final class FlowController {
 	 */
 	public function render(): string {
 		$output = $this->render_step();
+		if ( '' === $output ) {
+			return '';
+		}
 
 		// Enqueue the flow's view script and stylesheet only when a flow step is actually on the page
 		// (covers both the block and the shortcode); the flow works without either.
-		if ( '' !== $output ) {
-			$this->enqueue_view_script();
-			$this->enqueue_view_style();
+		$settings = new Settings();
+		$this->enqueue_view_script();
+		$this->enqueue_view_style( $settings );
+
+		if ( ! $settings->button_uses_theme_style() ) {
+			return $output;
 		}
 
-		return $output;
+		// The merchant asked for the theme's own button styling. The wrapper is what the stylesheet
+		// tests for, and it lives outside the templates on purpose: a theme override of any flow
+		// template — which is exactly what a merchant who cares about styling is likely to have —
+		// would otherwise never carry the class, and the setting would silently do nothing.
+		return '<div class="recesso-dig-theme-buttons">' . $output . '</div>';
 	}
 
 	/**
@@ -261,8 +272,16 @@ final class FlowController {
 	/**
 	 * Enqueue the flow's view stylesheet (the block's registered viewStyle handle). Idempotent and safe
 	 * whether the flow is shown via the block or the shortcode; does nothing if the build is not present.
+	 *
+	 * When the merchant has chosen an accent of their own, three custom properties are appended to
+	 * override the bundled ones. Only the accent is theirs: the hover shade and the label colour are
+	 * derived, so a pale accent cannot push the label below the WCAG contrast floor. Every value is
+	 * re-validated as a hex colour by {@see Settings::button_accent()} and {@see Color::hover()}, so
+	 * nothing but `#rrggbb` can reach the stylesheet.
+	 *
+	 * @param Settings $settings The plugin settings.
 	 */
-	private function enqueue_view_style(): void {
+	private function enqueue_view_style( Settings $settings ): void {
 		if ( ! function_exists( 'generate_block_asset_handle' ) ) {
 			return;
 		}
@@ -273,6 +292,22 @@ final class FlowController {
 		}
 
 		wp_enqueue_style( $handle );
+
+		$accent = $settings->button_accent();
+		if ( Settings::DEFAULT_ACCENT === $accent || $settings->button_uses_theme_style() ) {
+			// The stylesheet already carries the bundled accent, and in theme mode nothing is coloured
+			// by us at all: the overwhelming majority of sites therefore add no inline CSS.
+			return;
+		}
+
+		wp_add_inline_style(
+			$handle,
+			'.wp-block-recesso-digitale-flow{'
+				. '--recesso-dig-accent:' . $accent . ';'
+				. '--recesso-dig-accent-hover:' . Color::hover( $accent ) . ';'
+				. '--recesso-dig-accent-text:' . Color::readable_text( $accent ) . ';'
+				. '}'
+		);
 	}
 
 	/**
@@ -302,6 +337,8 @@ final class FlowController {
 				break;
 		}
 
+		$settings = new Settings();
+
 		return Templates::render(
 			'lookup',
 			array(
@@ -311,6 +348,10 @@ final class FlowController {
 				'flow_url'     => $this->current_page_url(),
 				'notice'       => $notice,
 				'notice_type'  => $notice_type,
+				'title'        => $settings->lookup_title(),
+				'intro'        => $settings->lookup_intro(),
+				'email_hint'   => $settings->lookup_email_hint(),
+				'submit_label' => $settings->lookup_submit_label(),
 			)
 		);
 	}

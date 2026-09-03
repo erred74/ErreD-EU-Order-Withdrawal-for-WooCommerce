@@ -36,6 +36,53 @@ final class SettingsPageTest extends TestCase {
 		parent::tearDown();
 	}
 
+	/**
+	 * The accent is interpolated into a stylesheet, so the sanitiser is a security boundary: a text
+	 * sanitiser would preserve every payload below intact.
+	 *
+	 * @dataProvider provide_hostile_accents
+	 *
+	 * @param string $value The value that must be rejected.
+	 */
+	public function test_accent_sanitiser_rejects_css_injection( string $value ): void {
+		$this->assertSame( '', $this->page->sanitize_button_accent( $value ) );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function provide_hostile_accents(): array {
+		return array(
+			'rule break-out' => array( '#c8102e;} .wp-block-recesso-digitale-flow{display:none' ),
+			'markup escape'  => array( '#c8102e"><script>alert(1)</script>' ),
+			'javascript uri' => array( 'javascript:alert(1)' ),
+			'import'         => array( '#c8102e;@import url(//evil.test)' ),
+			'named colour'   => array( 'red' ),
+			'partial hex'    => array( '#12345' ),
+		);
+	}
+
+	public function test_accent_sanitiser_normalises_a_valid_colour(): void {
+		$this->assertSame( '#aabbcc', $this->page->sanitize_button_accent( '#ABC' ) );
+		$this->assertSame( '#7b2cbf', $this->page->sanitize_button_accent( '#7B2CBF' ) );
+		// Empty means "use the bundled colour", so it must survive as the empty string.
+		$this->assertSame( '', $this->page->sanitize_button_accent( '' ) );
+		$this->assertSame( '', $this->page->sanitize_button_accent( null ) );
+		$this->assertSame( '', $this->page->sanitize_button_accent( array( '#abc' ) ) );
+	}
+
+	public function test_button_style_sanitiser_falls_back_to_the_plugin_style(): void {
+		$this->assertSame( Settings::BUTTON_STYLE_THEME, $this->page->sanitize_button_style( 'theme' ) );
+		$this->assertSame( Settings::BUTTON_STYLE_PLUGIN, $this->page->sanitize_button_style( 'plugin' ) );
+
+		// An unrecognised value can only arrive by tampering. It must land on the styling that is
+		// guaranteed to render a visible control, never leave the button to a theme that may not
+		// style it at all.
+		$this->assertSame( Settings::BUTTON_STYLE_PLUGIN, $this->page->sanitize_button_style( 'nonsense' ) );
+		$this->assertSame( Settings::BUTTON_STYLE_PLUGIN, $this->page->sanitize_button_style( null ) );
+		$this->assertSame( Settings::BUTTON_STYLE_PLUGIN, $this->page->sanitize_button_style( array() ) );
+	}
+
 	public function test_status_sanitiser_keeps_known_statuses_and_drops_the_rest(): void {
 		$clean = $this->page->sanitize_statuses( array( 'processing', 'completed', 'not-a-status', '', 'on-hold' ) );
 

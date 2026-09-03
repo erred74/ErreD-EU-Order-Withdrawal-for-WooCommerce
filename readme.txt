@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -172,6 +172,22 @@ No. It functions fully offline and loads no third-party scripts, fonts or assets
 Nothing is removed unless you opt in via the "Delete all data on uninstall" setting. When enabled,
 the plugin removes its tables, options and the flow page on uninstall.
 
+= Can I change the wording on the withdrawal page? =
+
+Yes, in three ways, and you will usually only need the first. The four texts on the order lookup screen — the page title, the intro paragraph, the hint under the email field and the submit button label — are settings, under WooCommerce → Order Withdrawal: settings → Order lookup screen. The intro of the declaration form, the consumer self-declaration, the excluded-product notices and the status emails have their own fields on the same screen. Leave any of them empty to keep the bundled wording, which follows the language of each visitor; your own text is shown exactly as written, in every language, and can be translated per language with WPML or Polylang.
+
+For anything else — field labels, the confirmation step, the acknowledgement screen — use a translation editor such as Loco Translate, which edits the plugin's strings and stores your version outside the plugin so updates do not overwrite it. For full control of the markup, copy any file from the plugin's `templates/frontend/` into a `recesso-digitale/` folder in your theme (for example `wp-content/themes/your-child-theme/recesso-digitale/lookup.php`) and edit it there; the plugin uses your copy automatically. A template copied before 0.8.0 keeps its own hardcoded wording and will ignore the settings above — re-copy it if you want both.
+
+= Can I change the colour of the withdrawal button? =
+
+Yes, under WooCommerce → Order Withdrawal: settings → Withdrawal page appearance. Pick any colour and the plugin works out the hover shade and the label colour from it, so the label keeps a WCAG AA contrast ratio whatever you choose. Leave it empty for the bundled colour. If your theme styles its buttons the way you want them everywhere, choose "Inherit my theme's button style" instead and the plugin stops styling them at all. The «recedere dal contratto qui» link in My Account and in your order emails is not affected: it sits inside your theme's own pages and has always used your theme's button style.
+
+= Why does the customer receive a link instead of sending the request straight away? =
+
+Because the withdrawal function must work for guest-checkout customers, who have no account to log into. If the lookup screen simply accepted "order number plus email" and recorded a withdrawal, anyone could file withdrawals against orders that are not theirs, and could discover which order numbers exist by trying them. That matters more here than on an ordinary form: the moment a withdrawal is confirmed is a legal fact — the date from which your refund deadline runs — so a request you cannot attribute is a bad record, not just a nuisance.
+
+So the plugin checks that the order number and the email match, then emails a cryptographically signed, expiring link to the address on the order itself, never to the address typed in the form. Opening that link proves the person has the order's mailbox, and the request is bound to a verified order. The screen answers identically whether or not an order matched, so it reveals nothing. Customers who arrive from the link in their order emails, or from the My Account tab, already hold a signed link and never see this step.
+
 == Hooks for developers ==
 
 All hooks are prefixed `recesso_dig_`. Names and signatures are stable within a major version.
@@ -213,6 +229,14 @@ Actions:
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.8.0 =
+The withdrawal page is now yours to word and to colour, without touching code or waiting for a translation.
+
+* **New:** the four texts on the order lookup screen — page title, intro paragraph, the hint under the email field, and the submit button label — are settings, under WooCommerce → Order Withdrawal: settings → Order lookup screen. Until now they were the only customer-facing copy in the plugin with no field of its own, which meant the first screen many customers see was the one screen a merchant could not reword. Leave a field empty to keep the bundled sentence, which follows each customer's language; your own wording can be translated per language with WPML or Polylang.
+* **New:** a colour for the withdrawal page's buttons, under Withdrawal page appearance. Pick any colour and the plugin works out the hover shade and the label colour from it, so the label keeps a WCAG AA contrast ratio whatever you choose — a pale brand colour cannot leave you with white text nobody can read.
+* **New:** "Inherit my theme's button style", in the same section, for stores whose theme already styles its buttons the way they want them everywhere. The plugin then stops styling those buttons entirely. It stays off by default: the withdrawal page is an ordinary page, where a theme's button rules are not guaranteed to load, and the shipped styling is what keeps the control from rendering as bare text.
+* **Fix:** with "Delete all data on uninstall" enabled, the wording you had written for the dated-service exclusion notice (Art. 16(l)) was left behind in the database instead of being removed. Two rows, no effect on how the site ran, but the setting promises a clean removal and did not deliver one. The plugin's own version marker was left behind for the same reason. Present since 0.6.0, and now covered by a test that checks every setting the plugin writes against the list of what it deletes.
 
 = 0.7.0 =
 Customers can now follow their withdrawal requests from their account, and a withdrawal page that has
@@ -502,6 +526,9 @@ hands it to JavaScript.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.8.0 =
+The order lookup screen's four texts and the withdrawal page's button colour are now settings, and the buttons can inherit your theme's style instead. Fixes two options left behind on uninstall. Nothing changes until you change it. No data migration required.
 
 = 0.7.0 =
 Customers can follow their withdrawal requests, and the receipt PDF, from My Account. Fixes a

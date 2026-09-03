@@ -12,6 +12,7 @@ namespace Recesso54bis\Admin;
 use Recesso54bis\Frontend\FlowPage;
 use Recesso54bis\Frontend\FooterLink;
 use Recesso54bis\Support\Capabilities;
+use Recesso54bis\Support\Color;
 use Recesso54bis\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -33,6 +34,8 @@ final class SettingsPage {
 	private const SECTION_STATUSES = 'recesso_dig_statuses';
 	private const SECTION_EMAILS   = 'recesso_dig_emails';
 	private const SECTION_FORM     = 'recesso_dig_form';
+	private const SECTION_LOOKUP   = 'recesso_dig_lookup';
+	private const SECTION_APPEAR   = 'recesso_dig_appearance';
 	private const SECTION_ROLES    = 'recesso_dig_roles';
 	private const SECTION_DATA     = 'recesso_dig_data';
 	public const MENU_SLUG         = 'recesso-digitale-settings';
@@ -280,6 +283,10 @@ final class SettingsPage {
 			Settings::OPT_NOTICE_DATED_BODY,
 			Settings::OPT_NOTICE_OTHER_TITLE,
 			Settings::OPT_NOTICE_OTHER_BODY,
+			Settings::OPT_LOOKUP_TITLE,
+			Settings::OPT_LOOKUP_INTRO,
+			Settings::OPT_LOOKUP_EMAIL_HINT,
+			Settings::OPT_LOOKUP_SUBMIT,
 		);
 		foreach ( $recesso_dig_copy_opts as $recesso_dig_copy_opt ) {
 			register_setting(
@@ -293,6 +300,29 @@ final class SettingsPage {
 				)
 			);
 		}
+		// The accent ends up inside a stylesheet, so it gets a hex-only validator rather than a text
+		// sanitiser: sanitize_text_field would pass ";}body{…}" through untouched. Empty means "use
+		// the bundled colour", which is why the registered default is '' and not the colour itself.
+		register_setting(
+			self::GROUP,
+			Settings::OPT_BUTTON_ACCENT,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_button_accent' ),
+				'show_in_rest'      => true,
+				'default'           => '',
+			)
+		);
+		register_setting(
+			self::GROUP,
+			Settings::OPT_BUTTON_STYLE,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_button_style' ),
+				'show_in_rest'      => true,
+				'default'           => Settings::BUTTON_STYLE_PLUGIN,
+			)
+		);
 		register_setting(
 			self::GROUP,
 			Settings::OPT_EMAIL_FROM_NAME,
@@ -427,6 +457,26 @@ final class SettingsPage {
 		add_settings_field( Settings::OPT_EMAIL_COMPLETED_TEXT, __( 'Completed email text', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_email_completed_text' ), self::MENU_SLUG, self::SECTION_EMAILS );
 
 		add_settings_section(
+			self::SECTION_LOOKUP,
+			__( 'Order lookup screen', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			array( $this, 'section_lookup_intro' ),
+			self::MENU_SLUG
+		);
+		add_settings_field( Settings::OPT_LOOKUP_TITLE, __( 'Page title', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_title' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_TITLE ) );
+		add_settings_field( Settings::OPT_LOOKUP_INTRO, __( 'Intro paragraph', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_intro' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_INTRO ) );
+		add_settings_field( Settings::OPT_LOOKUP_EMAIL_HINT, __( 'Email field hint', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_email_hint' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_EMAIL_HINT ) );
+		add_settings_field( Settings::OPT_LOOKUP_SUBMIT, __( 'Submit button label', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_submit' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_SUBMIT ) );
+
+		add_settings_section(
+			self::SECTION_APPEAR,
+			__( 'Withdrawal page appearance', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			array( $this, 'section_appearance_intro' ),
+			self::MENU_SLUG
+		);
+		add_settings_field( Settings::OPT_BUTTON_STYLE, __( 'Button style', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_button_style' ), self::MENU_SLUG, self::SECTION_APPEAR, array( 'label_for' => Settings::OPT_BUTTON_STYLE ) );
+		add_settings_field( Settings::OPT_BUTTON_ACCENT, __( 'Button colour', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_button_accent' ), self::MENU_SLUG, self::SECTION_APPEAR, array( 'label_for' => Settings::OPT_BUTTON_ACCENT ) );
+
+		add_settings_section(
 			self::SECTION_FORM,
 			__( 'Public withdrawal form', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			array( $this, 'section_form_intro' ),
@@ -515,6 +565,20 @@ final class SettingsPage {
 	 */
 	public function section_emails_intro(): void {
 		echo '<p>' . esc_html__( 'Choose who the plugin\'s emails come from and how the status-change messages to your customers are worded. Subjects and headings stay under WooCommerce → Settings → Emails, alongside every other store email.', 'erred-eu-order-withdrawal-for-woocommerce' ) . '</p>';
+	}
+
+	/**
+	 * Intro for the order-lookup section.
+	 */
+	public function section_lookup_intro(): void {
+		echo '<p>' . esc_html__( 'The wording of the screen a customer meets when they reach the withdrawal page without a signed link — from the footer link, from a bookmark, or after a link has expired. It asks for the order number and the order email, then sends the withdrawal link to that order\'s own address.', 'erred-eu-order-withdrawal-for-woocommerce' ) . '</p>';
+	}
+
+	/**
+	 * Intro for the appearance section.
+	 */
+	public function section_appearance_intro(): void {
+		echo '<p>' . esc_html__( 'How the buttons on the withdrawal page itself look: the lookup screen, the declaration form and the confirmation step. The «recedere dal contratto qui» link in My Account and in your order emails is not affected — it sits inside your theme\'s own pages and has always used your theme\'s button style.', 'erred-eu-order-withdrawal-for-woocommerce' ) . '</p>';
 	}
 
 	/**
@@ -751,6 +815,76 @@ final class SettingsPage {
 	 */
 	private function status_email_hint(): string {
 		return __( 'Leave empty to use the bundled text shown in the field. The order reference and the reason you record when rejecting are always appended automatically.', 'erred-eu-order-withdrawal-for-woocommerce' );
+	}
+
+	/**
+	 * Render the lookup screen's page title.
+	 */
+	public function field_lookup_title(): void {
+		$this->text_option( Settings::OPT_LOOKUP_TITLE, ( new Settings() )->lookup_title() );
+		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+	}
+
+	/**
+	 * Render the lookup screen's intro paragraph.
+	 */
+	public function field_lookup_intro(): void {
+		$this->textarea_option( Settings::OPT_LOOKUP_INTRO, ( new Settings() )->lookup_intro() );
+		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+	}
+
+	/**
+	 * Render the hint shown under the lookup screen's email field.
+	 */
+	public function field_lookup_email_hint(): void {
+		$this->textarea_option( Settings::OPT_LOOKUP_EMAIL_HINT, ( new Settings() )->lookup_email_hint() );
+		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+	}
+
+	/**
+	 * Render the lookup screen's submit button label.
+	 */
+	public function field_lookup_submit(): void {
+		$this->text_option( Settings::OPT_LOOKUP_SUBMIT, ( new Settings() )->lookup_submit_label() );
+		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+	}
+
+	/**
+	 * Render the button style choice.
+	 */
+	public function field_button_style(): void {
+		$this->render_select(
+			Settings::OPT_BUTTON_STYLE,
+			array(
+				Settings::BUTTON_STYLE_PLUGIN => __( 'Use the plugin\'s own button style (recommended)', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				Settings::BUTTON_STYLE_THEME  => __( 'Inherit my theme\'s button style', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			),
+			( new Settings() )->button_style()
+		);
+		$this->hint(
+			self::TAG_OPTIONAL,
+			__( 'The plugin styles these buttons itself because the withdrawal page is an ordinary page, where your theme\'s button styles are not guaranteed to load — without it the control can render as bare text. Choose to inherit only if your theme styles its buttons everywhere, and check the withdrawal page afterwards.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * Render the button accent colour.
+	 */
+	public function field_button_accent(): void {
+		// Re-validated on read as well as on save: the stylesheet must never see anything but a hex
+		// colour, whatever route put the value in the options table.
+		$value = Color::hex( (string) get_option( Settings::OPT_BUTTON_ACCENT, '' ) );
+
+		printf(
+			'<input type="text" class="recesso-dig-color-field" name="%1$s" id="%1$s" value="%2$s" data-default-color="%3$s" />',
+			esc_attr( Settings::OPT_BUTTON_ACCENT ),
+			esc_attr( $value ),
+			esc_attr( Settings::DEFAULT_ACCENT )
+		);
+		$this->hint(
+			self::TAG_OPTIONAL,
+			__( 'Leave empty to use the bundled colour. The hover shade and the label colour are worked out from your choice, so the label stays readable whatever colour you pick. Has no effect when the buttons inherit your theme\'s style.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
 	}
 
 	/**
@@ -1354,6 +1488,28 @@ final class SettingsPage {
 		return in_array( $value, array( Settings::POLICY_ALLOW, Settings::POLICY_EXCLUDE, Settings::POLICY_UNCONFIGURED ), true )
 			? $value
 			: Settings::POLICY_ALLOW;
+	}
+
+	/**
+	 * Sanitise the button accent to a hex colour, or to the empty string meaning "use the bundled
+	 * colour". This value is interpolated into a stylesheet, so nothing that is not `#rrggbb` may
+	 * survive: a text sanitiser would happily preserve a payload that closes the CSS rule.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public function sanitize_button_accent( $value ): string {
+		return Color::hex( is_string( $value ) ? $value : '' );
+	}
+
+	/**
+	 * Sanitise the button style choice.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public function sanitize_button_style( $value ): string {
+		return Settings::BUTTON_STYLE_THEME === $value
+			? Settings::BUTTON_STYLE_THEME
+			: Settings::BUTTON_STYLE_PLUGIN;
 	}
 
 	/**

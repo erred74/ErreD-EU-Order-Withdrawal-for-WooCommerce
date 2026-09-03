@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: ErreD EU Order Withdrawal for WooCommerce 0.7.0\n"
+"Project-Id-Version: ErreD EU Order Withdrawal for WooCommerce 0.8.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/erred-eu-order-withdrawal-for-woocommerce\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-15T08:50:19+00:00\n"
+"POT-Creation-Date: 2026-09-03T08:34:13+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: erred-eu-order-withdrawal-for-woocommerce\n"
@@ -91,52 +91,52 @@ msgstr ""
 msgid "Edit the page"
 msgstr ""
 
-#: src/Admin/Menu.php:84
-#: src/Admin/Menu.php:107
+#: src/Admin/Menu.php:91
+#: src/Admin/Menu.php:114
 msgid "Order Withdrawal"
 msgstr ""
 
-#: src/Admin/Menu.php:93
-#: src/Admin/SettingsPage.php:904
+#: src/Admin/Menu.php:100
+#: src/Admin/SettingsPage.php:1038
 msgid "Order Withdrawal — Settings"
 msgstr ""
 
-#: src/Admin/Menu.php:94
+#: src/Admin/Menu.php:101
 msgid "Order Withdrawal: settings"
 msgstr ""
 
 #. translators: %1$s: menu label, %2$s: count badge markup.
-#: src/Admin/Menu.php:116
+#: src/Admin/Menu.php:123
 #, php-format
 msgctxt "admin menu item with count badge"
 msgid "%1$s %2$s"
 msgstr ""
 
-#: src/Admin/Menu.php:199
+#: src/Admin/Menu.php:221
 msgid "Order Withdrawal — Requests"
 msgstr ""
 
-#: src/Admin/Menu.php:204
+#: src/Admin/Menu.php:226
 msgid "Search requests"
 msgstr ""
 
-#: src/Admin/Menu.php:230
+#: src/Admin/Menu.php:252
 msgid "Recent unmatched lookups"
 msgstr ""
 
-#: src/Admin/Menu.php:232
+#: src/Admin/Menu.php:254
 msgid "Someone asked for a withdrawal link with an order number and email that did not match any order. No withdrawal request was created. Most of these are typos — check the reference against your records and, if it is a genuine customer, send them the link from their order."
 msgstr ""
 
-#: src/Admin/Menu.php:237
+#: src/Admin/Menu.php:259
 msgid "When (GMT)"
 msgstr ""
 
-#: src/Admin/Menu.php:238
+#: src/Admin/Menu.php:260
 msgid "Order number submitted"
 msgstr ""
 
-#: src/Admin/Menu.php:239
+#: src/Admin/Menu.php:261
 msgid "Email submitted"
 msgstr ""
 
@@ -232,271 +232,311 @@ msgstr ""
 msgid "No withdrawal requests yet."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:346
+#: src/Admin/SettingsPage.php:376
 msgid "General"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:350
+#: src/Admin/SettingsPage.php:380
 msgid "Notification email"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:351
+#: src/Admin/SettingsPage.php:381
 msgid "Withdrawal page"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:355
+#: src/Admin/SettingsPage.php:385
 msgid "Eligible order statuses"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:359
+#: src/Admin/SettingsPage.php:389
 msgid "Offer withdrawal for"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:363
+#: src/Admin/SettingsPage.php:393
 msgid "Withdrawal deadline"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:367
+#: src/Admin/SettingsPage.php:397
 msgid "Withdrawal window (days)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:368
+#: src/Admin/SettingsPage.php:398
 msgid "Calculate deadline from"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:369
+#: src/Admin/SettingsPage.php:399
 msgid "Grace days"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:370
+#: src/Admin/SettingsPage.php:400
 msgid "Deadline enforcement"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:374
+#: src/Admin/SettingsPage.php:404
 msgid "Article 16 exclusions"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:378
+#: src/Admin/SettingsPage.php:408
 msgid "Default policy for unconfigured products"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:382
+#: src/Admin/SettingsPage.php:412
 msgid "Checkout consents"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:386
+#: src/Admin/SettingsPage.php:416
 msgid "When to show the consents"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:387
+#: src/Admin/SettingsPage.php:417
 msgid "Digital content consent (Art. 16(m))"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:388
+#: src/Admin/SettingsPage.php:418
 msgid "Require digital-content consent"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:389
+#: src/Admin/SettingsPage.php:419
 msgid "Digital-content consent text"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:390
+#: src/Admin/SettingsPage.php:420
 msgid "Service-start consent (Art. 14(4)(a))"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:391
+#: src/Admin/SettingsPage.php:421
 msgid "Require service-start consent"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:392
+#: src/Admin/SettingsPage.php:422
 msgid "Service-start consent text"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:396
+#: src/Admin/SettingsPage.php:426
 msgid "Model withdrawal form"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:400
+#: src/Admin/SettingsPage.php:430
 msgid "Show model form"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:401
+#: src/Admin/SettingsPage.php:431
 msgid "Trader name"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:402
+#: src/Admin/SettingsPage.php:432
 msgid "Trader postal address"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:403
+#: src/Admin/SettingsPage.php:433
 msgid "Trader phone (optional)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:404
+#: src/Admin/SettingsPage.php:434
 msgid "Trader contact email"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:408
+#: src/Admin/SettingsPage.php:438
 msgid "Excluded products notice"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:412
+#: src/Admin/SettingsPage.php:442
 msgid "Show notice on excluded products"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:413
+#: src/Admin/SettingsPage.php:443
 msgid "Notice for digital content (Art. 16(m))"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:414
+#: src/Admin/SettingsPage.php:444
 msgid "Notice for dated services (Art. 16(l))"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:415
+#: src/Admin/SettingsPage.php:445
 msgid "Notice for other Article 16 exceptions"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:419
+#: src/Admin/SettingsPage.php:449
 msgid "Withdrawal emails"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:423
+#: src/Admin/SettingsPage.php:453
 msgid "From name"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:424
+#: src/Admin/SettingsPage.php:454
 msgid "From address"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:425
+#: src/Admin/SettingsPage.php:455
 msgid "Accepted email text"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:426
+#: src/Admin/SettingsPage.php:456
 msgid "Rejected email text"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:427
+#: src/Admin/SettingsPage.php:457
 msgid "Completed email text"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:431
-msgid "Public withdrawal form"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:435
-msgid "Intro text"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:436
-msgid "Consumer self-declaration"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:440
-msgid "Permissions"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:444
-msgid "Roles that manage requests"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:448
-msgid "Withdrawal link visibility"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:452
-msgid "Show withdrawal link in footer"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:453
-msgid "My Account tab"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:457
-msgid "Data"
-msgstr ""
-
 #: src/Admin/SettingsPage.php:461
-msgid "Delete all data on uninstall"
+msgid "Order lookup screen"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:465
+msgid "Page title"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:466
+msgid "Intro paragraph"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:467
+msgid "Email field hint"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:468
-msgid "Configure where notifications are sent and which page hosts the withdrawal form."
+msgid "Submit button label"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:475
-msgid "EU Directive 2023/2673 keeps the withdrawal function continuously available. These settings tune the advisory deadline shown to the merchant; in Advisory mode the function is never hidden."
+#: src/Admin/SettingsPage.php:472
+msgid "Withdrawal page appearance"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:482
-msgid "Mark individual products or whole categories as excluded from the right of withdrawal in the product and category editors (Withdrawal status). This default applies to products without an explicit status."
+#: src/Admin/SettingsPage.php:476
+msgid "Button style"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:489
-msgid "Optional consents shown at checkout for products excluded under Article 16(m) (digital content) or starting early under Article 14(4)(a) (services)."
+#: src/Admin/SettingsPage.php:477
+msgid "Button colour"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:496
-msgid "The statutory model withdrawal form (Annex I.B of Directive 2011/83/EU), shown below the public withdrawal form and via the [recesso_digitale_modulo] shortcode. The contact details below populate its header."
+#: src/Admin/SettingsPage.php:481
+msgid "Public withdrawal form"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:485
+msgid "Intro text"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:486
+msgid "Consumer self-declaration"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:490
+msgid "Permissions"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:494
+msgid "Roles that manage requests"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:498
+msgid "Withdrawal link visibility"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:502
+msgid "Show withdrawal link in footer"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:503
-msgid "Optionally show a notice on the product page of items excluded from the right of withdrawal."
+msgid "My Account tab"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:510
-msgid "Pick the WooCommerce order statuses from which a customer may declare a withdrawal. The choice applies to the button below the order details, the block in the order emails and the My Account tab alike. Unticking every status silences the prompt without deactivating the plugin."
+#: src/Admin/SettingsPage.php:507
+msgid "Data"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:517
-msgid "Choose who the plugin's emails come from and how the status-change messages to your customers are worded. Subjects and headings stay under WooCommerce → Settings → Emails, alongside every other store email."
+#: src/Admin/SettingsPage.php:511
+msgid "Delete all data on uninstall"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:524
-msgid "Fine-tune the public withdrawal form. The two-step confirmation, the itemised summary and the acknowledgement of receipt are fixed: they are what the law requires of the function."
+#: src/Admin/SettingsPage.php:518
+msgid "Configure where notifications are sent and which page hosts the withdrawal form."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:531
-msgid "Choose which roles, besides the administrator, can view and manage withdrawal requests. Each request holds personal data (name, email, IP address), so access is scoped to the roles you pick here rather than to everyone who can edit the shop."
+#: src/Admin/SettingsPage.php:525
+msgid "EU Directive 2023/2673 keeps the withdrawal function continuously available. These settings tune the advisory deadline shown to the merchant; in Advisory mode the function is never hidden."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:538
-msgid "The withdrawal function must be clearly identifiable and accessible throughout the period it can be exercised (art. 54-bis). The usual practice is a permanent link in the site footer, next to the privacy policy and the terms of sale. Nothing is injected into your theme automatically — pick whichever of these routes suits it."
+#: src/Admin/SettingsPage.php:532
+msgid "Mark individual products or whole categories as excluded from the right of withdrawal in the product and category editors (Withdrawal status). This default applies to products without an explicit status."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:543
-msgid "The setting below."
+#: src/Admin/SettingsPage.php:539
+msgid "Optional consents shown at checkout for products excluded under Article 16(m) (digital content) or starting early under Article 14(4)(a) (services)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:544
-msgid "Appends the link to the footer on every page, wherever your theme prints wp_footer."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:548
-msgid "Classic themes (Appearance → Menus)."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:549
-msgid "Open the menu assigned to your footer, add the withdrawal page from the left column and save."
+#: src/Admin/SettingsPage.php:546
+msgid "The statutory model withdrawal form (Annex I.B of Directive 2011/83/EU), shown below the public withdrawal form and via the [recesso_digitale_modulo] shortcode. The contact details below populate its header."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:553
-msgid "Block themes (Appearance → Editor)."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:554
-msgid "Edit the Footer template part, insert a Navigation or Page List block and point it at the withdrawal page."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:558
-msgid "Shortcode, anywhere a shortcode is accepted."
+msgid "Optionally show a notice on the product page of items excluded from the right of withdrawal."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:560
+msgid "Pick the WooCommerce order statuses from which a customer may declare a withdrawal. The choice applies to the button below the order details, the block in the order emails and the My Account tab alike. Unticking every status silences the prompt without deactivating the plugin."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:567
+msgid "Choose who the plugin's emails come from and how the status-change messages to your customers are worded. Subjects and headings stay under WooCommerce → Settings → Emails, alongside every other store email."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:574
+msgid "The wording of the screen a customer meets when they reach the withdrawal page without a signed link — from the footer link, from a bookmark, or after a link has expired. It asks for the order number and the order email, then sends the withdrawal link to that order's own address."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:581
+msgid "How the buttons on the withdrawal page itself look: the lookup screen, the declaration form and the confirmation step. The «recedere dal contratto qui» link in My Account and in your order emails is not affected — it sits inside your theme's own pages and has always used your theme's button style."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:588
+msgid "Fine-tune the public withdrawal form. The two-step confirmation, the itemised summary and the acknowledgement of receipt are fixed: they are what the law requires of the function."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:595
+msgid "Choose which roles, besides the administrator, can view and manage withdrawal requests. Each request holds personal data (name, email, IP address), so access is scoped to the roles you pick here rather than to everyone who can edit the shop."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:602
+msgid "The withdrawal function must be clearly identifiable and accessible throughout the period it can be exercised (art. 54-bis). The usual practice is a permanent link in the site footer, next to the privacy policy and the terms of sale. Nothing is injected into your theme automatically — pick whichever of these routes suits it."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:607
+msgid "The setting below."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:608
+msgid "Appends the link to the footer on every page, wherever your theme prints wp_footer."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:612
+msgid "Classic themes (Appearance → Menus)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:613
+msgid "Open the menu assigned to your footer, add the withdrawal page from the left column and save."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:617
+msgid "Block themes (Appearance → Editor)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:618
+msgid "Edit the Footer template part, insert a Navigation or Page List block and point it at the withdrawal page."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:622
+msgid "Shortcode, anywhere a shortcode is accepted."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:624
 msgid "optional attributes:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:561
+#: src/Admin/SettingsPage.php:625
 #: src/Admin/WithdrawalStatusFields.php:115
 #: src/Admin/WithdrawalStatusFields.php:132
 #: src/Frontend/AccountEndpoint.php:179
@@ -505,256 +545,272 @@ msgstr ""
 msgid "Right of withdrawal"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:586
+#: src/Admin/SettingsPage.php:650
 msgid "Public withdrawal form:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:599
+#: src/Admin/SettingsPage.php:663
 msgid "Placing the withdrawal function"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:603
+#: src/Admin/SettingsPage.php:667
 msgid "the full two-step withdrawal form. The page selected under General already contains it."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:608
+#: src/Admin/SettingsPage.php:672
 msgid "a link to that page, for footers, widgets and menus."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:612
+#: src/Admin/SettingsPage.php:676
 msgid "the Annex I.B model withdrawal form."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:616
+#: src/Admin/SettingsPage.php:680
 msgid "the \"excluded from withdrawal\" notice, for product templates built with a page builder."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:620
+#: src/Admin/SettingsPage.php:684
 msgid "Legal note"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:623
+#: src/Admin/SettingsPage.php:687
 msgid "This plugin provides the technical tools for the online withdrawal function required by Directive (EU) 2023/2673, transposed in Italy as art. 54-bis of the Codice del Consumo. It does not guarantee legal compliance, and it does not decide whether a withdrawal is valid — you do. Which products fall under the art. 59 exceptions, and how the durable-medium receipt is worded, depend on your catalogue and your jurisdiction: have them reviewed by a lawyer specialised in consumer law."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:637
+#: src/Admin/SettingsPage.php:701
 msgid "Order statuses eligible for withdrawal"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:656
+#: src/Admin/SettingsPage.php:720
 msgid "Defaults to Processing and Completed. Statuses registered by other plugins (a shipping extension, for example) appear here automatically."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:670
+#: src/Admin/SettingsPage.php:734
 msgid "Roles allowed to manage withdrawal requests"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:677
+#: src/Admin/SettingsPage.php:741
 msgid "Administrator (always allowed)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:699
+#: src/Admin/SettingsPage.php:763
 msgid "Ticking a role lets it view and manage requests; unticking it revokes access as soon as you save. Existing sites start with the shop manager, which is the role the plugin granted on activation."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:710
+#: src/Admin/SettingsPage.php:774
 msgid "Sender name for the acknowledgement, the admin notification and the status updates. Leave empty to use the WooCommerce sender, so all your store emails stay consistent."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:721
+#: src/Admin/SettingsPage.php:785
 msgid "Sender address for this plugin's emails only. An address on your own domain improves deliverability. Leave empty to use the WooCommerce sender."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:753
+#: src/Admin/SettingsPage.php:817
 msgid "Leave empty to use the bundled text shown in the field. The order reference and the reason you record when rejecting are always appended automatically."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:760
+#: src/Admin/SettingsPage.php:859
+msgid "Use the plugin's own button style (recommended)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:860
+msgid "Inherit my theme's button style"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:866
+msgid "The plugin styles these buttons itself because the withdrawal page is an ordinary page, where your theme's button styles are not guaranteed to load — without it the control can render as bare text. Choose to inherit only if your theme styles its buttons everywhere, and check the withdrawal page afterwards."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:886
+msgid "Leave empty to use the bundled colour. The hover shade and the label colour are worked out from your choice, so the label stays readable whatever colour you pick. Has no effect when the buttons inherit your theme's style."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:894
 msgid "Show the intro paragraph above the form."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:765
+#: src/Admin/SettingsPage.php:899
 msgid "Untick the box to hide the intro entirely. Leave the text empty to use the bundled sentence shown in the field, which names the order and follows the language of each visitor."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:773
+#: src/Admin/SettingsPage.php:907
 msgid "Require a \"bought as a consumer\" self-declaration on the form."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:778
+#: src/Admin/SettingsPage.php:912
 msgid "The right of withdrawal protects consumers — natural persons acting outside their trade or profession — not business buyers. When enabled, the form shows a required checkbox and the declaration is recorded in the durable-medium receipt. It is a good-faith declaration, not a legal guarantee: review business purchases yourself."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:786
+#: src/Admin/SettingsPage.php:920
 msgid "Add a \"Right of withdrawal\" tab to My Account."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:789
+#: src/Admin/SettingsPage.php:923
 msgid "The tab lists the customer's orders that are currently eligible and offers the withdrawal control for each, so a logged-in customer can find the function without hunting through past orders."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:825
+#: src/Admin/SettingsPage.php:959
 msgid "Title"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:828
+#: src/Admin/SettingsPage.php:962
 msgid "Body"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:833
+#: src/Admin/SettingsPage.php:967
 msgid "Leave a field empty to use the bundled wording shown in it, which follows the language of each visitor. The body accepts the {withdrawal_page_link} placeholder, which expands to a link to your withdrawal page."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:931
+#: src/Admin/SettingsPage.php:1065
 msgid "Fourteen days is the statutory minimum (art. 52). Raise it if you offer a longer return window; lowering it below fourteen has no legal effect."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:941
+#: src/Admin/SettingsPage.php:1075
 msgid "Delivery (goods)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:942
+#: src/Admin/SettingsPage.php:1076
 msgid "Conclusion of contract (services)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:947
+#: src/Admin/SettingsPage.php:1081
 msgid "For goods the period runs from delivery, which WooCommerce cannot know: the order completion date is used as the proxy. For services it runs from the conclusion of the contract, so the order date is used. This only affects the advisory deadline shown to you."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:957
+#: src/Admin/SettingsPage.php:1091
 msgid "Advisory — always available, merchant decides (recommended)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:958
+#: src/Admin/SettingsPage.php:1092
 msgid "Strict — hide the function outside the window"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:963
+#: src/Admin/SettingsPage.php:1097
 msgid "Keep Advisory. Because the real period runs from delivery, strict mode can turn away a consumer who is still within their actual window — and the function is supposed to stay continuously available. Use it only where the order or completion date is a reliable proxy for delivery."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:980
+#: src/Admin/SettingsPage.php:1114
 msgid "Extra days added on top of the window when computing the advisory deadline. Useful when your real return policy is more generous than the statutory minimum."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:990
+#: src/Admin/SettingsPage.php:1124
 msgid "Allow withdrawal (recommended)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:991
+#: src/Admin/SettingsPage.php:1125
 msgid "Exclude from withdrawal"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:992
+#: src/Admin/SettingsPage.php:1126
 msgid "Unconfigured — fail closed"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:997
+#: src/Admin/SettingsPage.php:1131
 msgid "Applies to products with no explicit \"Withdrawal status\" of their own or on their category. Keep \"Allow\": the right of withdrawal is the rule and the exceptions are the exception, and you still decide each request. \"Unconfigured\" makes any unclassified product block the whole order — safe, but it hides the function until your catalogue is fully classified."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1010
+#: src/Admin/SettingsPage.php:1144
 msgid "Display a notice on the product page for products excluded from withdrawal."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1014
+#: src/Admin/SettingsPage.php:1148
 msgid "Rendered between the price and the add-to-cart button. Not required by law as such, but it tells the consumer before they buy that this item cannot be returned, which heads off the dispute later."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1024
+#: src/Admin/SettingsPage.php:1158
 msgid "Show each consent only when the cart contains a product classified for it."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1028
+#: src/Admin/SettingsPage.php:1162
 msgid "The consent then follows the \"Withdrawal status\" you set on the product or category: the digital-content box appears only with Article 16(m) items in the cart, the service box only with Article 14(4)(a) items. Left unticked, every enabled consent is shown on every checkout — the behaviour of earlier versions, kept as the default so updating changes nothing."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1036
+#: src/Admin/SettingsPage.php:1170
 msgid "Show the digital-content consent at checkout."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1039
+#: src/Admin/SettingsPage.php:1173
 msgid "Mandatory if you sell digital content. Required for downloads, online courses, software and eBooks when you want to rely on the Article 16(m) exception. Without this consent given and recorded, the consumer keeps the 14-day right of withdrawal even after accessing the content. Otherwise optional."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1047
-#: src/Admin/SettingsPage.php:1077
+#: src/Admin/SettingsPage.php:1181
+#: src/Admin/SettingsPage.php:1211
 msgid "The order cannot be placed until this consent is given."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1050
+#: src/Admin/SettingsPage.php:1184
 msgid "Blocking checkout is a deliberate, catalogue-specific choice, so it is off by default. Turn it on only where the Article 16(m) exception is the basis of your sale."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1066
+#: src/Admin/SettingsPage.php:1200
 msgid "Show the optional service-start consent at checkout."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1069
+#: src/Admin/SettingsPage.php:1203
 msgid "Useful for ongoing services (maintenance plans, consultancy, subscriptions). With this consent recorded you may charge a proportionate amount for the work already done if the consumer withdraws within the window; without it, an early withdrawal means a full refund regardless of the work delivered."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1080
+#: src/Admin/SettingsPage.php:1214
 msgid "Leave this off unless your service always begins inside the withdrawal window — a live session, a booking for the next few days — where an order without the request is one you cannot fulfil. Asking for early performance is the consumer's choice to make, and requiring it takes that choice away, so it is off by default."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1098
+#: src/Admin/SettingsPage.php:1232
 msgid "Leave empty to use the bundled text shown in the field, which follows the language of each customer. Your own text is shown exactly as written, in every language."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1105
+#: src/Admin/SettingsPage.php:1239
 msgid "Add a persistent «recedere dal contratto qui» link to the site footer."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1108
+#: src/Admin/SettingsPage.php:1242
 msgid "The simplest way to satisfy the \"continuously available\" requirement. If your theme builds its footer from a menu or a template part, use one of the other routes above instead."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1123
+#: src/Admin/SettingsPage.php:1257
 msgid "Comma-separated email addresses notified when a withdrawal is confirmed. Defaults to the site admin email."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1127
+#: src/Admin/SettingsPage.php:1261
 msgid "Someone has to see a confirmed withdrawal: the acknowledgement to the consumer is automatic, but the refund is not. Separate several addresses with commas."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1141
+#: src/Admin/SettingsPage.php:1275
 msgid "— Select a page —"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1163
+#: src/Admin/SettingsPage.php:1297
 msgid "The page that contains the withdrawal form. Make sure it includes the [recesso_digitale] shortcode. The plugin creates one automatically on activation."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1167
+#: src/Admin/SettingsPage.php:1301
 msgid "Without it the withdrawal function has nowhere to live: the buttons in order emails and in My Account have no destination."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1180
+#: src/Admin/SettingsPage.php:1314
 msgid "Display the model form below the public withdrawal form."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1184
+#: src/Admin/SettingsPage.php:1318
 msgid "Providing the Annex I.B model form is a separate, pre-contractual obligation (art. 6(1)(h)): the online function complements it, it does not replace it. The model is generated from the trader details below, so it works as soon as they are filled in."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1226
+#: src/Admin/SettingsPage.php:1360
 msgid "Mandatory."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1227
+#: src/Admin/SettingsPage.php:1361
 msgid "Recommended."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1228
+#: src/Admin/SettingsPage.php:1362
 msgid "Optional."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1297
+#: src/Admin/SettingsPage.php:1431
 msgid "Remove tables and options when the plugin is deleted."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:1301
+#: src/Admin/SettingsPage.php:1435
 msgid "Off by default, and deliberately so: withdrawal records and their receipts are legal evidence. Only tick this if you are sure you no longer need them."
 msgstr ""
 
@@ -855,7 +911,8 @@ msgid "Your withdrawal link for order {order_number}"
 msgstr ""
 
 #: src/Email/WithdrawalLinkEmail.php:56
-#: templates/frontend/lookup.php:26
+#: src/Support/Settings.php:417
+#: templates/frontend/lookup.php:32
 msgid "Exercise your right of withdrawal"
 msgstr ""
 
@@ -981,64 +1038,64 @@ msgstr ""
 msgid "Please confirm the required consent to place your order."
 msgstr ""
 
-#: src/Frontend/FlowController.php:292
+#: src/Frontend/FlowController.php:327
 msgid "If an order matching those details exists, we have sent a withdrawal link to the email address on file. Please check your inbox."
 msgstr ""
 
-#: src/Frontend/FlowController.php:296
+#: src/Frontend/FlowController.php:331
 msgid "Please enter both your order number and the email address used for the order."
 msgstr ""
 
-#: src/Frontend/FlowController.php:300
+#: src/Frontend/FlowController.php:335
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr ""
 
-#: src/Frontend/FlowController.php:328
-#: src/Frontend/FlowController.php:333
-#: src/Frontend/FlowController.php:518
-#: src/Frontend/FlowController.php:570
+#: src/Frontend/FlowController.php:369
+#: src/Frontend/FlowController.php:374
+#: src/Frontend/FlowController.php:559
+#: src/Frontend/FlowController.php:611
 msgid "This withdrawal link is not valid or has expired."
 msgstr ""
 
 #. translators: %s: date and time the earlier request was sent.
-#: src/Frontend/FlowController.php:410
+#: src/Frontend/FlowController.php:451
 #, php-format
 msgid "You already sent a withdrawal request for this order on %s. We have it — there is no need to send another."
 msgstr ""
 
-#: src/Frontend/FlowController.php:413
+#: src/Frontend/FlowController.php:454
 msgid "A withdrawal request for this order is already in progress. We have it — there is no need to send another."
 msgstr ""
 
-#: src/Frontend/FlowController.php:419
+#: src/Frontend/FlowController.php:460
 #: templates/emails/partials/request-summary.php:89
 #: templates/frontend/done.php:60
 msgid "Follow this request in your account"
 msgstr ""
 
-#: src/Frontend/FlowController.php:432
+#: src/Frontend/FlowController.php:473
 msgid "Please provide a valid name and email address, select at least one item to withdraw, and confirm that you bought as a consumer."
 msgstr ""
 
-#: src/Frontend/FlowController.php:435
+#: src/Frontend/FlowController.php:476
 msgid "Please provide a valid name and email address, and select at least one item to withdraw."
 msgstr ""
 
-#: src/Frontend/FlowController.php:545
+#: src/Frontend/FlowController.php:586
 msgid "Confirm withdrawal"
 msgstr ""
 
-#: src/Frontend/FlowController.php:965
+#: src/Frontend/FlowController.php:1006
 #: src/Rest/EligibilityController.php:137
 #: src/Rest/WithdrawalsController.php:220
 msgid "A withdrawal request is already in progress for this order."
 msgstr ""
 
-#: src/Frontend/FlowController.php:968
+#: src/Frontend/FlowController.php:1009
 msgid "We could not record your withdrawal right now. Please try again in a few moments."
 msgstr ""
 
-#: src/Frontend/FlowController.php:971
+#: src/Frontend/FlowController.php:1012
 msgid "This withdrawal link is no longer valid — it may have expired, or it may already have been used. You can request a new one below."
 msgstr ""
 
@@ -1210,61 +1267,76 @@ msgstr ""
 msgid "This order is not eligible for withdrawal."
 msgstr ""
 
-#: src/Support/Settings.php:262
+#: src/Support/Settings.php:288
 msgid "For this product the right of withdrawal does not apply (art. 59 of the Italian Consumer Code)."
 msgstr ""
 
-#: src/Support/Settings.php:280
+#: src/Support/Settings.php:306
 msgid "Digital content — the right of withdrawal is lost on access"
 msgstr ""
 
-#: src/Support/Settings.php:281
+#: src/Support/Settings.php:307
 msgid "This is digital content under Article 16(m) of Directive 2011/83/EU. By starting to access, download or view it after purchase you expressly request its immediate supply and acknowledge that you thereby lose the right of withdrawal. {withdrawal_page_link}"
 msgstr ""
 
-#: src/Support/Settings.php:287
+#: src/Support/Settings.php:313
 msgid "Dated service — excluded from the right of withdrawal"
 msgstr ""
 
-#: src/Support/Settings.php:288
+#: src/Support/Settings.php:314
 msgid "This service is excluded from the right of withdrawal under Article 16(l) of Directive 2011/83/EU, which covers accommodation other than for residential purposes, transport of goods, vehicle rental, catering and leisure services when the contract sets a specific date or period of performance. Please check the booking conditions before purchasing. {withdrawal_page_link}"
 msgstr ""
 
-#: src/Support/Settings.php:297
+#: src/Support/Settings.php:323
 msgid "Excluded from the right of withdrawal"
 msgstr ""
 
-#: src/Support/Settings.php:302
+#: src/Support/Settings.php:328
 msgid "This product is excluded from the right of withdrawal under one of the exceptions in Article 16 of Directive 2011/83/EU (perishable goods, made-to-measure or personalised items, hygiene-sealed goods, sealed audio, video or software media unsealed after delivery, and similar). Please check the conditions before purchasing. {withdrawal_page_link}"
 msgstr ""
 
-#: src/Support/Settings.php:331
+#: src/Support/Settings.php:357
 msgid "We have accepted your withdrawal request and will proceed with the refund within the legal deadline."
 msgstr ""
 
-#: src/Support/Settings.php:332
+#: src/Support/Settings.php:358
 msgid "We have reviewed your withdrawal request and are unable to accept it."
 msgstr ""
 
-#: src/Support/Settings.php:333
+#: src/Support/Settings.php:359
 msgid "Your withdrawal has been processed and the refund issued. The funds may take a few business days to reach your account."
 msgstr ""
 
 #. translators: %s: order/contract reference.
-#: src/Support/Settings.php:358
+#: src/Support/Settings.php:384
 #, php-format
 msgid "You are exercising your right of withdrawal for order %s. Please confirm your details below."
 msgstr ""
 
-#: src/Support/Settings.php:377
+#: src/Support/Settings.php:403
 msgid "I confirm that I made this purchase as a consumer, that is, as a natural person acting for purposes outside my trade, business, craft or profession."
 msgstr ""
 
-#: src/Support/Settings.php:420
+#: src/Support/Settings.php:427
+#: templates/frontend/lookup.php:36
+msgid "Enter your order number and the email address you used for the order. We will send a secure withdrawal link to that email address."
+msgstr ""
+
+#: src/Support/Settings.php:437
+#: templates/frontend/lookup.php:40
+msgid "The link is sent to this address only, so it must be the one on the order."
+msgstr ""
+
+#: src/Support/Settings.php:447
+#: templates/frontend/lookup.php:44
+msgid "Send me the withdrawal link"
+msgstr ""
+
+#: src/Support/Settings.php:519
 msgid "I request immediate access to the digital content and acknowledge that I therefore lose my right of withdrawal."
 msgstr ""
 
-#: src/Support/Settings.php:468
+#: src/Support/Settings.php:567
 msgid "I request that the service begins during the withdrawal period."
 msgstr ""
 
@@ -1489,7 +1561,7 @@ msgid "Withdrawal declaration"
 msgstr ""
 
 #: templates/frontend/declaration.php:48
-#: templates/frontend/lookup.php:48
+#: templates/frontend/lookup.php:69
 msgid "Leave this field empty"
 msgstr ""
 
@@ -1558,28 +1630,16 @@ msgstr ""
 msgid "Your withdrawal for %1$s has been recorded. An acknowledgement of receipt has been sent to %2$s on a durable medium."
 msgstr ""
 
-#: templates/frontend/lookup.php:38
-msgid "Enter your order number and the email address you used for the order. We will send a secure withdrawal link to that email address."
-msgstr ""
-
-#: templates/frontend/lookup.php:53
+#: templates/frontend/lookup.php:74
 msgid "Order number"
 msgstr ""
 
-#: templates/frontend/lookup.php:66
+#: templates/frontend/lookup.php:87
 msgid "You will find it in your order confirmation email."
 msgstr ""
 
-#: templates/frontend/lookup.php:71
+#: templates/frontend/lookup.php:92
 msgid "Email address used for the order"
-msgstr ""
-
-#: templates/frontend/lookup.php:83
-msgid "The link is sent to this address only, so it must be the one on the order."
-msgstr ""
-
-#: templates/frontend/lookup.php:89
-msgid "Send me the withdrawal link"
 msgstr ""
 
 #: templates/frontend/model-form.php:21

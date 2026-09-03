@@ -425,6 +425,29 @@ test.describe( 'Guest withdrawal flow (server-rendered)', () => {
 		).toBeVisible();
 	} );
 
+	test( 'a merchant accent colour keeps the lookup screen within the contrast floor', async ( {
+		page,
+	} ) => {
+		// A pale accent is the case that would break a fixed white label. The label colour is derived,
+		// so axe must still find no contrast violation — this is the browser-level confirmation of the
+		// gamut sweep in tests/unit/Support/ColorTest.php.
+		wpEval(
+			`update_option( 'recesso_dig_button_accent', '#ffe08a' );`
+		);
+
+		try {
+			await page.goto( order.flowUrl );
+			await expect( page.locator( FLOW ) ).toBeVisible();
+			await expect(
+				page.locator( '.wp-block-recesso-digitale-flow__submit' )
+			).toBeVisible();
+
+			await expectNoA11yViolations( page, FLOW );
+		} finally {
+			wpEval( `delete_option( 'recesso_dig_button_accent' );` );
+		}
+	} );
+
 	test( 'the consumer self-declaration is required, accessible and recorded in the receipt', async ( {
 		page,
 	} ) => {
