@@ -246,6 +246,15 @@ with it. Never change the v1 shape.
 
 ---
 
+## Legal review outstanding
+
+0.9.0 shipped before a legal advisor validated the `TODO(legal)` assumptions. They are collected,
+with one closed question each, in [`LEGAL-REVIEW.md`](LEGAL-REVIEW.md), written for the advisor.
+Turn every answer other than "confirmed" into an item here; remove a `TODO(legal)` marker only when
+its question has been confirmed.
+
+---
+
 ## Product decisions, not engineering tasks
 
 **Standalone mode without WooCommerce.** The competitor runs its whole plugin — form, log, emails,
