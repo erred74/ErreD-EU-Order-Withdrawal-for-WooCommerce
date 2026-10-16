@@ -54,6 +54,14 @@ final class FlowControllerTest extends TestCase {
 		}
 		delete_option( Settings::OPT_BUTTON_ACCENT );
 		delete_option( Settings::OPT_BUTTON_STYLE );
+		delete_option( Settings::OPT_LOOKUP_ORDER_HINT );
+		delete_option( Settings::OPT_LOOKUP_INTRO_ENABLED );
+		delete_option( Settings::OPT_LOOKUP_EMAIL_HINT_ENABLED );
+		delete_option( Settings::OPT_LOOKUP_ORDER_HINT_ENABLED );
+		delete_option( Settings::OPT_INELIGIBLE_ADDENDUM );
+		delete_option( Settings::OPT_INELIGIBLE_LINK_URL );
+		delete_option( Settings::OPT_INELIGIBLE_LINK_TEXT );
+		delete_option( Settings::OPT_ELIGIBLE_STATUSES );
 		$_GET = array();
 		parent::tearDown();
 	}
@@ -292,6 +300,171 @@ final class FlowControllerTest extends TestCase {
 		$handle = $this->reset_styles();
 		$this->flow->render();
 		$this->assertSame( '', $this->inline_style_for( $handle ) );
+	}
+
+	/**
+	 * The reference a consumer actually pastes.
+	 *
+	 * WooCommerce shows the order number as "#1234" in the confirmation email, and `absint( '#1234' )`
+	 * is 0 — so the lookup used to fail at its first guard, and because the form answers identically
+	 * whether or not an order matched, the consumer was told a link had been sent that never arrived.
+	 *
+	 * `match_order()` is private on purpose: it is the resolver that decides who may be sent a signed
+	 * withdrawal link, and nothing outside the lookup handler should be able to call it. The handler
+	 * itself ends in `wp_safe_redirect()` + `exit`, which cannot run inside PHPUnit, so the resolver is
+	 * reached by reflection rather than left untested.
+	 *
+	 * @dataProvider provide_typed_references
+	 *
+	 * @param string $suffix   Appended to the order's own number to build what the consumer typed.
+	 * @param string $prefix   Prepended to it.
+	 * @param bool   $expected Whether the reference must resolve to the order.
+	 */
+	public function test_lookup_matches_the_reference_as_the_customer_sees_it( string $prefix, string $suffix, bool $expected ): void {
+		$typed = $prefix . $this->order_id . $suffix;
+
+		$this->assertSame(
+			$expected,
+			$this->match_order( $typed, 'mario@example.org' ) instanceof \WC_Order,
+			sprintf( 'Reference "%s" resolved unexpectedly.', $typed )
+		);
+	}
+
+	/**
+	 * @return array<string, array{string, string, bool}>
+	 */
+	public static function provide_typed_references(): array {
+		return array(
+			'as WooCommerce prints it' => array( '#', '', true ),
+			'hash and spaces'          => array( '  #', '  ', true ),
+			'plain'                    => array( '', '', true ),
+			'zero padded'              => array( '00', '', true ),
+			'hash and zero padded'     => array( '#0', '', true ),
+			// Must still fail: normalising formatting may not widen the match to another order.
+			'a different order'        => array( '', '9', false ),
+			'not a number'             => array( 'ORD-', '', false ),
+		);
+	}
+
+	public function test_lookup_still_refuses_a_mismatched_email(): void {
+		// The email guard is the other half of the resolver and must be unaffected by normalisation.
+		$this->assertNull( $this->match_order( '#' . $this->order_id, 'someone-else@example.org' ) );
+	}
+
+	/**
+	 * Reach the private resolver. See the docblock above for why this is by reflection.
+	 */
+	private function match_order( string $order_number, string $email ): ?\WC_Order {
+		$method = new \ReflectionMethod( FlowController::class, 'match_order' );
+		$method->setAccessible( true );
+
+		$order = $method->invoke( $this->flow, $order_number, $email );
+
+		return $order instanceof \WC_Order ? $order : null;
+	}
+
+	/**
+	 * Rewording a line was never the same as being able to drop it: emptying the setting restores the
+	 * bundled sentence, so before this the hints could not be removed at all.
+	 */
+	public function test_lookup_lines_can_be_hidden_not_only_reworded(): void {
+		$_GET = array();
+
+		$shown = $this->flow->render();
+		$this->assertStringContainsString( 'wp-block-recesso-digitale-flow__intro', $shown );
+		$this->assertStringContainsString( 'recesso-dig-lookup-email-hint', $shown );
+		$this->assertStringContainsString( 'recesso-dig-lookup-order-hint', $shown );
+
+		update_option( Settings::OPT_LOOKUP_INTRO_ENABLED, '0' );
+		update_option( Settings::OPT_LOOKUP_EMAIL_HINT_ENABLED, '0' );
+		update_option( Settings::OPT_LOOKUP_ORDER_HINT_ENABLED, '0' );
+
+		$hidden = $this->flow->render();
+		$this->assertStringNotContainsString( 'wp-block-recesso-digitale-flow__intro', $hidden );
+		$this->assertStringNotContainsString( 'The link is sent to this address only', $hidden );
+		$this->assertStringNotContainsString( 'your order confirmation email', $hidden );
+
+		// A hidden hint must take its aria-describedby with it, or assistive tech follows a reference
+		// to an element that is no longer on the page.
+		$this->assertStringNotContainsString( 'recesso-dig-lookup-email-hint', $hidden );
+		$this->assertStringNotContainsString( 'recesso-dig-lookup-order-hint', $hidden );
+
+		// The form itself must survive: hiding guidance may not remove the function.
+		$this->assertStringContainsString( 'name="order_number"', $hidden );
+		$this->assertStringContainsString( 'name="order_email"', $hidden );
+	}
+
+	public function test_declaration_tells_the_consumer_when_the_period_ends(): void {
+		$_GET = array(
+			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,
+			FlowUrls::QV_ORDER => (string) $this->order_id,
+			FlowUrls::QV_TOKEN => $this->token,
+		);
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'wp-block-recesso-digitale-flow__deadline', $html );
+		// Advisory is the default, so the wording must not promise a cut-off the plugin does not apply.
+		$this->assertStringContainsString( 'ordinary withdrawal period', $html );
+		$this->assertStringNotContainsString( 'You can withdraw from this order until', $html );
+	}
+
+	/**
+	 * The refusal states a legal position and then stops, which leaves the consumer with no way to
+	 * ask a person about it. The reason stays ours; the way out is the merchant's.
+	 */
+	public function test_ineligible_message_carries_the_merchant_follow_up(): void {
+		update_option( Settings::OPT_ELIGIBLE_STATUSES, array( 'completed' ) );
+		$order = wc_get_order( $this->order_id );
+		$order->set_status( 'on-hold' );
+		$order->save();
+
+		$_GET = array(
+			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,
+			FlowUrls::QV_ORDER => (string) $this->order_id,
+			FlowUrls::QV_TOKEN => $this->token,
+		);
+
+		$bare = $this->flow->render();
+		$this->assertStringContainsString( 'cannot be withdrawn in its current state', $bare );
+		$this->assertStringNotContainsString( 'Call us on', $bare );
+
+		update_option( Settings::OPT_INELIGIBLE_ADDENDUM, 'Call us on 0123 456789 and we will look at it.' );
+		update_option( Settings::OPT_INELIGIBLE_LINK_TEXT, 'Contact us' );
+		update_option( Settings::OPT_INELIGIBLE_LINK_URL, 'https://example.org/contact' );
+
+		$helped = $this->flow->render();
+		$this->assertStringContainsString( 'cannot be withdrawn in its current state', $helped );
+		$this->assertStringContainsString( 'Call us on 0123 456789', $helped );
+		$this->assertStringContainsString( 'https://example.org/contact', $helped );
+		$this->assertStringContainsString( 'Contact us', $helped );
+	}
+
+	/**
+	 * Two layers enforce this — `Settings::ineligible_link()` and `message()`, which renders a link
+	 * only when it has both halves — so like the bundled-wording fallback it pins the promise rather
+	 * than either guard, and only fails when both are gone. Kept because a half-configured link is the
+	 * likeliest way for a merchant to leave the page with a dangling anchor or an unlabelled URL.
+	 */
+	public function test_follow_up_link_needs_both_halves(): void {
+		update_option( Settings::OPT_ELIGIBLE_STATUSES, array( 'completed' ) );
+		$order = wc_get_order( $this->order_id );
+		$order->set_status( 'on-hold' );
+		$order->save();
+
+		// An address with no label renders nothing a consumer could read; a label with no address
+		// renders nothing they could follow. Neither half alone may reach the page.
+		update_option( Settings::OPT_INELIGIBLE_LINK_URL, 'https://example.org/contact' );
+		$_GET = array(
+			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,
+			FlowUrls::QV_ORDER => (string) $this->order_id,
+			FlowUrls::QV_TOKEN => $this->token,
+		);
+		$this->assertStringNotContainsString( 'example.org/contact', $this->flow->render() );
+
+		delete_option( Settings::OPT_INELIGIBLE_LINK_URL );
+		update_option( Settings::OPT_INELIGIBLE_LINK_TEXT, 'Contact us' );
+		$this->assertStringNotContainsString( 'Contact us', $this->flow->render() );
 	}
 
 	public function test_declaration_denies_invalid_token(): void {

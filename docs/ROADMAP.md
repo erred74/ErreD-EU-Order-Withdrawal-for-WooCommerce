@@ -4,7 +4,7 @@ Work not yet done, why it matters, and what it touches. Ordered by release. Rule
 `claude.local.md`; this file records *intent*, not state — a completed item is deleted from here and
 described in the `readme.txt` changelog instead.
 
-Last reviewed: 2026-09-03, after 0.8.0.
+Last reviewed: 2026-09-05, after 0.8.1.
 
 ---
 
@@ -67,6 +67,57 @@ and the consumer gets silence. Add a resolver checking the known meta keys, with
 `recesso_dig_order_number_meta_keys` and `recesso_dig_resolve_order` filters for anything else.
 Touches the lookup path in `src/Frontend/FlowController.php`.
 
+0.8.1 did the cheap half — `src/Support/OrderNumber.php` forgives the leading `#`, stray spaces and
+zero padding, which covered the typo case. The third-party numbering case is still open, and the new
+helper is where the resolver should hang.
+
+### Tell the merchant about failed withdrawal attempts
+Reported twice by the same merchant, from two directions: a mistyped order number, and an address
+mistyped at checkout so the link can never reach the customer. Both already land in the read-only
+"unmatched lookups" panel; what is missing is a push, so nobody has to think to go and look.
+
+Must be a **throttled digest, never an email per event** — the lookup form is public and a bot run
+would turn per-event mail into a flood aimed at the merchant's inbox. `RateLimiter` has no cooldown
+primitive (it can be used with `max=1`, but that is an oblique use of a counter), so this needs a
+design pass rather than a call site.
+Touches `src/Frontend/FlowController.php`, `src/Persistence/LogRepository.php`, a new `WC_Email`.
+
+### The log records failed lookups but not successful ones
+`record_unmatched_lookup()` writes a row when nothing matched; a lookup that matched and sent a link
+writes nothing at all — no log row, no order note, no trace anywhere but the customer's inbox. That
+is backwards for reconstructing a disputed case ("I asked for the link and it never came"), and it
+is what makes "did we send it?" unanswerable today. One row per sent link, alongside the digest above.
+
+### Surface abandoned declarations
+A consumer who fills in step one and never confirms leaves a `pending` row, which
+`RequestRepository::admin_where()` deliberately excludes from the requests list and its counts —
+correctly, because an unconfirmed declaration is not a legal record and has no `confirmed_at_gmt`.
+The only trace is an order note. Worth showing, but **outside** the requests list: promoting these
+rows into it would invite a merchant to process something that is not a withdrawal. A counter or a
+separate panel, in the shape of the unmatched-lookups one.
+
+### Window start per line, not per store
+Not from the competitor comparison: raised by a merchant selling both T-shirts and enrolments in a
+youth football school. Today the window start (`delivery` / `conclusion`) and its length are one
+store-wide setting, and `EligibilityAdapter::window_start()` computes one start **per order**. A
+store selling both goods and services must pick one trigger, and one of the two kinds then gets a
+wrong deadline — harmless in advisory mode, a refused legitimate withdrawal in strict mode.
+
+Art. 52(2) Codice del Consumo does not reduce to "delivery vs purchase", so a two-way per-product
+switch would be the wrong model. The start depends on the kind of contract:
+- services and digital content not on a tangible medium → conclusion of the contract;
+- goods → receipt; several goods delivered separately → receipt of the **last** one;
+- regular delivery of goods over a period (a subscription box) → receipt of the **first** one.
+
+So: a per-product/per-category contract type (inheriting like the withdrawal status does), resolved
+per line by the engine, plus a rule for orders that mix types. `EligibilityResult` would then carry a
+window per line, and the declaration screen's deadline sentence must follow. The legal mapping above
+is an assumption and needs `TODO(legal)` markers — in particular whether a season enrolment is a
+leisure service with a "specific period of performance" (art. 59(1)(n)), which would exclude it
+outright rather than start its window at conclusion.
+Touches `src/Domain/Eligibility/`, `src/Integration/EligibilityAdapter.php`,
+`src/Admin/WithdrawalStatusFields.php`, `src/Support/Settings.php`, `templates/frontend/declaration.php`.
+
 ### WPML: resolve a translated product's withdrawal status to the original
 On WPML/Polylang sites a translated product does not inherit the "Withdrawal status" set on the
 original, so its exclusion notice and checkout consent silently disappear. The competitor shipped
@@ -114,6 +165,30 @@ styling is exactly the one likely to have an override — routing the toggle thr
 the setting silently do nothing for them. The `:where()` keeps the negation at zero specificity, so the
 selectors stay at `(0,1,0)` and keep losing to the same theme rules they lost to before; a plain
 descendant scope would raise them to `(0,2,0)` and restyle sites that changed nothing.
+
+### The order-status check runs before the advisory/strict branch
+`EligibilityEngine::evaluate()` rejects an order whose status is not in `eligible_statuses()` at its
+very first guard, ahead of the advisory/strict window logic. So "Advisory — always available", which
+the settings screen recommends, is **not** always available: an order in an unticked status is hard
+blocked whatever the mode. This surprised a merchant testing an unpaid bank-transfer order.
+
+It is the right order of checks — a contract in a state the merchant does not consider concluded is
+not a withdrawal question — but it is not what the advisory label implies. Documented in the readme
+FAQ and left alone deliberately; changing it would silently make orders withdrawable on existing
+installs. If it is ever revisited, note the follow-on trap: enabling `on-hold` while in strict mode
+with a delivery-based window start just swaps one dead end ("cannot be withdrawn in its current
+state") for another ("the withdrawal period has not started yet"), because such an order has no
+`date_completed`.
+
+### Two emails ignore their own enable switch
+The acknowledgement and the withdrawal-link emails bypass `is_enabled()`. That is deliberate — the
+first is legally required, the second is the only reply to a link a guest asked for — but the code
+justified it with a claim that a `WC_Email` with no saved settings reports `is_enabled() === false`.
+**That claim is false**: all five of the plugin's emails report `true` before anything is saved, as
+`tests/integration/Email/EmailTogglesTest.php` now pins. The comments were corrected in 0.8.1 and
+each of the two says so in its `$description`, so the switch on the WooCommerce screen no longer
+looks like a control that does nothing. Do not re-derive this from the WooCommerce source: the test
+is the record.
 
 ### No unverified withdrawal records
 The competitor's headline 2.1.0 feature registers requests that match no order, flagged "Unverified".

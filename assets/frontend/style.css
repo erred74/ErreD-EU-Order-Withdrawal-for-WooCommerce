@@ -65,6 +65,18 @@
 	margin-bottom: 0.5em;
 }
 
+/* The intro carried no rule at all, so its spacing was whatever the theme gave
+   a bare <p> — on a theme that zeroes paragraph margins it sat directly on the
+   first field's label. State it here rather than rely on the theme. */
+.wp-block-recesso-digitale-flow__intro {
+	margin: 0 0 1.25rem;
+}
+
+.wp-block-recesso-digitale-flow__deadline {
+	color: var(--recesso-dig-muted);
+	margin: 0 0 1.25rem;
+}
+
 .wp-block-recesso-digitale-flow__field {
 	display: flex;
 	flex-direction: column;

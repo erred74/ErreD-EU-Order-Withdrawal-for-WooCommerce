@@ -247,7 +247,15 @@ final class SettingsPage {
 			)
 		);
 		// Booleans defaulting to on: the intro paragraph and the My Account tab.
-		foreach ( array( Settings::OPT_FORM_INTRO_ENABLED, Settings::OPT_ACCOUNT_ENDPOINT ) as $recesso_dig_on_opt ) {
+		foreach (
+			array(
+				Settings::OPT_FORM_INTRO_ENABLED,
+				Settings::OPT_ACCOUNT_ENDPOINT,
+				Settings::OPT_LOOKUP_INTRO_ENABLED,
+				Settings::OPT_LOOKUP_EMAIL_HINT_ENABLED,
+				Settings::OPT_LOOKUP_ORDER_HINT_ENABLED,
+			) as $recesso_dig_on_opt
+		) {
 			register_setting(
 				self::GROUP,
 				$recesso_dig_on_opt,
@@ -286,7 +294,10 @@ final class SettingsPage {
 			Settings::OPT_LOOKUP_TITLE,
 			Settings::OPT_LOOKUP_INTRO,
 			Settings::OPT_LOOKUP_EMAIL_HINT,
+			Settings::OPT_LOOKUP_ORDER_HINT,
 			Settings::OPT_LOOKUP_SUBMIT,
+			Settings::OPT_INELIGIBLE_ADDENDUM,
+			Settings::OPT_INELIGIBLE_LINK_TEXT,
 		);
 		foreach ( $recesso_dig_copy_opts as $recesso_dig_copy_opt ) {
 			register_setting(
@@ -300,6 +311,17 @@ final class SettingsPage {
 				)
 			);
 		}
+		// A URL, so it gets a URL sanitiser: this one is printed as an href on a public page.
+		register_setting(
+			self::GROUP,
+			Settings::OPT_INELIGIBLE_LINK_URL,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'esc_url_raw',
+				'show_in_rest'      => true,
+				'default'           => '',
+			)
+		);
 		// The accent ends up inside a stylesheet, so it gets a hex-only validator rather than a text
 		// sanitiser: sanitize_text_field would pass ";}body{…}" through untouched. Empty means "use
 		// the bundled colour", which is why the registered default is '' and not the colour itself.
@@ -464,8 +486,10 @@ final class SettingsPage {
 		);
 		add_settings_field( Settings::OPT_LOOKUP_TITLE, __( 'Page title', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_title' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_TITLE ) );
 		add_settings_field( Settings::OPT_LOOKUP_INTRO, __( 'Intro paragraph', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_intro' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_INTRO ) );
+		add_settings_field( Settings::OPT_LOOKUP_ORDER_HINT, __( 'Order number field hint', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_order_hint' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_ORDER_HINT ) );
 		add_settings_field( Settings::OPT_LOOKUP_EMAIL_HINT, __( 'Email field hint', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_email_hint' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_EMAIL_HINT ) );
 		add_settings_field( Settings::OPT_LOOKUP_SUBMIT, __( 'Submit button label', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_lookup_submit' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_LOOKUP_SUBMIT ) );
+		add_settings_field( Settings::OPT_INELIGIBLE_ADDENDUM, __( 'When withdrawal is not available', 'erred-eu-order-withdrawal-for-woocommerce' ), array( $this, 'field_ineligible_addendum' ), self::MENU_SLUG, self::SECTION_LOOKUP, array( 'label_for' => Settings::OPT_INELIGIBLE_ADDENDUM ) );
 
 		add_settings_section(
 			self::SECTION_APPEAR,
@@ -829,16 +853,53 @@ final class SettingsPage {
 	 * Render the lookup screen's intro paragraph.
 	 */
 	public function field_lookup_intro(): void {
+		$this->checkbox_option( Settings::OPT_LOOKUP_INTRO_ENABLED, __( 'Show the intro paragraph.', 'erred-eu-order-withdrawal-for-woocommerce' ), '1' );
+		echo '<p></p>';
 		$this->textarea_option( Settings::OPT_LOOKUP_INTRO, ( new Settings() )->lookup_intro() );
-		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+		$this->hint( self::TAG_OPTIONAL, $this->hideable_text_hint() );
+	}
+
+	/**
+	 * Render the hint shown under the lookup screen's order-number field.
+	 */
+	public function field_lookup_order_hint(): void {
+		$this->checkbox_option( Settings::OPT_LOOKUP_ORDER_HINT_ENABLED, __( 'Show the hint under the order number field.', 'erred-eu-order-withdrawal-for-woocommerce' ), '1' );
+		echo '<p></p>';
+		$this->textarea_option( Settings::OPT_LOOKUP_ORDER_HINT, ( new Settings() )->lookup_order_hint() );
+		$this->hint( self::TAG_OPTIONAL, $this->hideable_text_hint() );
 	}
 
 	/**
 	 * Render the hint shown under the lookup screen's email field.
 	 */
 	public function field_lookup_email_hint(): void {
+		$this->checkbox_option( Settings::OPT_LOOKUP_EMAIL_HINT_ENABLED, __( 'Show the hint under the email field.', 'erred-eu-order-withdrawal-for-woocommerce' ), '1' );
+		echo '<p></p>';
 		$this->textarea_option( Settings::OPT_LOOKUP_EMAIL_HINT, ( new Settings() )->lookup_email_hint() );
-		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
+		$this->hint( self::TAG_OPTIONAL, $this->hideable_text_hint() );
+	}
+
+	/**
+	 * Render the merchant's follow-up for orders that cannot be withdrawn from.
+	 */
+	public function field_ineligible_addendum(): void {
+		$settings = new Settings();
+		$link     = $settings->ineligible_link();
+
+		$this->textarea_option( Settings::OPT_INELIGIBLE_ADDENDUM, '' );
+
+		printf( '<p><label for="%s">%s</label></p>', esc_attr( Settings::OPT_INELIGIBLE_LINK_TEXT ), esc_html__( 'Link text', 'erred-eu-order-withdrawal-for-woocommerce' ) );
+		$this->text_option( Settings::OPT_INELIGIBLE_LINK_TEXT, '' );
+
+		printf( '<p><label for="%s">%s</label></p>', esc_attr( Settings::OPT_INELIGIBLE_LINK_URL ), esc_html__( 'Link address', 'erred-eu-order-withdrawal-for-woocommerce' ) );
+		$this->text_option( Settings::OPT_INELIGIBLE_LINK_URL, '' );
+
+		$this->hint(
+			self::TAG_OPTIONAL,
+			'' === $link['url'] && '' !== trim( (string) get_option( Settings::OPT_INELIGIBLE_LINK_URL, '' ) . (string) get_option( Settings::OPT_INELIGIBLE_LINK_TEXT, '' ) )
+				? __( 'The link needs both a text and an address; with only one of the two it is not shown. Your sentence is added below the explanation the customer is given when their order cannot be withdrawn from — for example how to reach you about it. The explanation itself states the legal position and is not editable. Leave all three empty to add nothing.', 'erred-eu-order-withdrawal-for-woocommerce' )
+				: __( 'Added below the explanation the customer is given when their order cannot be withdrawn from — for example how to reach you about it. The explanation itself states the legal position and is not editable. The link needs both a text and an address to appear. Leave all three empty to add nothing.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
 	}
 
 	/**
@@ -891,7 +952,7 @@ final class SettingsPage {
 	 * Render the form intro toggle and text together.
 	 */
 	public function field_form_intro(): void {
-		$this->checkbox_option( Settings::OPT_FORM_INTRO_ENABLED, __( 'Show the intro paragraph above the form.', 'erred-eu-order-withdrawal-for-woocommerce' ) );
+		$this->checkbox_option( Settings::OPT_FORM_INTRO_ENABLED, __( 'Show the intro paragraph above the form.', 'erred-eu-order-withdrawal-for-woocommerce' ), '1' );
 		echo '<p></p>';
 		$this->textarea_option( Settings::OPT_FORM_INTRO_TEXT, ( new Settings() )->form_intro_text( '#1234' ) );
 		$this->hint(
@@ -917,7 +978,7 @@ final class SettingsPage {
 	 * Render the My Account tab toggle.
 	 */
 	public function field_account_endpoint(): void {
-		$this->checkbox_option( Settings::OPT_ACCOUNT_ENDPOINT, __( 'Add a "Right of withdrawal" tab to My Account.', 'erred-eu-order-withdrawal-for-woocommerce' ) );
+		$this->checkbox_option( Settings::OPT_ACCOUNT_ENDPOINT, __( 'Add a "Right of withdrawal" tab to My Account.', 'erred-eu-order-withdrawal-for-woocommerce' ), '1' );
 		$this->hint(
 			self::TAG_RECOMMENDED,
 			__( 'The tab lists the customer\'s orders that are currently eligible and offers the withdrawal control for each, so a logged-in customer can find the function without hunting through past orders.', 'erred-eu-order-withdrawal-for-woocommerce' )
@@ -1189,7 +1250,7 @@ final class SettingsPage {
 	 * Render the digital-content consent text field.
 	 */
 	public function field_consent_digital_text(): void {
-		$this->textarea_option( Settings::OPT_CONSENT_DIGITAL_TEXT, esc_attr( ( new Settings() )->consent_digital_text() ) );
+		$this->textarea_option( Settings::OPT_CONSENT_DIGITAL_TEXT, ( new Settings() )->consent_digital_text() );
 		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
 	}
 
@@ -1219,7 +1280,7 @@ final class SettingsPage {
 	 * Render the service-start consent text field.
 	 */
 	public function field_consent_service_text(): void {
-		$this->textarea_option( Settings::OPT_CONSENT_SERVICE_TEXT, esc_attr( ( new Settings() )->consent_service_text() ) );
+		$this->textarea_option( Settings::OPT_CONSENT_SERVICE_TEXT, ( new Settings() )->consent_service_text() );
 		$this->hint( self::TAG_OPTIONAL, $this->bundled_text_hint() );
 	}
 
@@ -1230,6 +1291,15 @@ final class SettingsPage {
 	 */
 	private function bundled_text_hint(): string {
 		return __( 'Leave empty to use the bundled text shown in the field, which follows the language of each customer. Your own text is shown exactly as written, in every language.', 'erred-eu-order-withdrawal-for-woocommerce' );
+	}
+
+	/**
+	 * The same explanation for a line that can also be hidden altogether. Emptying the text was never
+	 * a way to remove one — it restores the bundled wording — so the tickbox is how it goes away, and
+	 * the two need saying together or a merchant reasonably expects the empty field to do it.
+	 */
+	private function hideable_text_hint(): string {
+		return __( 'Untick the box to remove this line from the page entirely. Leave the text empty to use the bundled wording shown in the field, which follows the language of each customer; your own text is shown exactly as written, in every language.', 'erred-eu-order-withdrawal-for-woocommerce' );
 	}
 
 	/**
@@ -1323,7 +1393,8 @@ final class SettingsPage {
 	 * Render the trader-name field.
 	 */
 	public function field_trader_name(): void {
-		$this->text_option( Settings::OPT_TRADER_NAME, esc_attr( ( new Settings() )->trader_name() ) );
+		$this->text_option( Settings::OPT_TRADER_NAME, ( new Settings() )->trader_name() );
+		$this->hint( self::TAG_RECOMMENDED, $this->trader_field_hint() );
 	}
 
 	/**
@@ -1331,20 +1402,35 @@ final class SettingsPage {
 	 */
 	public function field_trader_phone(): void {
 		$this->text_option( Settings::OPT_TRADER_PHONE, '' );
+		$this->hint(
+			self::TAG_OPTIONAL,
+			__( 'The only trader detail with nothing to fall back on, which is why this field shows no greyed suggestion: left empty, the model form simply omits the phone number.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
 	}
 
 	/**
 	 * Render the trader-address field.
 	 */
 	public function field_trader_address(): void {
-		$this->textarea_option( Settings::OPT_TRADER_ADDRESS, esc_attr( ( new Settings() )->trader_address() ) );
+		$this->textarea_option( Settings::OPT_TRADER_ADDRESS, ( new Settings() )->trader_address() );
+		$this->hint( self::TAG_RECOMMENDED, $this->trader_field_hint() );
 	}
 
 	/**
 	 * Render the trader-email field.
 	 */
 	public function field_trader_email(): void {
-		$this->text_option( Settings::OPT_TRADER_EMAIL, esc_attr( ( new Settings() )->trader_email() ) );
+		$this->text_option( Settings::OPT_TRADER_EMAIL, ( new Settings() )->trader_email() );
+		$this->hint( self::TAG_RECOMMENDED, $this->trader_field_hint() );
+	}
+
+	/**
+	 * The shared explanation for the trader details, which had no descriptions at all: the greyed
+	 * suggestion in each box is what the model form will print if the field is left alone, and it is
+	 * worth saying that it comes from the store's own settings rather than from nowhere.
+	 */
+	private function trader_field_hint(): string {
+		return __( 'Printed on the Annex I.B model withdrawal form. Leave empty to use the greyed value shown in the field, which comes from your WordPress and WooCommerce store settings.', 'erred-eu-order-withdrawal-for-woocommerce' );
 	}
 
 	/**
@@ -1391,9 +1477,14 @@ final class SettingsPage {
 	 *
 	 * @param string $option      Option name.
 	 * @param string $description Inline label shown next to the checkbox.
+	 * @param string $unsaved     What the option means before it has ever been saved. It must match the
+	 *                            reader in Settings: a default-on option rendered against '0' shows as
+	 *                            unticked on a site that has never opened this screen, while the front
+	 *                            end treats it as on — the box would then be describing the opposite of
+	 *                            what the visitor sees.
 	 */
-	private function checkbox_option( string $option, string $description ): void {
-		$value = (string) get_option( $option, '0' );
+	private function checkbox_option( string $option, string $description, string $unsaved = '0' ): void {
+		$value = (string) get_option( $option, $unsaved );
 		printf(
 			'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
 			esc_attr( $option ),

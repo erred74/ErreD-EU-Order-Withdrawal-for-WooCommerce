@@ -25,6 +25,7 @@ use Recesso54bis\Rest\PermissionGate;
 use Recesso54bis\Support\ClientIp;
 use Recesso54bis\Support\Color;
 use Recesso54bis\Support\Nonces;
+use Recesso54bis\Support\OrderNumber;
 use Recesso54bis\Support\RateLimiter;
 use Recesso54bis\Support\Settings;
 
@@ -238,6 +239,21 @@ final class FlowController {
 					// form comes with the explanation rather than leaving the consumer at a dead end.
 					return $this->message( $text, 'error' ) . $this->render_lookup();
 				}
+				if ( str_starts_with( $code, self::MSG_REASON_PREFIX ) ) {
+					// The same refusal the declaration screen shows, reached by redirect after a POST, so
+					// it carries the merchant's follow-up too. Anything else here is the plugin's own
+					// operational wording and has nothing for a merchant to add.
+					$settings = new Settings();
+					$addendum = $settings->ineligible_addendum();
+					$link     = $settings->ineligible_link();
+
+					return $this->message(
+						'' !== $addendum ? $text . ' ' . $addendum : $text,
+						'info',
+						$link['url'],
+						$link['text']
+					);
+				}
 				return $this->message( $text, 'info' );
 			default:
 				// No signed link on the URL: offer the order-lookup form, which emails a signed link to
@@ -342,16 +358,20 @@ final class FlowController {
 		return Templates::render(
 			'lookup',
 			array(
-				'action_url'   => esc_url_raw( admin_url( 'admin-post.php' ) ),
-				'nonce_action' => Nonces::LOOKUP,
-				'nonce_name'   => '_recesso_dig_nonce',
-				'flow_url'     => $this->current_page_url(),
-				'notice'       => $notice,
-				'notice_type'  => $notice_type,
-				'title'        => $settings->lookup_title(),
-				'intro'        => $settings->lookup_intro(),
-				'email_hint'   => $settings->lookup_email_hint(),
-				'submit_label' => $settings->lookup_submit_label(),
+				'action_url'      => esc_url_raw( admin_url( 'admin-post.php' ) ),
+				'nonce_action'    => Nonces::LOOKUP,
+				'nonce_name'      => '_recesso_dig_nonce',
+				'flow_url'        => $this->current_page_url(),
+				'notice'          => $notice,
+				'notice_type'     => $notice_type,
+				'title'           => $settings->lookup_title(),
+				'intro'           => $settings->lookup_intro(),
+				'email_hint'      => $settings->lookup_email_hint(),
+				'order_hint'      => $settings->lookup_order_hint(),
+				'submit_label'    => $settings->lookup_submit_label(),
+				'show_intro'      => $settings->lookup_intro_enabled(),
+				'show_email_hint' => $settings->lookup_email_hint_enabled(),
+				'show_order_hint' => $settings->lookup_order_hint_enabled(),
 			)
 		);
 	}
@@ -419,6 +439,7 @@ final class FlowController {
 				),
 				'intro'              => $settings->form_intro_enabled() ? $settings->form_intro_text( $order->get_order_number() ) : '',
 				'declaration_text'   => $settings->consumer_declaration_enabled() ? $settings->consumer_declaration_text() : '',
+				'deadline'           => $this->deadline_notice( $eligibility ),
 				'error'              => '' === $error ? '' : $this->declaration_error_message( $settings ),
 			)
 		);
@@ -432,12 +453,25 @@ final class FlowController {
 	 * a refusal, so it is worth saying plainly that their request arrived, when it arrived, and where
 	 * they can watch it.
 	 *
+	 * Every other reason states a legal position and then stops. Accurate, and a dead end: the consumer
+	 * is told no with no way to ask a person about it. The reason stays the plugin's wording — it says
+	 * what the law says — but the merchant can append their own follow-up and a link to it.
+	 *
 	 * @param \WC_Order $order  The order.
 	 * @param string    $reason A {@see Reason} constant.
 	 */
 	private function ineligible_message( \WC_Order $order, string $reason ): string {
 		if ( Reason::DUPLICATE_OPEN !== $reason ) {
-			return $this->message( EligibilityController::reason_label( $reason ), 'info' );
+			$settings = new Settings();
+			$addendum = $settings->ineligible_addendum();
+			$link     = $settings->ineligible_link();
+
+			$text = EligibilityController::reason_label( $reason );
+			if ( '' !== $addendum ) {
+				$text .= ' ' . $addendum;
+			}
+
+			return $this->message( $text, 'info', $link['url'], $link['text'] );
 		}
 
 		$existing = $this->requests->latest_for_order( $order->get_id() );
@@ -637,6 +671,46 @@ final class FlowController {
 		}
 
 		return (string) wc_get_account_endpoint_url( AccountEndpoint::ENDPOINT );
+	}
+
+	/**
+	 * The sentence telling the consumer when their withdrawal period ends.
+	 *
+	 * The window end has always been computed and then thrown away: the consumer was told a duration
+	 * ("you have 14 days from delivery") and left to work out the date, which is the one thing they
+	 * actually need. The period is the consumer's deadline as much as the merchant's, so it belongs on
+	 * the screen where they are about to use it.
+	 *
+	 * Returns an empty string when there is no date to state — an order whose window has not started
+	 * has no end — and the wording follows the enforcement mode: in the default advisory mode the date
+	 * is guidance, and promising a hard cut-off the plugin does not enforce would be a lie.
+	 *
+	 * @param \Recesso54bis\Domain\Eligibility\EligibilityResult $eligibility The evaluated eligibility.
+	 */
+	private function deadline_notice( $eligibility ): string {
+		$ends_at = $eligibility->window_ends_at;
+		if ( ! $ends_at instanceof \DateTimeImmutable ) {
+			return '';
+		}
+
+		$date = $this->local_datetime( $ends_at->format( 'Y-m-d H:i:s' ) );
+		if ( '' === $date ) {
+			return '';
+		}
+
+		if ( ( new Settings() )->enforcement_strict() ) {
+			return sprintf(
+				/* translators: %s: date and time the withdrawal period closes. */
+				__( 'You can withdraw from this order until %s.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				$date
+			);
+		}
+
+		return sprintf(
+			/* translators: %s: date and time the withdrawal period closes. */
+			__( 'The ordinary withdrawal period for this order runs until %s.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			$date
+		);
 	}
 
 	/**
@@ -867,7 +941,9 @@ final class FlowController {
 	 * @param string $email        The email address entered.
 	 */
 	private function match_order( string $order_number, string $email ): ?\WC_Order {
-		$candidate_id = absint( $order_number );
+		$typed = OrderNumber::normalise( $order_number );
+
+		$candidate_id = absint( $typed );
 		if ( $candidate_id <= 0 ) {
 			return null;
 		}
@@ -878,9 +954,17 @@ final class FlowController {
 		}
 
 		// The value the consumer typed must be the order's own number (covers custom numbering schemes),
-		// not merely any id that parses out of it.
-		if ( 0 !== strcasecmp( trim( $order->get_order_number() ), trim( $order_number ) )
-			&& (string) $order->get_id() !== trim( $order_number ) ) {
+		// not merely any id that parses out of it. The third comparison is numeric and comes last, so a
+		// zero-padded reference (`01234` against order 1234, or the reverse) still resolves without the
+		// padding being stripped anywhere — for a sequential-numbering plugin those zeros are part of
+		// the number the customer was shown.
+		$own_number = OrderNumber::normalise( (string) $order->get_order_number() );
+		$own_id     = (string) $order->get_id();
+
+		if ( 0 !== strcasecmp( $own_number, $typed )
+			&& $own_id !== $typed
+			&& ! OrderNumber::same_number( $own_number, $typed )
+			&& ! OrderNumber::same_number( $own_id, $typed ) ) {
 			return null;
 		}
 

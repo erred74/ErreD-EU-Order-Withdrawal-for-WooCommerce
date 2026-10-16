@@ -44,7 +44,7 @@ class WithdrawalAcknowledgementEmail extends \WC_Email {
 		$this->id             = 'recesso_dig_acknowledgement';
 		$this->customer_email = true;
 		$this->title          = __( 'Withdrawal acknowledgement (recesso)', 'erred-eu-order-withdrawal-for-woocommerce' );
-		$this->description    = __( 'Durable-medium acknowledgement sent to the consumer when a withdrawal is confirmed.', 'erred-eu-order-withdrawal-for-woocommerce' );
+		$this->description    = __( 'Durable-medium acknowledgement sent to the consumer when a withdrawal is confirmed. Required by law, so the Enable switch does not apply to it: this email is always sent. The subject, heading and content below are yours to change.', 'erred-eu-order-withdrawal-for-woocommerce' );
 		$this->template_html  = 'emails/withdrawal-acknowledgement.php';
 		$this->template_plain = 'emails/plain/withdrawal-acknowledgement.php';
 		$this->template_base  = plugin_dir_path( RECESSO_DIG_PLUGIN_FILE ) . 'templates/';
@@ -80,10 +80,11 @@ class WithdrawalAcknowledgementEmail extends \WC_Email {
 
 		$this->setup_locale();
 
-		// The acknowledgement of receipt on a durable medium is legally required (art. 11-bis(4)); it is
-		// sent whenever there is a recipient and is NOT gated by the WC email enable/disable toggle (a
-		// custom WC_Email with no saved settings reports is_enabled() === false, which previously
-		// silenced it). The toggle still governs subject/heading customisation in WooCommerce → Emails.
+		// The acknowledgement of receipt on a durable medium is legally required (art. 11-bis(4)), so it
+		// is sent whenever there is a recipient and is NOT gated by the WC email enable/disable toggle:
+		// a merchant must not be able to switch off the one message the law obliges them to send. The
+		// toggle still governs subject/heading customisation in WooCommerce → Settings → Emails, and the
+		// email's description there says the switch does not apply, so it is not a control that lies.
 		$sent = false;
 		if ( '' !== $this->get_recipient() ) {
 			$attachments = is_readable( $pdf_path ) ? array( $pdf_path ) : array();

@@ -4,7 +4,7 @@
  *
  * Override: copy to `recesso-digitale/declaration.php` in your theme.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected?: bool, selected_qty?: int}>, error: string, intro: string, declaration_text: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected?: bool, selected_qty?: int}>, error: string, intro: string, declaration_text: string, deadline?: string} $args
  * @package Recesso54bis
  */
 
@@ -28,6 +28,13 @@ defined( 'ABSPATH' ) || exit;
 	<?php if ( '' !== $args['intro'] ) : ?>
 		<p class="wp-block-recesso-digitale-flow__intro">
 			<?php echo esc_html( $args['intro'] ); ?>
+		</p>
+	<?php endif; ?>
+
+	<?php // Empty when the order's window has no known end (it has not started yet). ?>
+	<?php if ( isset( $args['deadline'] ) && '' !== $args['deadline'] ) : ?>
+		<p class="wp-block-recesso-digitale-flow__deadline">
+			<?php echo esc_html( (string) $args['deadline'] ); ?>
 		</p>
 	<?php endif; ?>
 

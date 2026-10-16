@@ -11,7 +11,7 @@
  * own hardcoded wording and will not pick up the four texts configured under
  * WooCommerce → Order Withdrawal: settings → Order lookup screen; re-copy this file to get them.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, flow_url: string, notice: string, notice_type: string, title?: string, intro?: string, email_hint?: string, submit_label?: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, flow_url: string, notice: string, notice_type: string, title?: string, intro?: string, email_hint?: string, order_hint?: string, submit_label?: string, show_intro?: bool, show_email_hint?: bool, show_order_hint?: bool} $args
  * @package Recesso54bis
  */
 
@@ -39,9 +39,21 @@ $recesso_dig_email_hint = isset( $args['email_hint'] ) && '' !== trim( (string) 
 	? (string) $args['email_hint']
 	: __( 'The link is sent to this address only, so it must be the one on the order.', 'erred-eu-order-withdrawal-for-woocommerce' );
 
+$recesso_dig_order_hint = isset( $args['order_hint'] ) && '' !== trim( (string) $args['order_hint'] )
+	? (string) $args['order_hint']
+	: __( 'You will find it in your order confirmation email. The # is optional.', 'erred-eu-order-withdrawal-for-woocommerce' );
+
 $recesso_dig_submit_label = isset( $args['submit_label'] ) && '' !== trim( (string) $args['submit_label'] )
 	? (string) $args['submit_label']
 	: __( 'Send me the withdrawal link', 'erred-eu-order-withdrawal-for-woocommerce' );
+
+// Whether each optional line is shown at all. Separate from its text: because this template falls
+// back to the bundled sentence whenever the text is empty, emptying the setting could never hide a
+// line — which is what a merchant reasonably expects it to do. A hidden hint must also drop the
+// aria-describedby that points at it, or assistive tech is left following a dangling reference.
+$recesso_dig_show_intro      = ! isset( $args['show_intro'] ) || (bool) $args['show_intro'];
+$recesso_dig_show_email_hint = ! isset( $args['show_email_hint'] ) || (bool) $args['show_email_hint'];
+$recesso_dig_show_order_hint = ! isset( $args['show_order_hint'] ) || (bool) $args['show_order_hint'];
 ?>
 <div class="wp-block-recesso-digitale-flow wp-block-recesso-digitale-flow--lookup">
 	<h2 class="wp-block-recesso-digitale-flow__title"><?php echo esc_html( $recesso_dig_title ); ?></h2>
@@ -55,9 +67,11 @@ $recesso_dig_submit_label = isset( $args['submit_label'] ) && '' !== trim( (stri
 		</div>
 	<?php endif; ?>
 
-	<p class="wp-block-recesso-digitale-flow__intro">
-		<?php echo esc_html( $recesso_dig_intro ); ?>
-	</p>
+	<?php if ( $recesso_dig_show_intro ) : ?>
+		<p class="wp-block-recesso-digitale-flow__intro">
+			<?php echo esc_html( $recesso_dig_intro ); ?>
+		</p>
+	<?php endif; ?>
 
 	<form class="wp-block-recesso-digitale-flow__form" method="post" action="<?php echo esc_url( $args['action_url'] ); ?>">
 		<?php wp_nonce_field( $args['nonce_action'], $args['nonce_name'] ); ?>
@@ -81,11 +95,15 @@ $recesso_dig_submit_label = isset( $args['submit_label'] ) && '' !== trim( (stri
 				aria-required="true"
 				autocomplete="off"
 				inputmode="numeric"
-				aria-describedby="recesso-dig-lookup-order-hint"
+				<?php if ( $recesso_dig_show_order_hint ) : ?>
+					aria-describedby="recesso-dig-lookup-order-hint"
+				<?php endif; ?>
 			/>
-			<span id="recesso-dig-lookup-order-hint" class="wp-block-recesso-digitale-flow__hint">
-				<?php esc_html_e( 'You will find it in your order confirmation email.', 'erred-eu-order-withdrawal-for-woocommerce' ); ?>
-			</span>
+			<?php if ( $recesso_dig_show_order_hint ) : ?>
+				<span id="recesso-dig-lookup-order-hint" class="wp-block-recesso-digitale-flow__hint">
+					<?php echo esc_html( $recesso_dig_order_hint ); ?>
+				</span>
+			<?php endif; ?>
 		</p>
 
 		<p class="wp-block-recesso-digitale-flow__field">
@@ -98,11 +116,15 @@ $recesso_dig_submit_label = isset( $args['submit_label'] ) && '' !== trim( (stri
 				required
 				aria-required="true"
 				autocomplete="email"
-				aria-describedby="recesso-dig-lookup-email-hint"
+				<?php if ( $recesso_dig_show_email_hint ) : ?>
+					aria-describedby="recesso-dig-lookup-email-hint"
+				<?php endif; ?>
 			/>
-			<span id="recesso-dig-lookup-email-hint" class="wp-block-recesso-digitale-flow__hint">
-				<?php echo esc_html( $recesso_dig_email_hint ); ?>
-			</span>
+			<?php if ( $recesso_dig_show_email_hint ) : ?>
+				<span id="recesso-dig-lookup-email-hint" class="wp-block-recesso-digitale-flow__hint">
+					<?php echo esc_html( $recesso_dig_email_hint ); ?>
+				</span>
+			<?php endif; ?>
 		</p>
 
 		<p class="wp-block-recesso-digitale-flow__actions">

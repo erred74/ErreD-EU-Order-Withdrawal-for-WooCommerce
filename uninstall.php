@@ -116,6 +116,13 @@ $recesso_dig_options = array(
 	'recesso_dig_button_accent',
 	'recesso_dig_button_style',
 	'recesso_dig_plugin_version',
+	'recesso_dig_lookup_order_hint',
+	'recesso_dig_lookup_intro_enabled',
+	'recesso_dig_lookup_email_hint_enabled',
+	'recesso_dig_lookup_order_hint_enabled',
+	'recesso_dig_ineligible_addendum',
+	'recesso_dig_ineligible_link_url',
+	'recesso_dig_ineligible_link_text',
 );
 
 foreach ( $recesso_dig_options as $recesso_dig_option ) {

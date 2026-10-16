@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.8.0
+Stable tag: 0.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -182,6 +182,24 @@ For anything else — field labels, the confirmation step, the acknowledgement s
 
 Yes, under WooCommerce → Order Withdrawal: settings → Withdrawal page appearance. Pick any colour and the plugin works out the hover shade and the label colour from it, so the label keeps a WCAG AA contrast ratio whatever you choose. Leave it empty for the bundled colour. If your theme styles its buttons the way you want them everywhere, choose "Inherit my theme's button style" instead and the plugin stops styling them at all. The «recedere dal contratto qui» link in My Account and in your order emails is not affected: it sits inside your theme's own pages and has always used your theme's button style.
 
+= Can I turn individual emails on and off? =
+
+Yes, in WooCommerce → Settings → Emails, where all five of this plugin's emails are listed alongside your store's own: the acknowledgement, the withdrawal link, the rejection, the status update and the notification to you. Each has its own enable switch, subject and heading there, and the wording of the status emails is set on the plugin's own settings screen.
+
+Two of them ignore the switch and are always sent, and each says so in its description on that screen. The acknowledgement of receipt is the one message the law obliges you to send, and the withdrawal link is the only reply to a link a customer explicitly asked for — a guest has no account to fall back on, so switching it off would turn the lookup form into a dead end that still says a link was sent.
+
+= A customer says they never received the withdrawal link. What should I check? =
+
+First, the order lookup screen only ever sends the link to the address stored on the order, never to the address typed into the form. If those differ — a mistyped address at checkout, say — no link can arrive. Attempts that matched no order are listed under Recent unmatched lookups at the bottom of the withdrawal requests screen, with the reference and a masked address, so a typo usually shows up there. Correct the email on the order and send the customer the link from the order itself.
+
+Second, check whether the customer is being told a link was sent when it was not: the screen answers identically whether or not an order matched, on purpose, so that nobody can discover which order numbers exist by trying them. That is why the unmatched lookups list is worth a glance after a customer reports silence.
+
+= A customer cannot withdraw because of the order status. What can I do? =
+
+Withdrawal is offered from the order statuses you tick under Order Withdrawal: settings → Eligible order statuses, which are Processing and Completed unless you change them. An order in another status — an unpaid bank transfer sitting On hold, for example — is refused with "This order cannot be withdrawn in its current state". Tick that status if you want those orders to be withdrawable.
+
+The order-status check runs before everything else, including the advisory deadline mode, so "Advisory — always available" does not override it. One caveat if you are in strict mode with the window starting at delivery: an order that has not been completed has no delivery date, so it would then be refused with "The withdrawal period has not started yet" instead. Under Order lookup screen you can also add your own sentence and a contact link below any of these refusals, so the customer is not left at a dead end.
+
 = Why does the customer receive a link instead of sending the request straight away? =
 
 Because the withdrawal function must work for guest-checkout customers, who have no account to log into. If the lookup screen simply accepted "order number plus email" and recorded a withdrawal, anyone could file withdrawals against orders that are not theirs, and could discover which order numbers exist by trying them. That matters more here than on an ordinary form: the moment a withdrawal is confirmed is a legal fact — the date from which your refund deadline runs — so a request you cannot attribute is a bad record, not just a nuisance.
@@ -229,6 +247,17 @@ Actions:
 5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
 
 == Changelog ==
+
+= 0.8.1 =
+A customer pasting their order number the way WooCommerce prints it could never get a withdrawal link, and was never told why.
+
+* **Fix:** the order lookup rejected an order number entered with the leading `#` — which is exactly how WooCommerce shows it in the confirmation email a customer copies from. Because the screen answers identically whether or not an order matched (so nobody can discover which order numbers exist), the customer was told a link had been sent and then waited for one that was never going to arrive. Order numbers now also survive a stray space and a difference in leading zeros. Present since the lookup screen was introduced in 0.5.0. Two references that are genuinely different orders still do not match.
+* **New:** the intro paragraph and the two field hints on the lookup screen can now be removed, not only reworded. Emptying the text was never a way to remove a line — it restored the bundled wording — so each now has its own tickbox, and the hint under the order number field became editable at the same time.
+* **New:** the withdrawal form tells the customer when their withdrawal period ends, in your site's date format. The date was already worked out and never shown; they were given a duration and left to do the arithmetic. The wording follows your enforcement setting, so the advisory default does not promise a cut-off the plugin will not apply.
+* **New:** you can add your own sentence, and a contact link, below the explanation a customer sees when their order cannot be withdrawn from (Order Withdrawal: settings → Order lookup screen). The explanations themselves state the legal position and stay as they are, but they used to end the conversation with no way for the customer to reach you.
+* **Fix:** the intro paragraph on the lookup screen had no spacing of its own, so on themes that do not space paragraphs it sat directly on the first field's label.
+* **Fix:** on the settings screen, the greyed suggestion inside six fields — the trader details and the two consent texts — was double-escaped, so an apostrophe showed as `&#039;`. The four trader fields also had no description at all, and the phone field showed nothing greyed with no explanation of why.
+* The withdrawal acknowledgement and the withdrawal-link email are always sent, whatever the enable switch in WooCommerce → Settings → Emails says. That was already true and deliberate; now each says so in its description on that screen, instead of showing a switch that quietly does nothing. Three code comments claimed these emails were exempted for a different reason that turned out not to hold, and are corrected.
 
 = 0.8.0 =
 The withdrawal page is now yours to word and to colour, without touching code or waiting for a translation.
@@ -526,6 +555,9 @@ hands it to JavaScript.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.8.1 =
+Fixes a customer who pastes their order number as WooCommerce prints it, with the #, never receiving a withdrawal link and never being told why. Recommended for all sites. Also shows customers their withdrawal deadline. No data migration required.
 
 = 0.8.0 =
 The order lookup screen's four texts and the withdrawal page's button colour are now settings, and the buttons can inherit your theme's style instead. Fixes two options left behind on uninstall. Nothing changes until you change it. No data migration required.

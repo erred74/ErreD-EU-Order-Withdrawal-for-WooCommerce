@@ -74,6 +74,31 @@ final class Settings {
 	public const OPT_LOOKUP_EMAIL_HINT = 'recesso_dig_lookup_email_hint';
 	public const OPT_LOOKUP_SUBMIT     = 'recesso_dig_lookup_submit';
 
+	public const OPT_LOOKUP_ORDER_HINT = 'recesso_dig_lookup_order_hint';
+
+	/**
+	 * Whether the optional parts of the lookup screen are shown at all. Rewording a line is not the
+	 * same as being able to drop it: the email hint in particular restates what the intro already
+	 * says, so a merchant who has reworded the intro may well want the hint gone. On by default, so
+	 * an update changes nothing. The title and the submit label have no switch — a screen with no
+	 * heading or an unlabelled button is not a configuration, it is a broken page.
+	 */
+	public const OPT_LOOKUP_INTRO_ENABLED      = 'recesso_dig_lookup_intro_enabled';
+	public const OPT_LOOKUP_EMAIL_HINT_ENABLED = 'recesso_dig_lookup_email_hint_enabled';
+	public const OPT_LOOKUP_ORDER_HINT_ENABLED = 'recesso_dig_lookup_order_hint_enabled';
+
+	/**
+	 * What the consumer is told to do when an order cannot be withdrawn from.
+	 *
+	 * The reasons themselves stay fixed — they state a legal position and are the plugin's to word —
+	 * but they end the conversation, which is the merchant's to continue. This addendum is appended to
+	 * any of them, with an optional link to wherever the merchant handles such cases. All three are
+	 * empty by default, so nothing is added until the merchant asks for it.
+	 */
+	public const OPT_INELIGIBLE_ADDENDUM  = 'recesso_dig_ineligible_addendum';
+	public const OPT_INELIGIBLE_LINK_URL  = 'recesso_dig_ineligible_link_url';
+	public const OPT_INELIGIBLE_LINK_TEXT = 'recesso_dig_ineligible_link_text';
+
 	/**
 	 * Appearance of the flow's own buttons. The accent is validated as a hex colour on save and again
 	 * on read ({@see \Recesso54bis\Support\Color::hex()}), because it ends up inside a stylesheet.
@@ -436,6 +461,70 @@ final class Settings {
 			self::OPT_LOOKUP_EMAIL_HINT,
 			__( 'The link is sent to this address only, so it must be the one on the order.', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
+	}
+
+	/**
+	 * The hint shown under the order-number field of the order-lookup screen.
+	 */
+	public function lookup_order_hint(): string {
+		return $this->text_or(
+			self::OPT_LOOKUP_ORDER_HINT,
+			__( 'You will find it in your order confirmation email. The # is optional.', 'erred-eu-order-withdrawal-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * The merchant's own follow-up shown under a "you cannot withdraw from this order" message.
+	 * Empty (the default) means nothing is added.
+	 */
+	public function ineligible_addendum(): string {
+		return trim( (string) get_option( self::OPT_INELIGIBLE_ADDENDUM, '' ) );
+	}
+
+	/**
+	 * The optional follow-up link shown with that message.
+	 *
+	 * Both halves are required: a URL with no label renders nothing a consumer could read, and a label
+	 * with no URL renders nothing they could follow.
+	 *
+	 * @return array{url: string, text: string} Both empty when the link is not configured.
+	 */
+	public function ineligible_link(): array {
+		$url  = esc_url_raw( trim( (string) get_option( self::OPT_INELIGIBLE_LINK_URL, '' ) ) );
+		$text = trim( (string) get_option( self::OPT_INELIGIBLE_LINK_TEXT, '' ) );
+
+		if ( '' === $url || '' === $text ) {
+			return array(
+				'url'  => '',
+				'text' => '',
+			);
+		}
+
+		return array(
+			'url'  => $url,
+			'text' => $text,
+		);
+	}
+
+	/**
+	 * Whether the intro paragraph is shown on the order-lookup screen. On by default.
+	 */
+	public function lookup_intro_enabled(): bool {
+		return '0' !== (string) get_option( self::OPT_LOOKUP_INTRO_ENABLED, '1' );
+	}
+
+	/**
+	 * Whether the hint under the email field is shown. On by default.
+	 */
+	public function lookup_email_hint_enabled(): bool {
+		return '0' !== (string) get_option( self::OPT_LOOKUP_EMAIL_HINT_ENABLED, '1' );
+	}
+
+	/**
+	 * Whether the hint under the order-number field is shown. On by default.
+	 */
+	public function lookup_order_hint_enabled(): bool {
+		return '0' !== (string) get_option( self::OPT_LOOKUP_ORDER_HINT_ENABLED, '1' );
 	}
 
 	/**

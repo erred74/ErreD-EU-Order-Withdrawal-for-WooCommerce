@@ -34,7 +34,7 @@ class WithdrawalLinkEmail extends \WC_Email {
 		$this->id             = 'recesso_dig_link';
 		$this->customer_email = true;
 		$this->title          = __( 'Withdrawal link request (recesso)', 'erred-eu-order-withdrawal-for-woocommerce' );
-		$this->description    = __( 'Sent to the order email when a consumer requests a withdrawal link from the on-page lookup form.', 'erred-eu-order-withdrawal-for-woocommerce' );
+		$this->description    = __( 'Sent to the order email when a consumer requests a withdrawal link from the on-page lookup form. It is the only reply to a link the customer asked for, so the Enable switch does not apply to it: this email is always sent. The subject, heading and content below are yours to change.', 'erred-eu-order-withdrawal-for-woocommerce' );
 		$this->template_html  = 'emails/withdrawal-link.php';
 		$this->template_plain = 'emails/plain/withdrawal-link.php';
 		$this->template_base  = plugin_dir_path( RECESSO_DIG_PLUGIN_FILE ) . 'templates/';
@@ -73,10 +73,12 @@ class WithdrawalLinkEmail extends \WC_Email {
 		$this->placeholders['{order_number}'] = $order->get_order_number();
 		$this->placeholders['{order_date}']   = $created instanceof \WC_DateTime ? wc_format_datetime( $created ) : '';
 
-		// Sent whenever there is a recipient and is NOT gated by the WC email enable/disable toggle: a
-		// custom WC_Email with no saved settings reports is_enabled() === false, which would silently
-		// swallow the link the consumer explicitly requested. The toggle still governs subject/heading
-		// customisation in WooCommerce → Settings → Emails.
+		// Sent whenever there is a recipient and NOT gated by the WC email enable/disable toggle: this is
+		// the sole answer to a link the consumer explicitly asked for, and the withdrawal function has to
+		// stay reachable by guests, who have no account to fall back on. Switching it off would turn the
+		// lookup form into a dead end that still says a link was sent. The toggle still governs
+		// subject/heading customisation in WooCommerce → Settings → Emails, and the email's description
+		// there says the switch does not apply, so it is not a control that lies.
 		$sent = false;
 		if ( '' !== $this->get_recipient() ) {
 			$sent = $this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), array() );

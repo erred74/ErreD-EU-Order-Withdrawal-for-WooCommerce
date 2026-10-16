@@ -35,8 +35,16 @@
 		-->
 		<key name="recesso_dig_lookup_title" />
 		<key name="recesso_dig_lookup_intro" />
+		<key name="recesso_dig_lookup_order_hint" />
 		<key name="recesso_dig_lookup_email_hint" />
 		<key name="recesso_dig_lookup_submit" />
+
+		<!--
+			The merchant's follow-up for an order that cannot be withdrawn from. The link address is
+			not listed: a URL is not copy, and a translated one would more likely be a broken one.
+		-->
+		<key name="recesso_dig_ineligible_addendum" />
+		<key name="recesso_dig_ineligible_link_text" />
 
 		<!-- Status-change emails and their sender name. -->
 		<key name="recesso_dig_email_from_name" />
