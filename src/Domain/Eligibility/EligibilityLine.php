@@ -21,15 +21,18 @@ final class EligibilityLine {
 	/**
 	 * Construct a per-line input.
 	 *
-	 * @param int  $line_id    Order line item id.
-	 * @param bool $configured Whether the merchant has configured the art. 59 status for this line's product.
-	 * @param bool $excluded   Whether the product/category is flagged as excluded from withdrawal (art. 59).
-	 * @param int  $quantity   The line's total ordered quantity (the ceiling for a partial-by-quantity withdrawal).
+	 * @param int         $line_id      Order line item id.
+	 * @param bool        $configured   Whether the merchant has configured the art. 59 status for this line's product.
+	 * @param bool        $excluded     Whether the product/category is flagged as excluded from withdrawal (art. 59).
+	 * @param int         $quantity     The line's total ordered quantity (the ceiling for a partial-by-quantity withdrawal).
+	 * @param string|null $window_basis What this line's period is counted from ({@see WindowBasis}); null to
+	 *                                  follow the order's {@see EligibilityInput::$window_start}.
 	 */
 	public function __construct(
 		public readonly int $line_id,
 		public readonly bool $configured,
 		public readonly bool $excluded,
-		public readonly int $quantity = 1
+		public readonly int $quantity = 1,
+		public readonly ?string $window_basis = null
 	) {}
 }

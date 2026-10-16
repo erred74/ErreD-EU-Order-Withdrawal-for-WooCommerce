@@ -67,6 +67,35 @@ final class EligibilityAdapterTest extends TestCase {
 		$this->assertTrue( $result->within_window );
 	}
 
+	/**
+	 * WooCommerce sends the "order completed" email in the request that completes the order, and the
+	 * email renders the withdrawal block. A result memoised earlier in that request — before the
+	 * completion date existed — must not survive the save.
+	 */
+	public function test_memoised_result_is_dropped_when_the_order_changes(): void {
+		$order = $this->make_completed_order( time() );
+		$order->set_status( 'processing' );
+		$order->set_date_completed( null );
+		$order->save();
+
+		$adapter = ( new Container() )->eligibility_adapter();
+		$adapter->register();
+
+		$before = $adapter->for_order( wc_get_order( $order->get_id() ) );
+		$this->assertNull( $before->window_ends_at, 'Fixture premise: not delivered, so no end yet.' );
+
+		$order = wc_get_order( $order->get_id() );
+		$order->set_status( 'completed' );
+		$order->set_date_completed( time() );
+		$order->save();
+
+		$after = $adapter->for_order( wc_get_order( $order->get_id() ) );
+		remove_action( 'woocommerce_update_order', array( $adapter, 'forget_order' ) );
+		remove_action( 'woocommerce_order_status_changed', array( $adapter, 'forget_order' ) );
+
+		$this->assertNotNull( $after->window_ends_at, 'The completed order must be evaluated afresh.' );
+	}
+
 	public function test_old_order_stays_eligible_but_outside_window(): void {
 		// Completed 60 days ago: the ordinary 14-day period has elapsed.
 		$order  = $this->make_completed_order( time() - ( 60 * DAY_IN_SECONDS ) );

@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Support;
 
+use Recesso54bis\Domain\Eligibility\WindowBasis;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -157,6 +159,14 @@ final class Settings {
 	public const META_PRODUCT_STATUS = '_recesso_dig_withdrawal';
 	public const META_TERM_STATUS    = 'recesso_dig_withdrawal';
 
+	/**
+	 * Per-product / per-category override of what the withdrawal period is counted from: one of the
+	 * TRIGGER_* values. Absent means "inherit" — the category's value, then the store-wide
+	 * {@see self::OPT_START_TRIGGER}. Stored the same way as the status above.
+	 */
+	public const META_PRODUCT_WINDOW_BASIS = '_recesso_dig_window_basis';
+	public const META_TERM_WINDOW_BASIS    = 'recesso_dig_window_basis';
+
 	public const STATUS_INHERIT = '';
 
 	/**
@@ -215,8 +225,8 @@ final class Settings {
 		);
 	}
 
-	public const TRIGGER_DELIVERY   = 'delivery';
-	public const TRIGGER_CONCLUSION = 'conclusion';
+	public const TRIGGER_DELIVERY   = WindowBasis::DELIVERY;
+	public const TRIGGER_CONCLUSION = WindowBasis::CONCLUSION;
 
 	public const POLICY_ALLOW        = 'allow';
 	public const POLICY_EXCLUDE      = 'exclude';

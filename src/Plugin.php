@@ -58,6 +58,9 @@ final class Plugin {
 
 		$container = new Container();
 
+		// The eligibility memo must not outlive a change to the order it describes.
+		$container->eligibility_adapter()->register();
+
 		// REST API (public withdrawal flow + eligibility + admin endpoints).
 		( new \Recesso54bis\Rest\RouteRegistrar( $container ) )->register();
 

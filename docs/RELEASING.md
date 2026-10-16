@@ -198,10 +198,11 @@ This is not hypothetical: it happened during 0.6.1, and the fix was the rollback
 `assets/` holds the banner, icon and screenshots shown on the plugin page. They are versioned in SVN
 but never shipped to users, and they are **not** built by `bin/build-dist.sh`.
 
-Live files: `banner-1544x500.png`, `banner-772x250.png`, `icon.svg`, `screenshot-1..5.jpg`.
+Live files: `banner-1544x500.png`, `banner-772x250.png`, `icon.svg`, `screenshot-1..6.jpg`
+(`screenshot-6` added with 0.9.0).
 
 Screenshot captions come from `== Screenshots ==` in `readme.txt`; the numbering must match. The
-repo's `.wordpress-org/` holds PNG sources for screenshots 1–4 — regenerate them with
+repo's `.wordpress-org/` holds PNG sources for screenshots 1–6 — regenerate them with
 `npm run screenshots` (a Playwright run tagged `@screenshot`) when the UI changes, then convert and
 commit to SVN separately from a release. Changing assets does not require a version bump.
 

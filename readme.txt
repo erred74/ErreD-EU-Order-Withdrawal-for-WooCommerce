@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 8.2
 WC requires at least: 8.2
 WC tested up to: 11.0
-Stable tag: 0.8.1
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,8 +49,8 @@ service calls).
 * A React admin screen to review requests, filter by status, search by order, name or email, view
   the audit timeline, view/regenerate the durable receipt and mark requests refunded or rejected.
 * A menu badge counting the requests awaiting action.
-* A conservative, configurable eligibility engine (withdrawal window, start trigger, eligible order
-  statuses, per-product and per-category exclusions) that fails closed when configuration is missing.
+* A conservative, configurable eligibility engine (withdrawal window, eligible order statuses, per-product and per-category exclusions) that fails closed when configuration is missing.
+* Withdrawal periods counted per item: goods from delivery, services and digital content from the purchase, set store-wide and overridable on any product or category. An order mixing the two gives each item its own deadline.
 * Article 16 checkout consents — digital content (art. 16(m)) and early-started services
   (art. 14(4)(a)) — in both the classic checkout and the WooCommerce Checkout block, shown either on
   every checkout or only for the carts that actually call for them.
@@ -77,8 +77,7 @@ professional before relying on them.
    plugins screen.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. WooCommerce 8.2 or newer (with High-Performance Order Storage) is required.
-4. Visit WooCommerce → Recesso digitale: settings to configure the withdrawal window, the window
-   start trigger and your product/category exclusions.
+4. Visit WooCommerce → Recesso digitale: settings to configure the withdrawal window, what it is counted from, and your product/category exclusions.
 
 == Source code and build process ==
 
@@ -169,8 +168,7 @@ No. It functions fully offline and loads no third-party scripts, fonts or assets
 
 = What happens to my data on uninstall? =
 
-Nothing is removed unless you opt in via the "Delete all data on uninstall" setting. When enabled,
-the plugin removes its tables, options and the flow page on uninstall.
+Nothing is removed unless you opt in via the "Delete all data on uninstall" setting. When enabled, the plugin removes its tables, its options, the flow page it created, and the withdrawal settings stored on your products and categories. Your orders are left as they are.
 
 = Can I change the wording on the withdrawal page? =
 
@@ -200,6 +198,18 @@ Withdrawal is offered from the order statuses you tick under Order Withdrawal: s
 
 The order-status check runs before everything else, including the advisory deadline mode, so "Advisory — always available" does not override it. One caveat if you are in strict mode with the window starting at delivery: an order that has not been completed has no delivery date, so it would then be refused with "The withdrawal period has not started yet" instead. Under Order lookup screen you can also add your own sentence and a contact link below any of these refusals, so the customer is not left at a dead end.
 
+= I sell both goods and services. Can each have its own withdrawal deadline? =
+
+Yes. The law counts the period from delivery for goods and from the conclusion of the contract for services and for digital content not supplied on a physical medium. Set the store-wide default under Order Withdrawal: settings → Calculate deadline from, then use "Withdrawal period starts from" on any product, or on a whole category, that differs. A store selling T-shirts and football-school enrolments, for example, keeps the default on delivery and sets the enrolments' category to "Purchase".
+
+An order containing both gives each item its own deadline, and the withdrawal form shows each item's date next to it. In strict mode an item whose period has ended can no longer be selected, while the rest of the order stays withdrawable. WooCommerce does not record delivery, so "delivery" means the date the order was marked Completed: complete orders when they are delivered, or the deadline shown will run from the wrong day.
+
+Which of your products are services, and whether a dated activity is excluded from withdrawal altogether, are legal questions about your catalogue: have them checked by a lawyer.
+
+= Does it work with WPML or Polylang? =
+
+Yes. Set the withdrawal status and "Withdrawal period starts from" on the product or category in your main language, and every translation follows it. If an exception genuinely differs in one market, set a different value on that translation and it takes precedence there; the editor of a translation that inherits shows which value it is inheriting. The texts on the settings screen are translatable through WPML String Translation and Polylang too.
+
 = Why does the customer receive a link instead of sending the request straight away? =
 
 Because the withdrawal function must work for guest-checkout customers, who have no account to log into. If the lookup screen simply accepted "order number plus email" and recorded a withdrawal, anyone could file withdrawals against orders that are not theirs, and could discover which order numbers exist by trying them. That matters more here than on an ordinary form: the moment a withdrawal is confirmed is a legal fact — the date from which your refund deadline runs — so a request you cannot attribute is a bad record, not just a nuisance.
@@ -228,6 +238,8 @@ Filters:
   checkout hook; return an empty string to suppress the render and place them yourself. Classic
   checkout only — in the Checkout block, WooCommerce decides placement.
 * `recesso_dig_consent_render_priority` — `( int $priority, string $hook )`. Classic checkout only.
+* `recesso_dig_original_product_id` — `( int $original, int $product_id )`. The original of a translated product, whose withdrawal settings a translation without its own inherits. WPML and Polylang are handled already; use this for another multilingual plugin. Return `$product_id` when the product is not a translation.
+* `recesso_dig_original_category_id` — `( int $original, int $term_id )`. The same for product categories.
 
 Actions:
 
@@ -244,9 +256,22 @@ Actions:
 2. Step two: the explicit "conferma recesso" confirmation.
 3. The acknowledgement screen shown after confirmation.
 4. The admin requests screen: status filter, free-text search and per-request actions.
-5. The request detail: audit timeline, durable-medium receipt (PDF) and status processing.
+5. The request detail: each withdrawn item's period and whether the request was sent within it, the durable-medium receipt (PDF), audit timeline and status processing.
+6. The product editor: the withdrawal status and what the withdrawal period is counted from, settable per product or per category.
 
 == Changelog ==
+
+= 0.9.0 =
+A store selling both goods and services can now count each one's withdrawal period from the right moment, and a multilingual store's translations finally follow the withdrawal settings of the product they translate.
+
+* **New:** "Withdrawal period starts from", on every product and product category, next to the withdrawal status. Goods are counted from delivery, services and digital content from the purchase. Until now this was a single setting for the whole store, so a shop selling, say, T-shirts and course enrolments had to pick one, and one of the two always got the wrong deadline. A product you leave alone inherits from its category, then from the store-wide setting, so nothing changes until you choose. If a product sits in two categories that disagree, delivery wins: it is never earlier than the purchase, so a contradictory setting can cost you a few days but never cost the customer their right.
+* **New:** when an order mixes the two, each item gets its own deadline. The withdrawal form shows each item's date next to it instead of one date for the whole order, which could not have been true for both. In strict mode, an item whose period has ended can no longer be selected while the rest of the order stays withdrawable; before, one deadline decided for every item at once.
+* **New:** the request detail on the withdrawal requests screen lists each withdrawn item's period, what it is counted from, and whether the request was sent within it, after it but within your extra days, after it, or before the period started (a customer may withdraw before delivery). It is worked out from the order and your product settings as they are now, and says so: a guide for your decision, not part of the receipt. It stays available after the order has been refunded or cancelled.
+* **Fix:** on sites translated with WPML or Polylang, a translated product or category ignored the withdrawal status set on the original. Its exclusion, its product-page notice and its checkout consent silently disappeared in every other language, so a product you had excluded could be withdrawn from in translation. Translations now follow the original, as does the new "Withdrawal period starts from"; a value set on the translation itself still wins, for an exception that genuinely differs by market, and the product editor of a translation shows which value it is inheriting. Present since per-product statuses were introduced in 0.3.0.
+* **Fix:** within a single page load, an order whose status changed could still be described as it was before the change. WooCommerce sends the "order completed" email in the same request that completes the order, so the withdrawal paragraph in that email could miss the delivery date it had just been given. The result is now recalculated whenever an order is saved.
+* **Changed:** the withdrawal paragraph in your order emails and the acknowledgement of receipt now name the right starting point for the items concerned, and both starting points when an order mixes them. The acknowledgement for a store counting from the conclusion of the contract used to tell the customer their period ran "for goods" from the conclusion of the contract; it now says what it means.
+* **Fix:** "Delete all data on uninstall" left the withdrawal status set on products and categories behind in the database. It now removes it, together with the new setting. Present since per-product statuses were introduced in 0.3.0.
+* For developers: two new filters, `recesso_dig_original_product_id` and `recesso_dig_original_category_id`, let another multilingual plugin declare a translation's original. The admin request detail returns `item_periods`. The eligibility REST endpoint returns `line_windows`, each item's own period. The existing `window_starts_at` and `window_ends_at` now summarise the items — earliest start, latest end, and no end while an item's period has not started. On an order whose items share one period, which is every order until you use the new setting, they are unchanged.
 
 = 0.8.1 =
 A customer pasting their order number the way WooCommerce prints it could never get a withdrawal link, and was never told why.
@@ -555,6 +580,9 @@ hands it to JavaScript.
 * Accessibility to WCAG 2.2 AA (axe-verified) and a complete it_IT translation.
 
 == Upgrade Notice ==
+
+= 0.9.0 =
+Goods and services can have their own withdrawal deadlines. Fixes WPML/Polylang translations ignoring a product's withdrawal status, so an excluded product could be withdrawn from in another language. No data migration required.
 
 = 0.8.1 =
 Fixes a customer who pastes their order number as WooCommerce prints it, with the #, never receiving a withdrawal link and never being told why. Recommended for all sites. Also shows customers their withdrawal deadline. No data migration required.

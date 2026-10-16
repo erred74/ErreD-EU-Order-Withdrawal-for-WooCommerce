@@ -1139,7 +1139,7 @@ final class SettingsPage {
 		$this->render_select( Settings::OPT_START_TRIGGER, $options, $value );
 		$this->hint(
 			self::TAG_RECOMMENDED,
-			__( 'For goods the period runs from delivery, which WooCommerce cannot know: the order completion date is used as the proxy. For services it runs from the conclusion of the contract, so the order date is used. This only affects the advisory deadline shown to you.', 'erred-eu-order-withdrawal-for-woocommerce' )
+			__( 'For goods the period runs from delivery, which WooCommerce cannot know: the order completion date is used as the proxy. For services it runs from the conclusion of the contract, so the order date is used. This is the store-wide default: if you sell both, set "Withdrawal period starts from" on the products or categories that differ, and each item in an order gets its own deadline.', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 	}
 
@@ -1155,7 +1155,7 @@ final class SettingsPage {
 		$this->render_select( Settings::OPT_ENFORCEMENT_MODE, $options, $value );
 		$this->hint(
 			self::TAG_RECOMMENDED,
-			__( 'Keep Advisory. Because the real period runs from delivery, strict mode can turn away a consumer who is still within their actual window — and the function is supposed to stay continuously available. Use it only where the order or completion date is a reliable proxy for delivery.', 'erred-eu-order-withdrawal-for-woocommerce' )
+			__( 'Keep Advisory. For goods the real period runs from delivery, which WooCommerce only approximates with the completion date, so strict mode can turn away a consumer who is still within their actual window — and the function is supposed to stay continuously available. Use it only where the completion date is a reliable proxy for delivery. Services and digital content, counted from the purchase, do not have this problem.', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 	}
 

@@ -182,6 +182,105 @@ function Timeline( { timeline } ) {
 	);
 }
 
+// Where a request fell in each item's withdrawal period. Text, not colour alone, carries the meaning.
+const TIMING_LABELS = {
+	within: __(
+		'Sent within the period',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+	grace: __(
+		'Sent after the period, within your extra days',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+	late: __(
+		'Sent after the period ended',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+	before_start: __(
+		'Sent before the period started (before delivery)',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+	unknown: __(
+		'Period not available',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+};
+
+const BASIS_LABELS = {
+	delivery: __(
+		'counted from delivery',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+	conclusion: __(
+		'counted from the purchase',
+		'erred-eu-order-withdrawal-for-woocommerce'
+	),
+};
+
+/**
+ * Each withdrawn item's own withdrawal period, and whether the request arrived inside it. An order
+ * can mix goods (counted from delivery) and services (counted from the purchase), so the request has
+ * no single deadline.
+ *
+ * @param {Object}        props         Component props.
+ * @param {Array<Object>} props.periods The `item_periods` of the request detail.
+ * @return {Element|null} The list, or nothing when there are no periods.
+ */
+function ItemPeriods( { periods } ) {
+	if ( ! periods || periods.length === 0 ) {
+		return null;
+	}
+	return (
+		<div>
+			<p>
+				<strong>
+					{ __(
+						'Withdrawal periods (GMT)',
+						'erred-eu-order-withdrawal-for-woocommerce'
+					) }
+					:
+				</strong>
+			</p>
+			<ul className="recesso-dig-admin__periods">
+				{ periods.map( ( period, index ) => (
+					<li key={ index }>
+						{ period.label }
+						{ ' — ' }
+						{ period.ends_at_gmt
+							? sprintf(
+									/* translators: 1: period start date and time, 2: period end date and time. */
+									__(
+										'%1$s to %2$s',
+										'erred-eu-order-withdrawal-for-woocommerce'
+									),
+									period.starts_at_gmt,
+									period.ends_at_gmt
+							  )
+							: __(
+									'not started yet',
+									'erred-eu-order-withdrawal-for-woocommerce'
+							  ) }
+						{ BASIS_LABELS[ period.basis ]
+							? ' (' + BASIS_LABELS[ period.basis ] + ')'
+							: '' }
+						{ '. ' }
+						<strong>
+							{ TIMING_LABELS[ period.timing ] ||
+								TIMING_LABELS.unknown }
+						</strong>
+					</li>
+				) ) }
+			</ul>
+			<p className="description">
+				{ __(
+					"Worked out from the order's dates and the product settings as they are now, so a later change to either shows here too. Guidance for your decision, not part of the receipt.",
+					'erred-eu-order-withdrawal-for-woocommerce'
+				) }
+			</p>
+		</div>
+	);
+}
+
 function Detail( { detail, busy, onClose, onProcess } ) {
 	const [ reason, setReason ] = useState( '' );
 	const [ adminStatus, setAdminStatus ] = useState( 'pending' );
@@ -336,6 +435,8 @@ function Detail( { detail, busy, onClose, onProcess } ) {
 					</ul>
 				</div>
 			) }
+
+			<ItemPeriods periods={ detail.item_periods } />
 
 			{ detail.receipt_url ? (
 				<p>

@@ -157,6 +157,17 @@
 	font-weight: 500;
 }
 
+.wp-block-recesso-digitale-flow__item-text {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.wp-block-recesso-digitale-flow__item-deadline {
+	color: var(--recesso-dig-muted);
+	font-size: 0.875em;
+}
+
 .wp-block-recesso-digitale-flow__item-qty {
 	display: flex;
 	flex: 0 0 auto;

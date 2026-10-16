@@ -9,14 +9,18 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Rest;
 
+use Recesso54bis\Domain\Eligibility\LineWindow;
+use Recesso54bis\Domain\Eligibility\WindowBasis;
 use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Email\WithdrawalRejectionEmail;
 use Recesso54bis\Email\WithdrawalStatusUpdateEmail;
+use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Integration\ReceiptScheduler;
 use Recesso54bis\Persistence\LogRepository;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Support\RateLimiter;
+use Recesso54bis\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -44,24 +48,35 @@ final class AdminWithdrawalsController extends Controller {
 	private ReceiptScheduler $receipts;
 
 	/**
+	 * Eligibility adapter, for each item's withdrawal period in the request detail.
+	 *
+	 * @var EligibilityAdapter|null
+	 */
+	private ?EligibilityAdapter $eligibility;
+
+	/**
 	 * Construct the controller.
 	 *
-	 * @param PermissionGate    $gate     Permission gate.
-	 * @param RateLimiter       $rate     Rate limiter.
-	 * @param LogRepository     $log      Audit log repository.
-	 * @param RequestRepository $requests Request repository.
-	 * @param ReceiptScheduler  $receipts Receipt scheduler.
+	 * @param PermissionGate          $gate        Permission gate.
+	 * @param RateLimiter             $rate        Rate limiter.
+	 * @param LogRepository           $log         Audit log repository.
+	 * @param RequestRepository       $requests    Request repository.
+	 * @param ReceiptScheduler        $receipts    Receipt scheduler.
+	 * @param EligibilityAdapter|null $eligibility Eligibility adapter; without it the detail carries no
+	 *                                             per-item periods.
 	 */
 	public function __construct(
 		PermissionGate $gate,
 		RateLimiter $rate,
 		LogRepository $log,
 		RequestRepository $requests,
-		ReceiptScheduler $receipts
+		ReceiptScheduler $receipts,
+		?EligibilityAdapter $eligibility = null
 	) {
 		parent::__construct( $gate, $rate, $log );
-		$this->requests = $requests;
-		$this->receipts = $receipts;
+		$this->requests    = $requests;
+		$this->receipts    = $receipts;
+		$this->eligibility = $eligibility;
 	}
 
 	/**
@@ -465,13 +480,14 @@ final class AdminWithdrawalsController extends Controller {
 			)
 			: '';
 
-		list( $items, $is_partial )   = $this->withdrawal_items( $request );
-		$data['items']                = $items;
-		$data['is_partial']           = $is_partial;
-		$data['refund_iban']          = $request->refund_iban;
-		$data['withdrawal_reason']    = $request->withdrawal_reason;
-		$data['consumer_declaration'] = $request->consumer_declaration;
-		$data['admin_status']         = RequestStatus::to_admin( $request->status );
+		list( $items, $is_partial, $lines ) = $this->withdrawal_items( $request );
+		$data['items']                      = $items;
+		$data['item_periods']               = $this->item_periods( $request, $lines );
+		$data['is_partial']                 = $is_partial;
+		$data['refund_iban']                = $request->refund_iban;
+		$data['withdrawal_reason']          = $request->withdrawal_reason;
+		$data['consumer_declaration']       = $request->consumer_declaration;
+		$data['admin_status']               = RequestStatus::to_admin( $request->status );
 
 		// The receipt verification code (SHA-256 of the canonical payload) — the same code the consumer
 		// receives in the acknowledgement email — shown in the admin detail card for cross-checking.
@@ -482,19 +498,21 @@ final class AdminWithdrawalsController extends Controller {
 
 	/**
 	 * Resolve the human-readable items a request concerns and whether it is a partial withdrawal
-	 * (fewer lines than the order has). Returns a list of "name × qty" labels and the partial flag.
+	 * (fewer lines than the order has). Returns a list of "name × qty" labels, the partial flag and the
+	 * same labels keyed by order line id.
 	 *
 	 * @param WithdrawalRequest $request The request.
 	 *
-	 * @return array{0: string[], 1: bool}
+	 * @return array{0: string[], 1: bool, 2: array<int, string>}
 	 */
 	private function withdrawal_items( WithdrawalRequest $request ): array {
 		$order = function_exists( 'wc_get_order' ) ? wc_get_order( $request->order_id ) : null;
 		if ( ! $order instanceof \WC_Order ) {
-			return array( array(), false );
+			return array( array(), false, array() );
 		}
 
 		$quantities      = $request->requested_items;
+		$by_line         = array();
 		$labels          = array();
 		$total_units     = 0;
 		$withdrawn_units = 0;
@@ -510,15 +528,113 @@ final class AdminWithdrawalsController extends Controller {
 				continue;
 			}
 
-			$requested        = (int) ( $quantities[ $line_id ] ?? 0 );
-			$withdrawn        = $requested > 0 ? min( $requested, $line_qty ) : $line_qty;
-			$withdrawn_units += $withdrawn;
-			$labels[]         = $withdrawn > 1 ? $item->get_name() . ' × ' . $withdrawn : $item->get_name();
+			$requested           = (int) ( $quantities[ $line_id ] ?? 0 );
+			$withdrawn           = $requested > 0 ? min( $requested, $line_qty ) : $line_qty;
+			$withdrawn_units    += $withdrawn;
+			$label               = $withdrawn > 1 ? $item->get_name() . ' × ' . $withdrawn : $item->get_name();
+			$labels[]            = $label;
+			$by_line[ $line_id ] = $label;
 		}
 
 		$is_partial = array() !== $quantities && $withdrawn_units < $total_units;
 
-		return array( $labels, $is_partial );
+		return array( $labels, $is_partial, $by_line );
+	}
+
+	/**
+	 * Each withdrawn item's withdrawal period, and where the request fell in it.
+	 *
+	 * An order can mix goods counted from delivery with services counted from the purchase, so one
+	 * deadline per request would be wrong for half of it. The reference instant is the confirmation —
+	 * the legal moment of communication — or, for a request never confirmed, its submission.
+	 *
+	 * Computed from the order's dates and the product settings as they are now, not as they were when
+	 * the request arrived: the merchant may have completed the order later or reconfigured a product
+	 * since. The admin screen says so; this is guidance for the decision, never part of the record.
+	 *
+	 * `timing` is one of:
+	 * - `within`: on or before the statutory end;
+	 * - `grace`: after it, but inside the extra days the merchant chose to allow;
+	 * - `late`: after both;
+	 * - `before_start`: before the period opened (goods not yet delivered) — the consumer may
+	 *   withdraw before delivery, so this is not a lateness;
+	 * - `unknown`: no period could be computed.
+	 *
+	 * TODO(legal): the timing labels are guidance for the merchant; whether a late request must still
+	 * be honoured (e.g. an extended period for missing pre-contractual information, art. 53) is the
+	 * merchant's assessment.
+	 *
+	 * @param WithdrawalRequest  $request The request.
+	 * @param array<int, string> $lines   Map line_id => item label, for the withdrawn lines.
+	 *
+	 * @return array<int, array{label: string, basis: string, starts_at_gmt: string, ends_at_gmt: string, timing: string}>
+	 */
+	private function item_periods( WithdrawalRequest $request, array $lines ): array {
+		if ( ! $this->eligibility instanceof EligibilityAdapter || array() === $lines ) {
+			return array();
+		}
+
+		$order = wc_get_order( $request->order_id );
+		if ( ! $order instanceof \WC_Order ) {
+			return array();
+		}
+
+		$windows = $this->eligibility->line_windows( $order );
+		$sent    = $this->gmt_instant( (string) ( $request->confirmed_at_gmt ?? $request->submitted_at_gmt ?? '' ) );
+		$grace   = ( new Settings() )->grace_days();
+
+		$periods = array();
+		foreach ( $lines as $line_id => $label ) {
+			$window    = $windows[ $line_id ] ?? null;
+			$periods[] = array(
+				'label'         => $label,
+				'basis'         => $window instanceof LineWindow && WindowBasis::is_valid( $window->basis ) ? $window->basis : '',
+				'starts_at_gmt' => $window instanceof LineWindow && null !== $window->starts_at ? $window->starts_at->format( 'Y-m-d H:i:s' ) : '',
+				'ends_at_gmt'   => $window instanceof LineWindow && null !== $window->ends_at ? $window->ends_at->format( 'Y-m-d H:i:s' ) : '',
+				'timing'        => $window instanceof LineWindow ? $this->timing( $window, $sent, $grace ) : 'unknown',
+			);
+		}
+
+		return $periods;
+	}
+
+	/**
+	 * Where an instant falls in a period.
+	 *
+	 * @param LineWindow              $window The period.
+	 * @param \DateTimeImmutable|null $sent   When the request was sent.
+	 * @param int                     $grace  Extra days the merchant allows after the statutory end.
+	 */
+	private function timing( LineWindow $window, ?\DateTimeImmutable $sent, int $grace ): string {
+		if ( ! $sent instanceof \DateTimeImmutable ) {
+			return 'unknown';
+		}
+		if ( ! $window->starts_at instanceof \DateTimeImmutable || $sent < $window->starts_at ) {
+			return 'before_start';
+		}
+		if ( ! $window->ends_at instanceof \DateTimeImmutable ) {
+			return 'unknown';
+		}
+		if ( $sent <= $window->ends_at ) {
+			return 'within';
+		}
+
+		return $sent <= $window->ends_at->add( new \DateInterval( 'P' . max( 0, $grace ) . 'D' ) ) ? 'grace' : 'late';
+	}
+
+	/**
+	 * Parse a stored GMT datetime.
+	 *
+	 * @param string $gmt 'Y-m-d H:i:s' in GMT, or ''.
+	 */
+	private function gmt_instant( string $gmt ): ?\DateTimeImmutable {
+		if ( '' === $gmt ) {
+			return null;
+		}
+
+		$parsed = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $gmt, new \DateTimeZone( 'UTC' ) );
+
+		return $parsed instanceof \DateTimeImmutable ? $parsed : null;
 	}
 
 	/**

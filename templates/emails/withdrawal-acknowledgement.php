@@ -10,6 +10,7 @@
  * @var string                                                       $site_name
  * @var int                                                          $window_days
  * @var string                                                       $start_trigger
+ * @var string                                                       $period_terms
  * @var string                                                       $email_heading
  * @var \WC_Email                                                    $email
  * @package Recesso54bis
@@ -22,8 +23,8 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core email template hook.
 do_action( 'woocommerce_email_header', $email_heading, $email );
 
-// The window-start wording maps the configured start trigger (delivery vs conclusion) to
-// consumer-facing text.
+// Fallback wording for a caller that passes no $period_terms: maps the start trigger (delivery
+// vs conclusion) to consumer-facing text.
 $recesso_dig_from = \Recesso54bis\Support\Settings::TRIGGER_CONCLUSION === $start_trigger
 	? __( 'the conclusion of the contract', 'erred-eu-order-withdrawal-for-woocommerce' )
 	: __( 'delivery', 'erred-eu-order-withdrawal-for-woocommerce' );
@@ -49,12 +50,16 @@ $recesso_dig_from = \Recesso54bis\Support\Settings::TRIGGER_CONCLUSION === $star
 
 <p>
 	<?php
-	printf(
-		/* translators: 1: number of days in the withdrawal window, 2: when the window starts (e.g. delivery or the conclusion of the contract). */
-		esc_html__( 'Your withdrawal is subject to the legal deadlines and conditions: the %1$d-day period (for goods, counted from %2$s; for digital content, from the start of the download) and the statutory exceptions to the right of withdrawal. We verify these before confirming, so submitting a request does not by itself guarantee its acceptance.', 'erred-eu-order-withdrawal-for-woocommerce' ),
-		(int) $window_days,
-		esc_html( $recesso_dig_from )
-	);
+	if ( isset( $period_terms ) && '' !== $period_terms ) {
+		echo esc_html( $period_terms );
+	} else {
+		printf(
+			/* translators: 1: number of days in the withdrawal window, 2: when the window starts (e.g. delivery or the conclusion of the contract). */
+			esc_html__( 'Your withdrawal is subject to the legal deadlines and conditions: the %1$d-day period (for goods, counted from %2$s; for digital content, from the start of the download) and the statutory exceptions to the right of withdrawal. We verify these before confirming, so submitting a request does not by itself guarantee its acceptance.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			(int) $window_days,
+			esc_html( $recesso_dig_from )
+		);
+	}
 	?>
 </p>
 

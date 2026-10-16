@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Frontend;
 
+use Recesso54bis\Domain\Eligibility\LineWindow;
 use Recesso54bis\Domain\Eligibility\Reason;
 use Recesso54bis\Domain\RequestStatus;
 use Recesso54bis\Domain\WithdrawalRequest;
@@ -435,7 +436,8 @@ final class FlowController {
 				'lines'              => $this->line_choices(
 					$order,
 					$eligibility->available_quantities,
-					$draft instanceof WithdrawalRequest ? $draft->requested_items : array()
+					$draft instanceof WithdrawalRequest ? $draft->requested_items : array(),
+					$this->line_deadlines( $eligibility )
 				),
 				'intro'              => $settings->form_intro_enabled() ? $settings->form_intro_text( $order->get_order_number() ) : '',
 				'declaration_text'   => $settings->consumer_declaration_enabled() ? $settings->consumer_declaration_text() : '',
@@ -515,13 +517,15 @@ final class FlowController {
 	 * display name (variation included), total ordered quantity and the units still available to
 	 * withdraw (the input's maximum).
 	 *
-	 * @param \WC_Order       $order     The order.
-	 * @param array<int, int> $available Map line_id => units still available to withdraw.
-	 * @param array<int, int> $selected  Map line_id => quantity to pre-select (when amending a draft).
+	 * @param \WC_Order          $order     The order.
+	 * @param array<int, int>    $available Map line_id => units still available to withdraw.
+	 * @param array<int, int>    $selected  Map line_id => quantity to pre-select (when amending a draft).
+	 * @param array<int, string> $deadlines Map line_id => that line's own deadline sentence; empty when
+	 *                                      every line shares one, which is then stated once above.
 	 *
-	 * @return array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected: bool, selected_qty: int}>
+	 * @return array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected: bool, selected_qty: int, deadline: string}>
 	 */
-	private function line_choices( \WC_Order $order, array $available, array $selected = array() ): array {
+	private function line_choices( \WC_Order $order, array $available, array $selected = array(), array $deadlines = array() ): array {
 		$choices = array();
 		foreach ( $order->get_items() as $item_id => $item ) {
 			if ( ! $item instanceof \WC_Order_Item_Product ) {
@@ -543,6 +547,7 @@ final class FlowController {
 				'thumbnail'    => RequestedItemsResolver::thumbnail( $item ),
 				'selected'     => $want > 0,
 				'selected_qty' => $want > 0 ? min( $want, $units ) : $units,
+				'deadline'     => $deadlines[ $line_id ] ?? '',
 			);
 		}
 
@@ -681,6 +686,11 @@ final class FlowController {
 	 * actually need. The period is the consumer's deadline as much as the merchant's, so it belongs on
 	 * the screen where they are about to use it.
 	 *
+	 * Stated once, above the form, when every line the consumer can choose shares one deadline — the
+	 * ordinary case. When they differ (goods counted from delivery next to a service counted from the
+	 * purchase) no single date is true, so this returns '' and each line states its own
+	 * ({@see self::line_deadlines()}).
+	 *
 	 * Returns an empty string when there is no date to state — an order whose window has not started
 	 * has no end — and the wording follows the enforcement mode: in the default advisory mode the date
 	 * is guidance, and promising a hard cut-off the plugin does not enforce would be a lie.
@@ -688,12 +698,18 @@ final class FlowController {
 	 * @param \Recesso54bis\Domain\Eligibility\EligibilityResult $eligibility The evaluated eligibility.
 	 */
 	private function deadline_notice( $eligibility ): string {
-		$ends_at = $eligibility->window_ends_at;
-		if ( ! $ends_at instanceof \DateTimeImmutable ) {
+		$ends = $this->offered_line_ends( $eligibility );
+		if ( null === $ends ) {
+			// No per-line periods (a result replaced through the recesso_dig_is_eligible filter): fall
+			// back to the order-level bound, as before per-line periods existed.
+			$ends_at = $eligibility->window_ends_at;
+		} elseif ( 1 === count( array_unique( $ends ) ) ) {
+			$ends_at = $this->instant( (string) reset( $ends ) );
+		} else {
 			return '';
 		}
 
-		$date = $this->local_datetime( $ends_at->format( 'Y-m-d H:i:s' ) );
+		$date = $ends_at instanceof \DateTimeImmutable ? $this->local_datetime( $ends_at->format( 'Y-m-d H:i:s' ) ) : '';
 		if ( '' === $date ) {
 			return '';
 		}
@@ -711,6 +727,90 @@ final class FlowController {
 			__( 'The ordinary withdrawal period for this order runs until %s.', 'erred-eu-order-withdrawal-for-woocommerce' ),
 			$date
 		);
+	}
+
+	/**
+	 * Each offered line's own deadline sentence, when the lines do not share one.
+	 *
+	 * A line whose period has not opened says so instead of giving a date: in advisory mode a T-shirt
+	 * not yet delivered is still offered next to a course already running, and "until" an unknown date
+	 * would be no answer at all.
+	 *
+	 * @param \Recesso54bis\Domain\Eligibility\EligibilityResult $eligibility The evaluated eligibility.
+	 *
+	 * @return array<int, string> Map line_id => sentence; empty when one deadline covers every line.
+	 */
+	private function line_deadlines( $eligibility ): array {
+		$ends = $this->offered_line_ends( $eligibility );
+		if ( null === $ends || count( array_unique( $ends ) ) <= 1 ) {
+			return array();
+		}
+
+		$strict    = ( new Settings() )->enforcement_strict();
+		$sentences = array();
+		foreach ( $ends as $line_id => $end ) {
+			$ends_at = $this->instant( $end );
+			$date    = $ends_at instanceof \DateTimeImmutable ? $this->local_datetime( $ends_at->format( 'Y-m-d H:i:s' ) ) : '';
+
+			if ( '' === $date ) {
+				$sentences[ $line_id ] = __( 'The withdrawal period for this item starts on delivery.', 'erred-eu-order-withdrawal-for-woocommerce' );
+				continue;
+			}
+
+			$sentences[ $line_id ] = $strict
+				? sprintf(
+					/* translators: %s: date and time the withdrawal period for one item closes. */
+					__( 'You can withdraw this item until %s.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+					$date
+				)
+				: sprintf(
+					/* translators: %s: date and time the withdrawal period for one item closes. */
+					__( 'The ordinary withdrawal period for this item runs until %s.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+					$date
+				);
+		}
+
+		return $sentences;
+	}
+
+	/**
+	 * The period end of every line the consumer is offered, as comparable strings.
+	 *
+	 * @param \Recesso54bis\Domain\Eligibility\EligibilityResult $eligibility The evaluated eligibility.
+	 *
+	 * @return array<int, string>|null Map line_id => 'Y-m-d H:i:s' UTC ('' while the period has not
+	 *                                 opened); null when the result carries no per-line periods.
+	 */
+	private function offered_line_ends( $eligibility ): ?array {
+		if ( array() === $eligibility->line_windows ) {
+			return null;
+		}
+
+		$ends = array();
+		foreach ( array_keys( $eligibility->available_quantities ) as $line_id ) {
+			$window = $eligibility->line_windows[ $line_id ] ?? null;
+			if ( ! $window instanceof LineWindow ) {
+				return null;
+			}
+			$ends[ (int) $line_id ] = $window->ends_at instanceof \DateTimeImmutable ? $window->ends_at->format( 'Y-m-d H:i:s' ) : '';
+		}
+
+		return $ends;
+	}
+
+	/**
+	 * Parse a 'Y-m-d H:i:s' UTC string back to an instant ('' gives null).
+	 *
+	 * @param string $value Datetime string.
+	 */
+	private function instant( string $value ): ?\DateTimeImmutable {
+		if ( '' === $value ) {
+			return null;
+		}
+
+		$parsed = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', $value, new \DateTimeZone( 'UTC' ) );
+
+		return $parsed instanceof \DateTimeImmutable ? $parsed : null;
 	}
 
 	/**

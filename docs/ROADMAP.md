@@ -4,7 +4,7 @@ Work not yet done, why it matters, and what it touches. Ordered by release. Rule
 `claude.local.md`; this file records *intent*, not state — a completed item is deleted from here and
 described in the `readme.txt` changelog instead.
 
-Last reviewed: 2026-09-05, after 0.8.1.
+Last reviewed: 2026-10-16, after 0.9.0.
 
 ---
 
@@ -29,7 +29,7 @@ Everything below came out of that comparison unless marked otherwise.
 
 ---
 
-## 0.9.0 — admin ergonomics and evidence
+## 0.10.0 — admin ergonomics and evidence
 
 The theme: a merchant handling more than a handful of withdrawals a month currently does too much
 one request at a time, and the evidence trail stops short of what a dispute needs.
@@ -96,35 +96,6 @@ The only trace is an order note. Worth showing, but **outside** the requests lis
 rows into it would invite a merchant to process something that is not a withdrawal. A counter or a
 separate panel, in the shape of the unmatched-lookups one.
 
-### Window start per line, not per store
-Not from the competitor comparison: raised by a merchant selling both T-shirts and enrolments in a
-youth football school. Today the window start (`delivery` / `conclusion`) and its length are one
-store-wide setting, and `EligibilityAdapter::window_start()` computes one start **per order**. A
-store selling both goods and services must pick one trigger, and one of the two kinds then gets a
-wrong deadline — harmless in advisory mode, a refused legitimate withdrawal in strict mode.
-
-Art. 52(2) Codice del Consumo does not reduce to "delivery vs purchase", so a two-way per-product
-switch would be the wrong model. The start depends on the kind of contract:
-- services and digital content not on a tangible medium → conclusion of the contract;
-- goods → receipt; several goods delivered separately → receipt of the **last** one;
-- regular delivery of goods over a period (a subscription box) → receipt of the **first** one.
-
-So: a per-product/per-category contract type (inheriting like the withdrawal status does), resolved
-per line by the engine, plus a rule for orders that mix types. `EligibilityResult` would then carry a
-window per line, and the declaration screen's deadline sentence must follow. The legal mapping above
-is an assumption and needs `TODO(legal)` markers — in particular whether a season enrolment is a
-leisure service with a "specific period of performance" (art. 59(1)(n)), which would exclude it
-outright rather than start its window at conclusion.
-Touches `src/Domain/Eligibility/`, `src/Integration/EligibilityAdapter.php`,
-`src/Admin/WithdrawalStatusFields.php`, `src/Support/Settings.php`, `templates/frontend/declaration.php`.
-
-### WPML: resolve a translated product's withdrawal status to the original
-On WPML/Polylang sites a translated product does not inherit the "Withdrawal status" set on the
-original, so its exclusion notice and checkout consent silently disappear. The competitor shipped
-this as a 2.1.1 fix; we have the same bug.
-Touches `src/Integration/EligibilityAdapter.php`, `src/Admin/WithdrawalStatusFields.php`.
-Per-translation overrides must still win, for genuinely language-specific exceptions.
-
 ---
 
 ## Later — features they have announced but not shipped
@@ -189,6 +160,45 @@ justified it with a claim that a `WC_Email` with no saved settings reports `is_e
 each of the two says so in its `$description`, so the switch on the WooCommerce screen no longer
 looks like a control that does nothing. Do not re-derive this from the WooCommerce source: the test
 is the record.
+
+### "Delivery" is the order's completion date, for every goods line
+Per-line periods (0.9.0) count goods from delivery and services from the purchase, but WooCommerce
+records one completion date per order and no delivery date at all, so every goods line in an order
+opens on the same day. That is also what makes art. 52(2)'s special cases come out right without
+modelling them: several goods delivered separately run from the *last* (the order completes when
+the last one ships), and a regular supply runs from the *first* (a subscription's first order). Do
+not add a per-line delivery date to approximate partial shipments: it would need a source of truth
+the store does not have, and a wrong date is worse than the conservative later one.
+
+The order-level `window_starts_at` / `window_ends_at` on `EligibilityResult` are now a summary of
+the lines — earliest start, latest end, null end while any withdrawable line has not started. They
+are kept for the REST response and for integrators replacing the result through
+`recesso_dig_is_eligible`; anything new should read `line_windows`.
+
+### The admin's per-item periods are computed live, not stored
+The request detail (0.9.0) shows each item's period and whether the request arrived inside it,
+computed from the order's dates and the product settings *as they are now*. Completing an order
+later, or reclassifying a product, changes what an old request shows; the screen says so. Do not
+"fix" this by snapshotting the periods into the request: the request row is the legal record, its
+receipt hash covers a canonical payload, and the period is the merchant's assessment, not a fact the
+consumer communicated. If a dispute needs the period as it stood, the audit log and the order's own
+history are the evidence.
+
+### The withdrawal fields live in the classic product editor and on categories only
+"Withdrawal status" and "Withdrawal period starts from" are not offered in Quick Edit, Bulk Edit or
+WooCommerce's block-based product editor. Categories are the intended way to configure many
+products at once, and both fields inherit from them, so a catalogue never needs product-by-product
+editing. If the block editor becomes WooCommerce's default, the fields must follow it there (a
+`woocommerce_block_template_register` extension), for both keys together.
+
+### Multilingual: a translation inherits, it does not copy
+WPML and Polylang translations read the original's withdrawal status and period basis at lookup time
+(`src/Integration/Multilingual.php`); nothing is copied onto the translation. A value saved on the
+translation still wins. Do not add a `wpml-config.xml` `custom-fields` "copy" rule for these keys:
+it would overwrite a deliberate per-language exception on every sync, and Polylang's copy would do
+the same. WPML is detected through its `wpml_original_element_id` filter (term lookups go through
+`term_taxonomy_id`, as WPML stores them); Polylang has no source relation, so its default language
+stands for the original.
 
 ### No unverified withdrawal records
 The competitor's headline 2.1.0 feature registers requests that match no order, flagged "Unverified".

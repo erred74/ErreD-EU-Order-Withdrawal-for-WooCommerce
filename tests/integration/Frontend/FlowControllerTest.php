@@ -410,6 +410,50 @@ final class FlowControllerTest extends TestCase {
 	}
 
 	/**
+	 * A T-shirt and a football-school enrolment have different deadlines, so no single date above the
+	 * form would be true: each item states its own instead.
+	 */
+	public function test_declaration_states_each_item_deadline_when_they_differ(): void {
+		$course = new \WC_Product_Simple();
+		$course->set_name( 'Football school' );
+		$course->set_regular_price( '100' );
+		$course->update_meta_data( Settings::META_PRODUCT_WINDOW_BASIS, \Recesso54bis\Domain\Eligibility\WindowBasis::CONCLUSION );
+		$course->save();
+
+		$order = wc_get_order( $this->order_id );
+		$order->add_product( $course, 1 );
+		$order->set_date_created( time() - ( 5 * DAY_IN_SECONDS ) );
+		$order->save();
+
+		$_GET = array(
+			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,
+			FlowUrls::QV_ORDER => (string) $this->order_id,
+			FlowUrls::QV_TOKEN => $this->token,
+		);
+
+		$html = $this->flow->render();
+
+		$this->assertStringNotContainsString( 'wp-block-recesso-digitale-flow__deadline', $html, 'No single order-wide date is true here.' );
+		$this->assertSame( 2, substr_count( $html, 'wp-block-recesso-digitale-flow__item-deadline' ) );
+		$this->assertSame( 2, substr_count( $html, 'ordinary withdrawal period for this item runs until' ) );
+
+		$course->delete( true );
+	}
+
+	public function test_declaration_keeps_one_deadline_when_the_items_share_it(): void {
+		$_GET = array(
+			FlowUrls::QV_STEP  => FlowUrls::STEP_DECLARE,
+			FlowUrls::QV_ORDER => (string) $this->order_id,
+			FlowUrls::QV_TOKEN => $this->token,
+		);
+
+		$html = $this->flow->render();
+
+		$this->assertStringContainsString( 'wp-block-recesso-digitale-flow__deadline', $html );
+		$this->assertStringNotContainsString( 'wp-block-recesso-digitale-flow__item-deadline', $html );
+	}
+
+	/**
 	 * The refusal states a legal position and then stops, which leaves the consumer with no way to
 	 * ask a person about it. The reason stays ours; the way out is the merchant's.
 	 */

@@ -9,7 +9,9 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Email;
 
+use Recesso54bis\Domain\Eligibility\WindowBasis;
 use Recesso54bis\Domain\WithdrawalRequest;
+use Recesso54bis\Integration\WindowBasisResolver;
 use Recesso54bis\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -131,6 +133,7 @@ class WithdrawalAcknowledgementEmail extends \WC_Email {
 		// records. Presentation only — never feeds the receipt hash.
 		$context  = $this->request_context( $this->request );
 		$settings = new Settings();
+		$bases    = $this->window_bases( $settings );
 
 		return array_merge(
 			$context,
@@ -139,12 +142,77 @@ class WithdrawalAcknowledgementEmail extends \WC_Email {
 				'download_url'  => $this->download_url,
 				'site_name'     => get_bloginfo( 'name' ),
 				'window_days'   => $settings->window_days(),
-				'start_trigger' => $settings->start_trigger(),
+				// Kept for theme overrides of the template written before per-product bases: the
+				// request's own basis when it has one, the store's otherwise.
+				'start_trigger' => 1 === count( $bases ) ? $bases[0] : $settings->start_trigger(),
+				'period_terms'  => self::period_terms( $bases, $settings->window_days() ),
 				'email_heading' => $this->get_heading(),
 				'sent_to_admin' => false,
 				'plain_text'    => false,
 				'email'         => $this,
 			)
+		);
+	}
+
+	/**
+	 * What the withdrawn items' periods are counted from, per their product configuration.
+	 *
+	 * @param Settings $settings Configuration reader.
+	 *
+	 * @return string[] Distinct {@see \Recesso54bis\Domain\Eligibility\WindowBasis} values.
+	 */
+	private function window_bases( Settings $settings ): array {
+		if ( ! $this->request instanceof WithdrawalRequest ) {
+			return array( $settings->start_trigger() );
+		}
+
+		$order = wc_get_order( $this->request->order_id );
+		if ( ! $order instanceof \WC_Order ) {
+			return array( $settings->start_trigger() );
+		}
+
+		$line_ids = array_map( 'intval', array_keys( $this->request->requested_items ) );
+		$bases    = ( new WindowBasisResolver( $settings ) )->for_order( $order, array() === $line_ids ? null : $line_ids );
+
+		return array() === $bases ? array( $settings->start_trigger() ) : $bases;
+	}
+
+	/**
+	 * The sentence stating the deadlines and conditions a withdrawal is subject to, worded for what
+	 * the withdrawn items' periods are counted from.
+	 *
+	 * The goods-only wording is the one this email has always carried. A request for a service alone
+	 * used to be told its period ran "for goods" from the conclusion of the contract; a request mixing
+	 * the two now names both events, since one would be wrong for half of it.
+	 *
+	 * @param string[] $bases Distinct bases of the withdrawn items.
+	 * @param int      $days  Window length in days.
+	 */
+	public static function period_terms( array $bases, int $days ): string {
+		$delivery   = in_array( WindowBasis::DELIVERY, $bases, true );
+		$conclusion = in_array( WindowBasis::CONCLUSION, $bases, true );
+
+		if ( $delivery && $conclusion ) {
+			return sprintf(
+				/* translators: %d: number of days in the withdrawal window. */
+				__( 'Your withdrawal is subject to the legal deadlines and conditions: the %d-day period (for goods, counted from delivery; for services and digital content, from the conclusion of the contract) and the statutory exceptions to the right of withdrawal. We verify these before confirming, so submitting a request does not by itself guarantee its acceptance.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				$days
+			);
+		}
+
+		if ( $conclusion ) {
+			return sprintf(
+				/* translators: %d: number of days in the withdrawal window. */
+				__( 'Your withdrawal is subject to the legal deadlines and conditions: the %d-day period, counted from the conclusion of the contract, and the statutory exceptions to the right of withdrawal. We verify these before confirming, so submitting a request does not by itself guarantee its acceptance.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+				$days
+			);
+		}
+
+		return sprintf(
+			/* translators: 1: number of days in the withdrawal window, 2: when the window starts (e.g. delivery or the conclusion of the contract). */
+			__( 'Your withdrawal is subject to the legal deadlines and conditions: the %1$d-day period (for goods, counted from %2$s; for digital content, from the start of the download) and the statutory exceptions to the right of withdrawal. We verify these before confirming, so submitting a request does not by itself guarantee its acceptance.', 'erred-eu-order-withdrawal-for-woocommerce' ),
+			$days,
+			__( 'delivery', 'erred-eu-order-withdrawal-for-woocommerce' )
 		);
 	}
 }

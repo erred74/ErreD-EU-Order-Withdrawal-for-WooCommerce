@@ -64,7 +64,8 @@ final class RouteRegistrar {
 				$this->container->rate_limiter(),
 				$this->container->log_repository(),
 				$this->container->request_repository(),
-				$this->container->receipt_scheduler()
+				$this->container->receipt_scheduler(),
+				$this->container->eligibility_adapter()
 			),
 		);
 

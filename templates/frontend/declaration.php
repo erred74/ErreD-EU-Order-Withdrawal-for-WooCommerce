@@ -4,7 +4,7 @@
  *
  * Override: copy to `recesso-digitale/declaration.php` in your theme.
  *
- * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected?: bool, selected_qty?: int}>, error: string, intro: string, declaration_text: string, deadline?: string} $args
+ * @var array{action_url: string, nonce_action: string, nonce_name: string, order_id: int, token: string, contract_reference: string, consumer_name: string, confirmation_email: string, lines: array<int, array{id: int, label: string, quantity: int, available: int, thumbnail: string, selected?: bool, selected_qty?: int, deadline?: string}>, error: string, intro: string, declaration_text: string, deadline?: string} $args
  * @package Recesso54bis
  */
 
@@ -31,7 +31,7 @@ defined( 'ABSPATH' ) || exit;
 		</p>
 	<?php endif; ?>
 
-	<?php // Empty when the order's window has no known end (it has not started yet). ?>
+	<?php // Empty when the order's window has no known end (it has not started yet), or when its items have different deadlines and each states its own. ?>
 	<?php if ( isset( $args['deadline'] ) && '' !== $args['deadline'] ) : ?>
 		<p class="wp-block-recesso-digitale-flow__deadline">
 			<?php echo esc_html( (string) $args['deadline'] ); ?>
@@ -140,7 +140,19 @@ defined( 'ABSPATH' ) || exit;
 										?>
 									</span>
 								<?php endif; ?>
-								<span class="wp-block-recesso-digitale-flow__item-name"><?php echo esc_html( $recesso_dig_line['label'] ); ?></span>
+								<?php
+								// Set only when the lines' deadlines differ (goods counted from delivery next to a
+								// service counted from the purchase); otherwise one date is stated above the form.
+								// Inside the label on purpose: it is part of what the consumer is choosing.
+								?>
+								<?php if ( isset( $recesso_dig_line['deadline'] ) && '' !== $recesso_dig_line['deadline'] ) : ?>
+									<span class="wp-block-recesso-digitale-flow__item-text">
+										<span class="wp-block-recesso-digitale-flow__item-name"><?php echo esc_html( $recesso_dig_line['label'] ); ?></span>
+										<span class="wp-block-recesso-digitale-flow__item-deadline"><?php echo esc_html( (string) $recesso_dig_line['deadline'] ); ?></span>
+									</span>
+								<?php else : ?>
+									<span class="wp-block-recesso-digitale-flow__item-name"><?php echo esc_html( $recesso_dig_line['label'] ); ?></span>
+								<?php endif; ?>
 							</label>
 							<?php if ( $recesso_dig_has_qty ) : ?>
 								<span class="wp-block-recesso-digitale-flow__item-qty">

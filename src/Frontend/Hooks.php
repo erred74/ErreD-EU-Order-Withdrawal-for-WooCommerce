@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Frontend;
 
+use Recesso54bis\Domain\Eligibility\WindowBasis;
 use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Support\Settings;
 
@@ -119,7 +120,7 @@ final class Hooks {
 			return;
 		}
 
-		$intro = $this->withdrawal_intro();
+		$intro = $this->withdrawal_intro( $order );
 
 		if ( $plain_text ) {
 			echo "\n" . esc_html__( 'Right of withdrawal', 'erred-eu-order-withdrawal-for-woocommerce' ) . "\n";
@@ -144,12 +145,33 @@ final class Hooks {
 
 	/**
 	 * The explanatory sentence shown above the withdrawal control in the order emails. Reflects the
-	 * configured window length and start trigger (delivery for goods vs conclusion for services).
+	 * configured window length and what the withdrawable items' periods are counted from: delivery for
+	 * goods, conclusion for services — both, named separately, when the order mixes them.
+	 *
+	 * @param \WC_Order $order The order the email is about.
 	 */
-	private function withdrawal_intro(): string {
-		$days = $this->settings->window_days();
+	private function withdrawal_intro( \WC_Order $order ): string {
+		$days  = $this->settings->window_days();
+		$lines = $this->eligibility->for_order( $order )->eligible_line_ids;
+		$bases = $this->eligibility->window_bases()->for_order( $order, array() === $lines ? null : $lines );
+		if ( array() === $bases ) {
+			$bases = array( $this->settings->start_trigger() );
+		}
 
-		if ( Settings::TRIGGER_CONCLUSION === $this->settings->start_trigger() ) {
+		if ( in_array( WindowBasis::DELIVERY, $bases, true ) && in_array( WindowBasis::CONCLUSION, $bases, true ) ) {
+			return sprintf(
+				/* translators: %d: number of days in the withdrawal window. */
+				_n(
+					'You have %d day to exercise your withdrawal right without giving any reason: from receipt for goods, and from the conclusion of the contract for services and digital content.',
+					'You have %d days to exercise your withdrawal right without giving any reason: from receipt for goods, and from the conclusion of the contract for services and digital content.',
+					$days,
+					'erred-eu-order-withdrawal-for-woocommerce'
+				),
+				$days
+			);
+		}
+
+		if ( array( WindowBasis::CONCLUSION ) === $bases ) {
 			return sprintf(
 				/* translators: %d: number of days in the withdrawal window. */
 				_n(

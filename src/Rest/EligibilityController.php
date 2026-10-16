@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace Recesso54bis\Rest;
 
+use Recesso54bis\Domain\Eligibility\LineWindow;
 use Recesso54bis\Domain\Eligibility\Reason;
 use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Persistence\LogRepository;
@@ -111,6 +112,15 @@ final class EligibilityController extends Controller {
 				'window_ends_at'       => $result->window_ends_at?->format( 'Y-m-d\TH:i:s\Z' ),
 				'eligible_line_ids'    => $result->eligible_line_ids,
 				'available_quantities' => (object) $result->available_quantities,
+				'line_windows'         => (object) array_map(
+					static fn( LineWindow $window ): array => array(
+						'basis'         => $window->basis,
+						'starts_at'     => $window->starts_at?->format( 'Y-m-d\TH:i:s\Z' ),
+						'ends_at'       => $window->ends_at?->format( 'Y-m-d\TH:i:s\Z' ),
+						'within_window' => $window->within_window,
+					),
+					$result->line_windows
+				),
 			),
 			200
 		);

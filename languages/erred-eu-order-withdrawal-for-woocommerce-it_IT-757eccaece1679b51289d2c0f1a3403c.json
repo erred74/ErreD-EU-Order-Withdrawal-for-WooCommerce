@@ -1,5 +1,5 @@
 {
-    "translation-revision-date": "2026-09-05T10:54:41+00:00",
+    "translation-revision-date": "2026-10-16T14:48:16+00:00",
     "generator": "WP-CLI\/2.12.0",
     "source": "assets\/admin\/app.js",
     "domain": "messages",
@@ -99,6 +99,39 @@
             ],
             "administrator (#%s)": [
                 "amministratore (#%s)"
+            ],
+            "Sent within the period": [
+                "Inviata entro il periodo"
+            ],
+            "Sent after the period, within your extra days": [
+                "Inviata dopo il periodo, entro i tuoi giorni aggiuntivi"
+            ],
+            "Sent after the period ended": [
+                "Inviata dopo la fine del periodo"
+            ],
+            "Sent before the period started (before delivery)": [
+                "Inviata prima dell'inizio del periodo (prima della consegna)"
+            ],
+            "Period not available": [
+                "Periodo non disponibile"
+            ],
+            "counted from delivery": [
+                "calcolato dalla consegna"
+            ],
+            "counted from the purchase": [
+                "calcolato dall'acquisto"
+            ],
+            "Withdrawal periods (GMT)": [
+                "Periodi di recesso (GMT)"
+            ],
+            "%1$s to %2$s": [
+                "dal %1$s al %2$s"
+            ],
+            "not started yet": [
+                "non ancora iniziato"
+            ],
+            "Worked out from the order's dates and the product settings as they are now, so a later change to either shows here too. Guidance for your decision, not part of the receipt.": [
+                "Calcolato dalle date dell'ordine e dalle impostazioni dei prodotti cos\u00ec come sono ora, quindi una modifica successiva si riflette anche qui. \u00c8 un aiuto per la tua decisione, non fa parte della ricevuta."
             ],
             "Receipt verification code": [
                 "Codice di verifica della ricevuta"

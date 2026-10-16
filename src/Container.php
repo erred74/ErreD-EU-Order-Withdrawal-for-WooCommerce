@@ -15,6 +15,7 @@ use Recesso54bis\Frontend\FlowUrls;
 use Recesso54bis\Integration\EligibilityAdapter;
 use Recesso54bis\Integration\ReceiptScheduler;
 use Recesso54bis\Integration\SubscriptionsAdapter;
+use Recesso54bis\Integration\WindowBasisResolver;
 use Recesso54bis\Integration\WithdrawalService;
 use Recesso54bis\Pdf\ReceiptBuilder;
 use Recesso54bis\Pdf\ReceiptDownloadController;
@@ -95,9 +96,17 @@ final class Container {
 				$this->eligibility_engine(),
 				$this->settings(),
 				$this->request_repository(),
-				$this->clock()
+				$this->clock(),
+				$this->window_basis_resolver()
 			)
 		);
+	}
+
+	/**
+	 * Per-product withdrawal-period basis.
+	 */
+	public function window_basis_resolver(): WindowBasisResolver {
+		return $this->shared( 'window_basis_resolver', fn(): WindowBasisResolver => new WindowBasisResolver( $this->settings() ) );
 	}
 
 	/**

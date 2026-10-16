@@ -169,6 +169,53 @@ echo wp_json_encode( array(
 }
 
 /**
+ * Create an order mixing goods and a service — a T-shirt (counted from delivery) and a
+ * football-school enrolment (counted from the purchase) — bought five days ago and delivered today,
+ * and return the guest entry data.
+ *
+ * @return {{orderId:number, tokenUrl:string, email:string, name:string}} The seeded order id, signed flow URL and consumer details.
+ */
+function seedMixedOrder() {
+	return firstJson(
+		wpEval( `
+use Recesso54bis\\Container;
+use Recesso54bis\\Frontend\\FlowPage;
+use Recesso54bis\\Support\\Settings;
+update_option( Settings::OPT_DEFAULT_POLICY, Settings::POLICY_ALLOW );
+FlowPage::ensure();
+$tee = new WC_Product_Simple();
+$tee->set_name( 'E2E T-shirt' );
+$tee->set_regular_price( '20' );
+$tee->save();
+$course = new WC_Product_Simple();
+$course->set_name( 'E2E Football school' );
+$course->set_regular_price( '120' );
+$course->update_meta_data( Settings::META_PRODUCT_WINDOW_BASIS, 'conclusion' );
+$course->save();
+$order = wc_create_order();
+$order->add_product( wc_get_product( $tee->get_id() ), 1 );
+$order->add_product( wc_get_product( $course->get_id() ), 1 );
+$order->set_billing_email( 'e2e-mixed@example.test' );
+$order->set_billing_first_name( 'Luca' );
+$order->set_billing_last_name( 'Neri' );
+$order->set_date_created( time() - 5 * DAY_IN_SECONDS );
+$order->set_status( 'completed' );
+$order->set_date_completed( time() );
+$order->save();
+$container = new Container();
+$expiry = time() + 14 * DAY_IN_SECONDS;
+$url = $container->flow_urls()->declaration_url( FlowPage::url(), (int) $order->get_id(), $expiry );
+echo wp_json_encode( array(
+	'orderId' => (int) $order->get_id(),
+	'tokenUrl' => $url,
+	'email' => 'e2e-mixed@example.test',
+	'name' => 'Luca Neri',
+) );
+` )
+	);
+}
+
+/**
  * Assert the markup inside `selector` has no serious WCAG 2.2 AA violations.
  *
  * @param {import('@playwright/test').Page} page     The page.
@@ -338,6 +385,40 @@ test.describe( 'Guest withdrawal flow (server-rendered)', () => {
 		expect( quantities[ 0 ] ).toBe( 2 );
 	} );
 
+	test( 'an order mixing goods and a service states each item deadline, accessibly', async ( {
+		page,
+	} ) => {
+		const mixed = seedMixedOrder();
+		await page.goto( mixed.tokenUrl );
+		await expect( page.locator( FLOW ) ).toBeVisible();
+
+		// No single order-wide date is true here, so each item carries its own, inside its label.
+		await expect(
+			page.locator( '.wp-block-recesso-digitale-flow__deadline' )
+		).toHaveCount( 0 );
+		const deadlines = page.locator(
+			'.wp-block-recesso-digitale-flow__item-deadline'
+		);
+		await expect( deadlines ).toHaveCount( 2 );
+		await expect(
+			page.getByRole( 'checkbox', { name: /E2E Football school/ } )
+		).toHaveAccessibleName( /withdrawal period for this item/i );
+
+		await expectNoA11yViolations( page, FLOW );
+
+		// Keyboard path: select only the service and send the declaration.
+		await page
+			.getByRole( 'checkbox', { name: /E2E Football school/ } )
+			.focus();
+		await page.keyboard.press( 'Space' );
+		await page.fill( 'input[name="consumer_name"]', mixed.name );
+		await page.fill( 'input[name="confirmation_email"]', mixed.email );
+		await page.getByRole( 'button', { name: /continue/i } ).click();
+		await expect(
+			page.locator( '.wp-block-recesso-digitale-flow__confirm' )
+		).toBeVisible();
+	} );
+
 	test( 'a tampered token is refused without leaking order existence', async ( {
 		page,
 	} ) => {
@@ -431,9 +512,7 @@ test.describe( 'Guest withdrawal flow (server-rendered)', () => {
 		// A pale accent is the case that would break a fixed white label. The label colour is derived,
 		// so axe must still find no contrast violation — this is the browser-level confirmation of the
 		// gamut sweep in tests/unit/Support/ColorTest.php.
-		wpEval(
-			`update_option( 'recesso_dig_button_accent', '#ffe08a' );`
-		);
+		wpEval( `update_option( 'recesso_dig_button_accent', '#ffe08a' );` );
 
 		try {
 			await page.goto( order.flowUrl );
@@ -537,5 +616,28 @@ test.describe( 'Admin requests app (React)', () => {
 		).toBeVisible();
 
 		await expectNoA11yViolations( page, '#recesso-dig-admin-app' );
+	} );
+
+	test( 'the request detail states each item period and whether it was sent in time', async ( {
+		page,
+		admin,
+	} ) => {
+		await admin.visitAdminPage( 'admin.php', 'page=recesso-digitale' );
+		const app = page.locator( '#recesso-dig-admin-app' );
+		const row = app
+			.getByRole( 'row' )
+			.filter( { hasText: String( seeded.orderId ) } )
+			.first();
+		await row.getByRole( 'button', { name: /view/i } ).click();
+
+		const dialog = page.getByRole( 'dialog' );
+		await expect( dialog ).toBeVisible();
+		await expect( dialog ).toContainText( /withdrawal periods/i );
+		// Completed today and confirmed today: inside the period, stated in words.
+		await expect(
+			dialog.locator( '.recesso-dig-admin__periods li' )
+		).toContainText( /sent within the period/i );
+
+		await expectNoA11yViolations( page, '[role="dialog"]' );
 	} );
 } );

@@ -14,6 +14,7 @@ use Recesso54bis\Domain\Eligibility\EligibilityEngine;
 use Recesso54bis\Domain\Eligibility\EligibilityInput;
 use Recesso54bis\Domain\Eligibility\EligibilityLine;
 use Recesso54bis\Domain\Eligibility\Reason;
+use Recesso54bis\Domain\Eligibility\WindowBasis;
 
 /**
  * @covers \Recesso54bis\Domain\Eligibility\EligibilityEngine
@@ -250,5 +251,133 @@ final class EligibilityEngineTest extends TestCase {
 		$this->assertTrue( $result->is_eligible );
 		$this->assertSame( Reason::ELIGIBLE, $result->reason );
 		$this->assertSame( array( 10, 12 ), $result->eligible_line_ids );
+	}
+
+	/**
+	 * An order holding a T-shirt (goods, counted from delivery) and a football-school enrolment (a
+	 * service, counted from the purchase).
+	 *
+	 * @param string      $now          Current instant.
+	 * @param bool        $strict       Strict mode.
+	 * @param string|null $delivered_at Completion date standing for delivery; null while undelivered.
+	 * @param bool        $tee_excluded Whether the T-shirt is statutorily excluded.
+	 */
+	private function mixed_input( string $now, bool $strict, ?string $delivered_at, bool $tee_excluded = false ): EligibilityInput {
+		$delivered = null === $delivered_at ? null : $this->dt( $delivered_at );
+
+		return new EligibilityInput(
+			$this->dt( $now ),
+			true,
+			array(),
+			14,
+			$delivered,
+			array(
+				new EligibilityLine( 10, true, $tee_excluded, 1, WindowBasis::DELIVERY ),
+				new EligibilityLine( 20, true, false, 1, WindowBasis::CONCLUSION ),
+			),
+			$strict,
+			0,
+			array(
+				WindowBasis::DELIVERY   => $delivered,
+				WindowBasis::CONCLUSION => $this->dt( '2026-06-01 00:00:00' ),
+			)
+		);
+	}
+
+	public function test_each_line_is_counted_from_its_own_basis(): void {
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-12 12:00:00', false, '2026-06-10 00:00:00' ) );
+
+		$this->assertTrue( $result->is_eligible );
+		$this->assertEquals( $this->dt( '2026-06-24 00:00:00' ), $result->line_windows[10]->ends_at, 'Goods: 14 days from delivery.' );
+		$this->assertEquals( $this->dt( '2026-06-15 00:00:00' ), $result->line_windows[20]->ends_at, 'Service: 14 days from the purchase.' );
+		$this->assertSame( WindowBasis::DELIVERY, $result->line_windows[10]->basis );
+		$this->assertSame( WindowBasis::CONCLUSION, $result->line_windows[20]->basis );
+	}
+
+	public function test_order_summary_spans_its_lines(): void {
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-12 12:00:00', false, '2026-06-10 00:00:00' ) );
+
+		$this->assertEquals( $this->dt( '2026-06-01 00:00:00' ), $result->window_starts_at );
+		$this->assertEquals( $this->dt( '2026-06-24 00:00:00' ), $result->window_ends_at );
+		$this->assertTrue( $result->within_window );
+	}
+
+	public function test_an_undelivered_line_leaves_the_order_without_an_end(): void {
+		// The service period is running, the goods one has not begun: there is no last day to state yet.
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-05 12:00:00', false, null ) );
+
+		$this->assertTrue( $result->is_eligible );
+		$this->assertNull( $result->window_ends_at );
+		$this->assertNull( $result->line_windows[10]->starts_at );
+		$this->assertEquals( $this->dt( '2026-06-15 00:00:00' ), $result->line_windows[20]->ends_at );
+		$this->assertTrue( $result->within_window, 'The service period is running.' );
+	}
+
+	public function test_advisory_mode_keeps_an_expired_line_available(): void {
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-20 12:00:00', false, '2026-06-10 00:00:00' ) );
+
+		$this->assertSame( array( 10, 20 ), $result->eligible_line_ids );
+		$this->assertFalse( $result->line_windows[20]->within_window );
+	}
+
+	public function test_strict_mode_drops_only_the_expired_line(): void {
+		// Service bought 1 June (closed 15 June), T-shirt delivered 10 June (open until 24 June).
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-20 12:00:00', true, '2026-06-10 00:00:00' ) );
+
+		$this->assertTrue( $result->is_eligible, 'The T-shirt is still in its period.' );
+		$this->assertSame( array( 10 ), $result->eligible_line_ids );
+		$this->assertSame( array( 10 => 1 ), $result->available_quantities );
+	}
+
+	public function test_strict_mode_offers_the_service_before_the_goods_arrive(): void {
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-05 12:00:00', true, null ) );
+
+		$this->assertTrue( $result->is_eligible );
+		$this->assertSame( array( 20 ), $result->eligible_line_ids );
+	}
+
+	public function test_strict_mode_prefers_not_started_when_nothing_is_open(): void {
+		// The service closed on 15 June and the T-shirt has not been delivered: it will open, so say so.
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-20 12:00:00', true, null ) );
+
+		$this->assertFalse( $result->is_eligible );
+		$this->assertSame( Reason::NOT_STARTED, $result->reason );
+		$this->assertCount( 2, $result->line_windows, 'Per-line periods are reported on a refusal too.' );
+	}
+
+	public function test_strict_mode_closes_when_every_line_has_expired(): void {
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-07-01 12:00:00', true, '2026-06-10 00:00:00' ) );
+
+		$this->assertFalse( $result->is_eligible );
+		$this->assertSame( Reason::WINDOW_CLOSED, $result->reason );
+	}
+
+	public function test_an_excluded_line_does_not_hold_a_strict_order_open(): void {
+		// The T-shirt is excluded (art. 59) and within its period; the service has expired. The order
+		// must close, not be kept alive by a line that could never be withdrawn anyway.
+		$result = $this->engine->evaluate( $this->mixed_input( '2026-06-20 12:00:00', true, '2026-06-10 00:00:00', true ) );
+
+		$this->assertFalse( $result->is_eligible );
+		$this->assertSame( Reason::WINDOW_CLOSED, $result->reason );
+		$this->assertEquals( $this->dt( '2026-06-15 00:00:00' ), $result->window_ends_at, 'The excluded line must not stretch the deadline.' );
+	}
+
+	public function test_a_line_without_a_basis_follows_the_order_window(): void {
+		$input = new EligibilityInput(
+			$this->dt( '2026-06-05 12:00:00' ),
+			true,
+			array(),
+			14,
+			$this->dt( '2026-06-01 00:00:00' ),
+			array( new EligibilityLine( 10, true, false ) ),
+			false,
+			0,
+			array( WindowBasis::CONCLUSION => $this->dt( '2026-05-01 00:00:00' ) )
+		);
+
+		$result = $this->engine->evaluate( $input );
+
+		$this->assertSame( '', $result->line_windows[10]->basis );
+		$this->assertEquals( $this->dt( '2026-06-15 00:00:00' ), $result->line_windows[10]->ends_at );
 	}
 }

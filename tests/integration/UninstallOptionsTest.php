@@ -41,6 +41,28 @@ final class UninstallOptionsTest extends TestCase {
 	}
 
 	/**
+	 * The same promise for the configuration the plugin stores on products and categories. Orders are
+	 * left alone on purpose: their consent meta is part of the order's own record.
+	 */
+	public function test_every_product_and_category_meta_key_is_deleted(): void {
+		$source  = (string) file_get_contents( dirname( __DIR__, 2 ) . '/uninstall.php' );
+		$missing = array();
+
+		foreach ( ( new ReflectionClass( Settings::class ) )->getConstants() as $name => $value ) {
+			if ( ( str_starts_with( $name, 'META_PRODUCT_' ) || str_starts_with( $name, 'META_TERM_' ) )
+				&& ! str_contains( $source, "'" . $value . "'" ) ) {
+				$missing[] = $value;
+			}
+		}
+
+		$this->assertSame(
+			array(),
+			$missing,
+			'These product/category meta keys are written by the plugin but never deleted on uninstall: ' . implode( ', ', $missing )
+		);
+	}
+
+	/**
 	 * Every option the plugin writes: the settings, plus the two schema/version markers, which are
 	 * not Settings constants but are just as much the plugin's own rows.
 	 *

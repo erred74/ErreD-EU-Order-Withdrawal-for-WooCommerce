@@ -60,6 +60,16 @@ if ( is_readable( __DIR__ . '/vendor/autoload.php' ) ) {
 	}
 }
 
+// Remove the per-product and per-category withdrawal configuration: the art. 59 status and what the
+// period is counted from. Products are posts and categories are terms whatever the order storage, so
+// no order data is touched.
+foreach ( array( '_recesso_dig_withdrawal', '_recesso_dig_window_basis' ) as $recesso_dig_meta_key ) {
+	delete_post_meta_by_key( $recesso_dig_meta_key );
+}
+foreach ( array( 'recesso_dig_withdrawal', 'recesso_dig_window_basis' ) as $recesso_dig_meta_key ) {
+	delete_metadata( 'term', 0, $recesso_dig_meta_key, '', true );
+}
+
 // Remove plugin options.
 $recesso_dig_options = array(
 	'recesso_dig_db_version',

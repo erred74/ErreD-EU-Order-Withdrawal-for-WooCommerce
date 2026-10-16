@@ -13,6 +13,7 @@ use Recesso54bis\Domain\Eligibility\EligibilityEngine;
 use Recesso54bis\Domain\Eligibility\EligibilityInput;
 use Recesso54bis\Domain\Eligibility\EligibilityLine;
 use Recesso54bis\Domain\Eligibility\EligibilityResult;
+use Recesso54bis\Domain\Eligibility\WindowBasis;
 use Recesso54bis\Domain\WithdrawalRequest;
 use Recesso54bis\Persistence\RequestRepository;
 use Recesso54bis\Support\Clock;
@@ -56,6 +57,13 @@ final class EligibilityAdapter {
 	private Clock $clock;
 
 	/**
+	 * Per-product period basis.
+	 *
+	 * @var WindowBasisResolver
+	 */
+	private WindowBasisResolver $bases;
+
+	/**
 	 * Per-request memoisation keyed by order id.
 	 *
 	 * @var array<int, EligibilityResult>
@@ -65,21 +73,32 @@ final class EligibilityAdapter {
 	/**
 	 * Construct the adapter.
 	 *
-	 * @param EligibilityEngine $engine   Decision core.
-	 * @param Settings          $settings Configuration reader.
-	 * @param RequestRepository $requests Request repository (for the duplicate-open check).
-	 * @param Clock             $clock    Time source.
+	 * @param EligibilityEngine        $engine   Decision core.
+	 * @param Settings                 $settings Configuration reader.
+	 * @param RequestRepository        $requests Request repository (for the duplicate-open check).
+	 * @param Clock                    $clock    Time source.
+	 * @param WindowBasisResolver|null $bases    Per-product period basis (built from $settings when omitted).
 	 */
 	public function __construct(
 		EligibilityEngine $engine,
 		Settings $settings,
 		RequestRepository $requests,
-		Clock $clock
+		Clock $clock,
+		?WindowBasisResolver $bases = null
 	) {
 		$this->engine   = $engine;
 		$this->settings = $settings;
 		$this->requests = $requests;
 		$this->clock    = $clock;
+		$this->bases    = $bases ?? new WindowBasisResolver( $settings );
+	}
+
+	/**
+	 * The resolver this adapter counts periods with, for surfaces that describe the period in words
+	 * and must describe the same one.
+	 */
+	public function window_bases(): WindowBasisResolver {
+		return $this->bases;
 	}
 
 	/**
@@ -107,6 +126,39 @@ final class EligibilityAdapter {
 		$this->cache[ $order_id ] = $result;
 
 		return $result;
+	}
+
+	/**
+	 * Drop the memoised result for an order.
+	 *
+	 * The memo lives for the whole PHP request, and an order can change within one: WooCommerce sends
+	 * the "order completed" email in the request that completes the order, and that email renders the
+	 * withdrawal block. A result computed earlier in the request — before the completion date existed —
+	 * would then describe an order that no longer exists. Hooked to every order save.
+	 *
+	 * @param int $order_id Order id.
+	 */
+	public function forget( int $order_id ): void {
+		unset( $this->cache[ $order_id ] );
+	}
+
+	/**
+	 * Hook the memo invalidation to order saves and status changes.
+	 */
+	public function register(): void {
+		add_action( 'woocommerce_update_order', array( $this, 'forget_order' ) );
+		add_action( 'woocommerce_order_status_changed', array( $this, 'forget_order' ) );
+	}
+
+	/**
+	 * Hook callback for {@see self::forget()}; WooCommerce passes the order id first.
+	 *
+	 * @param mixed $order_id Order id as passed by WooCommerce.
+	 */
+	public function forget_order( $order_id ): void {
+		if ( is_numeric( $order_id ) ) {
+			$this->forget( (int) $order_id );
+		}
 	}
 
 	/**
@@ -145,6 +197,37 @@ final class EligibilityAdapter {
 	}
 
 	/**
+	 * Each line's withdrawal period, whatever the order's state.
+	 *
+	 * For the merchant reviewing a request: an order that has since been refunded or cancelled is no
+	 * longer withdrawable, and {@see self::for_order()} then stops before computing any period, but
+	 * the question "was this sent in time?" still needs one. Computed in advisory mode with no claims,
+	 * so nothing about the order's current eligibility leaks into the answer. Not filtered: it reports
+	 * the configured periods, not a decision.
+	 *
+	 * @param \WC_Order $order The order.
+	 *
+	 * @return array<int, \Recesso54bis\Domain\Eligibility\LineWindow> Map line_id => period.
+	 */
+	public function line_windows( \WC_Order $order ): array {
+		$input = $this->build_input( $order, array() );
+
+		return $this->engine->evaluate(
+			new EligibilityInput(
+				$input->now,
+				true,
+				array(),
+				$input->window_days,
+				$input->window_start,
+				$input->lines,
+				false,
+				$input->grace_days,
+				$input->basis_starts
+			)
+		)->line_windows;
+	}
+
+	/**
 	 * Assemble the WordPress-free engine input from a WooCommerce order.
 	 *
 	 * @param \WC_Order            $order  The order.
@@ -159,7 +242,11 @@ final class EligibilityAdapter {
 			$this->window_start( $order ),
 			$this->build_lines( $order ),
 			$this->settings->enforcement_strict(),
-			$this->settings->grace_days()
+			$this->settings->grace_days(),
+			array(
+				WindowBasis::DELIVERY   => $this->delivered_at( $order ),
+				WindowBasis::CONCLUSION => $this->concluded_at( $order ),
+			)
 		);
 	}
 
@@ -185,21 +272,36 @@ final class EligibilityAdapter {
 	}
 
 	/**
-	 * Compute when the withdrawal window opens, based on the configured trigger.
+	 * When the store-wide period opens: the order's start for the configured trigger. Lines carry
+	 * their own basis since per-product overrides exist, so this only matters for an order with no
+	 * product lines, and to callers reading the order-level window.
 	 *
 	 * @param \WC_Order $order The order.
 	 */
 	private function window_start( \WC_Order $order ): ?\DateTimeImmutable {
-		if ( Settings::TRIGGER_CONCLUSION === $this->settings->start_trigger() ) {
-			// "Conclusion" trigger: the order creation date is used as the proxy for the
-			// conclusion of the contract.
-			return $this->to_utc( $order->get_date_created() );
-		}
+		return Settings::TRIGGER_CONCLUSION === $this->settings->start_trigger()
+			? $this->concluded_at( $order )
+			: $this->delivered_at( $order );
+	}
 
-		// "Delivery" trigger: WooCommerce has no native delivery date, so the order completion
-		// date is used as a proxy. Until the order is completed the window has not opened
-		// (fail closed → NOT_STARTED).
+	/**
+	 * The instant standing for delivery. WooCommerce has no native delivery date, so the order
+	 * completion date is used as a proxy. Until the order is completed the period has not opened
+	 * (fail closed → NOT_STARTED in strict mode).
+	 *
+	 * @param \WC_Order $order The order.
+	 */
+	private function delivered_at( \WC_Order $order ): ?\DateTimeImmutable {
 		return $this->to_utc( $order->get_date_completed() );
+	}
+
+	/**
+	 * The instant standing for the conclusion of the contract: the order creation date.
+	 *
+	 * @param \WC_Order $order The order.
+	 */
+	private function concluded_at( \WC_Order $order ): ?\DateTimeImmutable {
+		return $this->to_utc( $order->get_date_created() );
 	}
 
 	/**
@@ -235,7 +337,13 @@ final class EligibilityAdapter {
 				$default_policy
 			);
 
-			$lines[] = new EligibilityLine( $item->get_id(), $configured, $excluded, max( 1, (int) $item->get_quantity() ) );
+			$lines[] = new EligibilityLine(
+				$item->get_id(),
+				$configured,
+				$excluded,
+				max( 1, (int) $item->get_quantity() ),
+				$this->bases->for_product( $product_id )
+			);
 		}
 
 		return $lines;
@@ -280,16 +388,16 @@ final class EligibilityAdapter {
 	 * @return string One of the Settings::STATUS_* classifications, or '' when unclassified.
 	 */
 	public function product_status( int $product_id ): string {
-		$product_meta = get_post_meta( $product_id, Settings::META_PRODUCT_STATUS, true );
-		$product_meta = is_string( $product_meta ) ? $product_meta : '';
-		if ( in_array( $product_meta, Settings::known_statuses(), true ) ) {
+		$known = static fn( $value ): bool => is_string( $value ) && in_array( $value, Settings::known_statuses(), true );
+
+		$product_meta = Multilingual::product_meta( $product_id, Settings::META_PRODUCT_STATUS, $known );
+		if ( is_string( $product_meta ) && '' !== $product_meta ) {
 			return $product_meta;
 		}
 
 		foreach ( $this->category_ids( $product_id ) as $category_id ) {
-			$category_meta = get_term_meta( $category_id, Settings::META_TERM_STATUS, true );
-			$category_meta = is_string( $category_meta ) ? $category_meta : '';
-			if ( in_array( $category_meta, Settings::known_statuses(), true ) ) {
+			$category_meta = Multilingual::category_meta( $category_id, Settings::META_TERM_STATUS, $known );
+			if ( is_string( $category_meta ) && '' !== $category_meta ) {
 				return $category_meta;
 			}
 		}
@@ -322,24 +430,33 @@ final class EligibilityAdapter {
 		string $default_policy
 	): array {
 		// Most specific: a per-product status set in the product editor.
-		$product_meta = $this->meta_status( get_post_meta( $product_id, Settings::META_PRODUCT_STATUS, true ) );
+		$known = fn( $value ): bool => null !== $this->meta_status( $value );
+
+		$product_meta = $this->meta_status( Multilingual::product_meta( $product_id, Settings::META_PRODUCT_STATUS, $known ) );
 		if ( null !== $product_meta ) {
 			return array( true, $product_meta );
 		}
-		if ( in_array( $product_id, $excluded_products, true ) ) {
+
+		// The legacy id lists name the product the merchant picked, which on a multilingual site is the
+		// original: a translation matches through it.
+		$product_ids = array_unique( array( $product_id, Multilingual::original_product( $product_id ) ) );
+		if ( array() !== array_intersect( $product_ids, $excluded_products ) ) {
 			return array( true, true );
 		}
-		if ( in_array( $product_id, $allowed_products, true ) ) {
+		if ( array() !== array_intersect( $product_ids, $allowed_products ) ) {
 			return array( true, false );
 		}
 
 		// Per-category status from the category term meta, then the legacy id lists.
 		foreach ( $category_ids as $category_id ) {
-			$category_meta = $this->meta_status( get_term_meta( $category_id, Settings::META_TERM_STATUS, true ) );
+			$category_meta = $this->meta_status( Multilingual::category_meta( $category_id, Settings::META_TERM_STATUS, $known ) );
 			if ( null !== $category_meta ) {
 				return array( true, $category_meta );
 			}
 		}
+		$category_ids = array_values(
+			array_unique( array_merge( $category_ids, array_map( array( Multilingual::class, 'original_category' ), $category_ids ) ) )
+		);
 		if ( array() !== array_intersect( $category_ids, $excluded_categories ) ) {
 			return array( true, true );
 		}
@@ -373,19 +490,14 @@ final class EligibilityAdapter {
 	}
 
 	/**
-	 * Category ids for a product, defensively.
+	 * Category ids for a product, defensively — the original's when a translation has none.
 	 *
 	 * @param int $product_id Product id.
 	 *
 	 * @return int[]
 	 */
 	private function category_ids( int $product_id ): array {
-		$product = wc_get_product( $product_id );
-		if ( ! $product instanceof \WC_Product ) {
-			return array();
-		}
-
-		return array_map( 'intval', $product->get_category_ids() );
+		return Multilingual::category_ids( $product_id );
 	}
 
 	/**
