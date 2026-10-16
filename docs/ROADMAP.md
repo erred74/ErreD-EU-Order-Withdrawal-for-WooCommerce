@@ -200,6 +200,11 @@ the same. WPML is detected through its `wpml_original_element_id` filter (term l
 `term_taxonomy_id`, as WPML stores them); Polylang has no source relation, so its default language
 stands for the original.
 
+Verified on 2026-10-16 against real Polylang 3.8.11 (product and `product_cat` translation enabled):
+an English translation inherited the Italian original's art. 16 exclusion and, through its translated
+category, the "purchase" basis. The integration suite simulates both plugins through their public
+APIs; WPML (paid) has not been run for real — do that before claiming WPML support beyond the readme.
+
 ### No unverified withdrawal records
 The competitor's headline 2.1.0 feature registers requests that match no order, flagged "Unverified".
 Their form is a bare public form, so unmatched submissions are a problem they had to solve. Ours is
